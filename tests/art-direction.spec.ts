@@ -585,6 +585,255 @@ test.describe("the Art Direction Gate in the workflow", () => {
  * here, so the first-render evidence is asserted here rather than assumed.
  */
 test.describe("the declared Style Pack reaches real pixels", () => {
+  /**
+   * 签署取值表 —— 逐条抄自工作区根目录 `S1-浅色主题取值与决策.md` §二。
+   *
+   * 这一节是**签署文件的机器化副本**：颜色一旦改动，这里与适配层必须同时改，
+   * 否则测试会红 —— 这正是"两份人手抄的数字会漂移"要防的事。
+   */
+  const SIGNED = {
+    dark: {
+      canvas: "#0B1220",
+      panel: "#0F1A2E",
+      raised: "#152238",
+      rule: "#4A6C9B",
+      ink: "#E6EDF7",
+      inkMuted: "#8FA3C0",
+      accent: "#22D3EE",
+      accent2: "#F5A524",
+      positive: "#2ECC71",
+    },
+    light: {
+      canvas: "#F4F6F9",
+      panel: "#FFFFFF",
+      raised: "#E9EFF7",
+      rule: "#B7C3D2",
+      ink: "#0B1220",
+      inkMuted: "#4A5866",
+      accent: "#0E7490",
+      accent2: "#9A5B00",
+      positive: "#116A2F",
+    },
+  } as const
+
+  /*
+   * 产品**有意重写**的槽位（独立于上面的 `SIGNED`）。
+   *
+   * `SIGNED` 只列产品未重写的槽位 —— 它们必须逐像素等于 pack 的取值。
+   * 这两个槽位则相反：断言的是"**产品实际用的那个颜色** == 签署值"，
+   * 而不是"pack 说什么"。两张表分开，是因为它们回答两个不同的问题；
+   * 混在一张表里，必然有一半是假话。
+   */
+  const PRODUCT_SIGNED = {
+    dark: { negative: "#FF5A70", evidence: "#60A5FA" },
+    light: { negative: "#C81E33", evidence: "#1D4ED8" },
+  } as const
+
+  /** 五个语义：一个色相 = 一个含义，跨主题必须落在同一族（色相 ±25°）。 */
+  const HUE_FAMILIES = [
+    { meaning: "ai-cyan · AI 正在产出", slot: "accent" },
+    { meaning: "attack-red · 攻击 / 失败", slot: "negative" },
+    { meaning: "authorize-amber · 球在你那边", slot: "accent2" },
+    { meaning: "closed-green · 已闭环", slot: "positive" },
+    { meaning: "evidence-blue · 证据可点开", slot: "evidence" },
+  ] as const
+
+  /** 语义色必须承载正文，因此对每个它可能出现的承载面都要过 AA。 */
+  const FACES = ["canvas", "panel", "raised"] as const
+
+  const PALETTE_PROBE = `(() => {
+    const root = getComputedStyle(document.documentElement)
+    const read = (name) => root.getPropertyValue(name).trim()
+    return {
+      scope: document.documentElement.getAttribute("data-kits-pack"),
+      dark: document.documentElement.classList.contains("dark"),
+      packs: {
+        canvas: read("--kits-color-canvas"),
+        panel: read("--kits-color-surface"),
+        raised: read("--kits-color-surface-raised"),
+        rule: read("--kits-color-rule"),
+        ink: read("--kits-color-ink"),
+        inkMuted: read("--kits-color-ink-muted"),
+        inkFaint: read("--kits-color-ink-faint"),
+        inkGhost: read("--kits-color-ink-ghost"),
+        ruleStrong: read("--kits-color-rule-strong"),
+        accent: read("--kits-color-accent"),
+        accent2: read("--kits-color-accent-2"),
+        positive: read("--kits-color-positive"),
+        negative: read("--kits-color-negative"),
+        evidence: read("--kits-data-series-3"),
+        accentInk: read("--kits-color-accent-ink"),
+        focus: read("--kits-color-focus"),
+      },
+      product: {
+        background: read("--background"),
+        foreground: read("--foreground"),
+        surface: read("--surface"),
+        hairline: read("--hairline"),
+        brand: read("--brand"),
+        success: read("--success"),
+        warning: read("--warning"),
+        danger: read("--danger"),
+        evidence: read("--evidence"),
+      },
+      body: getComputedStyle(document.body).backgroundColor,
+    }
+  })()`
+
+  type PaletteReading = {
+    scope: string | null
+    dark: boolean
+    packs: Record<string, string>
+    product: Record<string, string>
+    body: string
+  }
+
+  /**
+   * Lab（CSS `lab()` / `oklab()` 的字符串形态）→ sRGB。仅 Node 侧需要：
+   * 浏览器侧一律走 canvas 归一化（更稳），但有些断言（负对照、签署表比对）
+   * 在 Node 上下文里直接算，那里没有 `document`。
+   *
+   * 依据 CSS Color 4：Lab 以 D50 白点为参考，先转 XYZ(D50)，再 Bradford 适应到 D65，
+   * 最后 sRGB 传递函数 + 钳制。
+   */
+  function labToRgb(l: number, a: number, b: number): { r: number; g: number; b: number } {
+    const k = 24389 / 27
+    const e = 216 / 24389
+    const fy = (l + 16) / 116
+    const fx = fy + a / 500
+    const fz = fy - b / 200
+    const xyzD50 = [
+      fx ** 3 > e ? fx ** 3 : (116 * fx - 16) / k,
+      l > k * e ? ((l + 16) / 116) ** 3 : l / k,
+      fz ** 3 > e ? fz ** 3 : (116 * fz - 16) / k,
+    ]
+    // D50 → D65（Bradford 适应，CSS Color 4 的常系数）
+    const [X, Y, Z] = xyzD50
+    const xyzD65 = [
+      0.9554734 * X - 0.0230985 * Y + 0.0632593 * Z,
+      -0.0283697 * X + 1.0099955 * Y + 0.0210414 * Z,
+      0.0123140 * X - 0.0205077 * Y + 1.3303659 * Z,
+    ]
+    const lin = [
+      3.2409699419 * xyzD65[0] - 1.5373831776 * xyzD65[1] - 0.4986107603 * xyzD65[2],
+      -0.9692436363 * xyzD65[0] + 1.8759675015 * xyzD65[1] + 0.0415550574 * xyzD65[2],
+      0.0556300797 * xyzD65[0] - 0.2039769589 * xyzD65[1] + 1.0569715142 * xyzD65[2],
+    ]
+    const encode = (v: number) => {
+      const c = v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055
+      return Math.max(0, Math.min(255, Math.round(c * 255)))
+    }
+    return { r: encode(lin[0]), g: encode(lin[1]), b: encode(lin[2]) }
+  }
+
+  const inBrowser = typeof document !== "undefined"
+
+  /**
+   * 任意合法 CSS 颜色写法 → 0–255 分量。**Node 与浏览器两侧都能用。**
+   *
+   * 为什么需要它两侧可用：这个 spec 有的断言在浏览器里跑（读 computed style），
+   * 有的在 Node 侧直接算（签署表之间的负对照）。只支持一侧的实现会在另一侧炸。
+   *
+   * 为什么要处理 `lab()`：Chromium 对某些颜色表达式（实测：pack 里经 color-mix 之类的
+   * 令牌）的 `getComputedStyle` 返回值是 `lab(...)` 而不是 `rgb(...)`。手写全套 CSS 颜色
+   * 解析是在追浏览器实现，所以**浏览器侧一律交给 canvas 归一化**（对纯色填充的读取是精确的，
+   * 不经过 PNG 量化）；Node 侧只做 hex/rgb/lab 三种——那三种覆盖这个 spec 实际会遇到的全部输入。
+   *
+   * 这次放宽的是**输入格式**，不是阈值：要证明的性质（页面上的颜色就是签署表里那个）
+   * 一个字未改。若哪天有人把它改成"认不出就算相等"，那才是把探针改死了。
+   */
+  function parseColor(value: string): { r: number; g: number; b: number } {
+    if (typeof value !== "string") {
+      throw new Error(`颜色探针收到非字符串：${JSON.stringify(value)}（多半是某个 token 没解析出来）`)
+    }
+    const raw = value.trim()
+
+    const hex = raw.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i)
+    if (hex) {
+      const body = hex[1].length === 3 ? hex[1].replace(/./g, (c) => c + c) : hex[1]
+      return {
+        r: parseInt(body.slice(0, 2), 16),
+        g: parseInt(body.slice(2, 4), 16),
+        b: parseInt(body.slice(4, 6), 16),
+      }
+    }
+
+    const rgb = raw.match(/^rgba?\(([^)]+)\)$/i)
+    if (rgb) {
+      const parts = rgb[1].split(/[\s,/]+/).filter(Boolean).map(Number)
+      if (parts.length >= 3 && parts.slice(0, 3).every(Number.isFinite)) {
+        return { r: parts[0], g: parts[1], b: parts[2] }
+      }
+    }
+
+    const lab = raw.match(/^lab\(\s*([\d.]+)%?\s+(-?[\d.]+)\s+(-?[\d.]+)/i)
+    if (lab) return labToRgb(Number(lab[1]), Number(lab[2]), Number(lab[3]))
+
+    if (!inBrowser) throw new Error(`Node 侧认不出的颜色写法：${JSON.stringify(value)}`)
+
+    // 浏览器侧：交给浏览器自己归一化。
+    const canvas = document.createElement("canvas")
+    canvas.width = 1
+    canvas.height = 1
+    const ctx = canvas.getContext("2d")
+    if (!ctx) throw new Error("无法取得 2d context，颜色探针无法判定")
+    ctx.fillStyle = "#000000"
+    ctx.fillStyle = raw
+    const accepted = ctx.fillStyle
+    if (accepted === "#000000" && !/^(#000000|black|rgb\(0,\s*0,\s*0\))$/i.test(raw)) {
+      throw new Error(`认不出的颜色写法：${JSON.stringify(value)}（浏览器也拒绝解析）`)
+    }
+    ctx.fillRect(0, 0, 1, 1)
+    const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data
+    return { r, g, b }
+  }
+
+  const sameColor = (a: string, b: string) => {
+    const [x, y] = [parseColor(a), parseColor(b)]
+    return x.r === y.r && x.g === y.g && x.b === y.b
+  }
+
+  /** WCAG 相对亮度（sRGB 线性化），用于对比度。 */
+  function luminance(value: string): number {
+    const { r, g, b } = parseColor(value)
+    const channel = (v: number) => {
+      const s = v / 255
+      return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4)
+    }
+    return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b)
+  }
+
+  function contrast(a: string, b: string): number {
+    const [hi, lo] = [luminance(a), luminance(b)].sort((p, q) => q - p)
+    return (hi + 0.05) / (lo + 0.05)
+  }
+
+  /** HSL 色相角（0–360）。色相族判定用它，不用"颜色是否相同"这种弱代理。 */
+  function hueOf(value: string): number {
+    const { r, g, b } = parseColor(value)
+    const [rn, gn, bn] = [r / 255, g / 255, b / 255]
+    const max = Math.max(rn, gn, bn)
+    const min = Math.min(rn, gn, bn)
+    const delta = max - min
+    if (delta === 0) return 0
+    let hue: number
+    if (max === rn) hue = ((gn - bn) / delta) % 6
+    else if (max === gn) hue = (bn - rn) / delta + 2
+    else hue = (rn - gn) / delta + 4
+    hue *= 60
+    return hue < 0 ? hue + 360 : hue
+  }
+
+  const hueDistance = (a: number, b: number) => {
+    const d = Math.abs(a - b) % 360
+    return Math.min(d, 360 - d)
+  }
+
+  /** 同一语义在两个主题下的色相差上限。实测最大 11°（证据蓝），留一倍余量。 */
+  const SAME_FAMILY_MAX = 25
+  /** 不同语义之间的色相下限。实测最接近的一对是青 187° vs 蓝 213° = 26°。 */
+  const DISTINCT_MEANING_MIN = 20
+
   const cssChain = () => ({
     globals: read("app/globals.css"),
     bridge: read("lib/kits/adapters/s1-tokens.css"),
@@ -639,36 +888,254 @@ test.describe("the declared Style Pack reaches real pixels", () => {
     expect(measured.packDuration, "动效刻度由适配层注入 <html>").toMatch(/^\d+(\.\d+)?ms$/)
 
     // ③ the bridge really connects them to the product's semantic tokens
-    expect(measured.background, "深色主题的画布 = pack 的画布").toBe(measured.packCanvas)
-    expect(measured.hairline).toBe(measured.packRule)
+    //    ⚠ 比较**归一化之后**的值，不比较字符串：
+    //      Chromium 对 pack 的令牌可能返回 `lab(...)`，对适配层直接写的 hex 返回 `#rrggbb`
+    //      —— 两者可以指同一个颜色而字符串不同。归一化后比较，才是"颜色相同"的正确判据。
+    //
+    //    注意：`measured` 的索引签名是 `string | boolean | null`，所以 `!` 只能去掉 null，
+    //    去不掉 boolean（typecheck 会报 TS2345）。用 String() 转换才是真的收窄；
+    //    万一某个键没读到，parseColor 会以"收到非字符串"响亮地炸，不会被兜底救活。
+    expect(
+      sameColor(String(measured.background), String(measured.packCanvas)),
+      `深色主题的画布 = pack 的画布（适配层 ${measured.background} vs pack ${measured.packCanvas}）`,
+    ).toBe(true)
+    // 规则线同理：产品层从 pack 令牌继承，字符串形态可能不同（实测 pack 返回的是
+    // 带透明度的写法），但归一化之后必须是同一个颜色。
+    expect(
+      sameColor(String(measured.hairline), String(measured.packRule)),
+      `规则线必须与 pack 的规则线同色（${measured.hairline} vs ${measured.packRule}）`,
+    ).toBe(true)
 
     // ④ and it reached the canvas, not just the token table
     expect(measured.bodyBackground, "body 必须有实体底色").not.toBe("rgba(0, 0, 0, 0)")
     expect(measured.bodyBackground).not.toBe("rgb(255, 255, 255)")
   })
 
-  test("the light theme stays the Factory neutral layer, so the two-theme sweep stays real", async ({
-    page,
-  }) => {
+  test("两套主题都逐值兑现签署表，而且真的画到了页面上", async ({ page }) => {
     const pack = JSON.parse(read("visual-manifest.json")).stylePack as string
+    const readTheme = async (theme: "dark" | "light") => {
+      // 用产品形态的视口量：QA 矩阵是 `desktop 1440×900 × {dark, light}`
+      // （见 .qa/qa.config.mjs），这里的像素证据必须与那个矩阵同坐标。
+      await page.setViewportSize({ width: 1440, height: 900 })
+      await page.emulateMedia({ colorScheme: theme })
+      await page.goto("/", { waitUntil: "domcontentloaded" })
+      return (await page.evaluate(PALETTE_PROBE)) as PaletteReading
+    }
 
-    await page.setViewportSize({ width: 1440, height: 900 })
-    await page.emulateMedia({ colorScheme: "light" })
-    await page.goto("/", { waitUntil: "domcontentloaded" })
+    const dark = await readTheme("dark")
+    const light = await readTheme("light")
 
-    const measured = (await page.evaluate(() => {
-      const root = getComputedStyle(document.documentElement)
-      return {
-        scope: document.documentElement.getAttribute("data-kits-pack"),
-        background: root.getPropertyValue("--background").trim(),
-        packCanvas: root.getPropertyValue("--kits-color-canvas").trim(),
+    for (const [name, reading, signed] of [
+      ["dark", dark, SIGNED.dark],
+      ["light", light, SIGNED.light],
+    ] as const) {
+      expect(reading.scope, `${name}: pack 作用域必须声明在 <html> 上`).toBe(pack)
+      expect(reading.dark, `${name}: 主题 class`).toBe(name === "dark")
+
+      // ① 逐值比对签署表（不是"非空"，不是"看起来像个颜色"）
+      //    这一张表里的槽位**产品未重写**，所以页面上的 pack 令牌必须逐像素等于签署值。
+      for (const [slot, expected] of Object.entries(signed)) {
+        expect(
+          sameColor(reading.packs[slot], expected),
+          `${name}.${slot}：解析值 ${reading.packs[slot]} ≠ 签署值 ${expected}`,
+        ).toBe(true)
       }
-    })) as Record<string, string | null>
 
-    expect(measured.scope).toBe(pack)
-    // 浅色主题仍然是中性层取值，不是 pack 的深色画布 —— console 的
-    // `darkDirection.strategy` 是 single-theme，把它全局接死等于替人退役浅色主题，
-    // 那是一次产品决定，不是这一步可以顺手做的事（见适配层里的说明）。
-    expect(measured.background).not.toBe(measured.packCanvas)
+      // ①b 产品**有意重写**的两个语义槽位：断言的是"产品实际用的颜色 == 签署值"。
+      //     它们与 pack 的原始令牌可以不相等（那正是"重写"的含义），但必须等于
+      //     产品层映射出来的 `--danger` / `--evidence` —— 也就是页面真正会用的那两个。
+      const productSigned: Record<string, keyof PaletteReading["product"]> = {
+        negative: "danger",
+        evidence: "evidence",
+      }
+      for (const [slot, productKey] of Object.entries(productSigned)) {
+        const expected = (PRODUCT_SIGNED[name] as Record<string, string>)[slot]
+        expect(
+          sameColor(reading.product[productKey], expected),
+          `${name}.${slot}（产品重写）：--${productKey} = ${reading.product[productKey]} ≠ 签署值 ${expected}`,
+        ).toBe(true)
+      }
+
+      // ② 语义槽位映射是同一份（两套主题共用），产品令牌必须等于 pack 槽位
+      const bridge: Array<[keyof PaletteReading["product"], string]> = [
+        ["background", "canvas"],
+        ["foreground", "ink"],
+        ["surface", "panel"],
+        ["hairline", "rule"],
+        ["brand", "accent"],
+        ["success", "positive"],
+        ["warning", "accent2"],
+      ]
+      /*
+       * 产品**有意重写**的槽位 —— 不列进上面那张桥接表，改在这里单独声明。
+       *
+       * 为什么不能只是从桥接表里删掉：那样等于把"这个槽位还连着 pack 吗"这个问题
+       * **永久取消**，将来 `--danger` 意外断链也不会有任何东西发现。
+       * 所以这里改成两条**不依赖"是否相同"**的断言（取值正确性由 ①b 逐值比对负责）：
+       *   · 它必须在**两套主题下都有取值**（断链就会空）；
+       *   · 它承载的语义（红 = 攻击）**必须在每个承载面上过 AA** —— 这一条由
+       *     下面「一色一义」那组断言覆盖，且读的正是产品槽位。
+       *
+       * 顺带纠正一个我写错的判断：**浅色下 `--danger` 与 pack 的 negative 本来就该相同**
+       * （`#C81E33` 在浅色三个面上是 5.26 / 5.69 / 4.92，本来就达标，无需重写）。
+       * 只有深色需要重写（pack 原值 `#F4364C` 在 card 面 4.16、raise 面 3.69）。
+       * "重写"是**按主题分别判断**的，不是全局声明。
+       */
+      for (const productKey of ["danger", "evidence"] as const) {
+        expect(
+          reading.product[productKey],
+          `${name}：--${productKey} 必须解析出取值（断链会空）`,
+        ).not.toBe("")
+      }
+
+      for (const [productToken, packSlot] of bridge) {
+        expect(
+          sameColor(reading.product[productToken], reading.packs[packSlot]),
+          `${name}: --${productToken} 必须绑定到 pack 的 ${packSlot}`,
+        ).toBe(true)
+      }
+
+      // ③ 页面真的画成了这套主题（token 解析对 ≠ 页面用了它）
+      expect(
+        sameColor(reading.body, reading.packs.canvas),
+        `${name}: body 背景应当是画布色，实测 ${reading.body}`,
+      ).toBe(true)
+    }
+
+    // ④ 两套主题没有塌成一套：浅色画布既不是深色画布，也就是签署的那个冷白
+    expect(sameColor(light.packs.canvas, SIGNED.dark.canvas), "浅色不得解析成深色画布 #0b1220").toBe(
+      false,
+    )
+    expect(sameColor(light.packs.canvas, SIGNED.light.canvas)).toBe(true)
+  })
+
+  test("五个语义：一色一义（色相族跨主题不变、族间互异）且每个承载面都过 AA", async ({ page }) => {
+    const readTheme = async (theme: "dark" | "light") => {
+      await page.setViewportSize({ width: 1440, height: 900 })
+      await page.emulateMedia({ colorScheme: theme })
+      await page.goto("/", { waitUntil: "domcontentloaded" })
+      return (await page.evaluate(PALETTE_PROBE)) as PaletteReading
+    }
+
+    const dark = await readTheme("dark")
+    const light = await readTheme("light")
+    const themes = [
+      ["dark", dark],
+      ["light", light],
+    ] as const
+
+    /*
+     * 色相族判定 —— 这是 `color.every-hue-has-one-meaning`（候选不变量）的核心，
+     * 也是"两套主题确实是同一个语义体系"的唯一机器证据。
+     * 用 HSL 色相角，而不是"两个颜色不一样"这种弱代理：那个代理在两个语义被
+     * 换成同一色相时会照样通过。
+     */
+    for (const { meaning, slot } of HUE_FAMILIES) {
+      const [hueDark, hueLight] = [hueOf(dark.packs[slot]), hueOf(light.packs[slot])]
+      expect(
+        hueDistance(hueDark, hueLight),
+        `${meaning}：深色 ${hueDark.toFixed(1)}° 与浅色 ${hueLight.toFixed(1)}° 不在同一色相族（上限 ${SAME_FAMILY_MAX}°）`,
+      ).toBeLessThanOrEqual(SAME_FAMILY_MAX)
+    }
+
+    for (const [name, reading] of themes) {
+      for (let i = 0; i < HUE_FAMILIES.length; i += 1) {
+        for (let j = i + 1; j < HUE_FAMILIES.length; j += 1) {
+          const distance = hueDistance(
+            hueOf(reading.packs[HUE_FAMILIES[i].slot]),
+            hueOf(reading.packs[HUE_FAMILIES[j].slot]),
+          )
+          expect(
+            distance,
+            `${name}：${HUE_FAMILIES[i].meaning} 与 ${HUE_FAMILIES[j].meaning} 的色相只差 ${distance.toFixed(1)}°，一个色相被两个语义借用了`,
+          ).toBeGreaterThanOrEqual(DISTINCT_MEANING_MIN)
+        }
+      }
+    }
+
+    // 负对照：判定器必须能失败 —— 拿浅色的"青"去比深色的"红"，必须被判成不同族。
+    // 没有这一条，"色相族相同"可能只是判定器永远返回 true。
+    // 注意取的是 PRODUCT_SIGNED（产品实际用的红），不是 SIGNED —— 后者只列未重写的槽位。
+    expect(
+      hueDistance(hueOf(SIGNED.light.accent), hueOf(PRODUCT_SIGNED.dark.negative)),
+      "色相族判定器没有区分能力（青 vs 红被判成同族）",
+    ).toBeGreaterThan(SAME_FAMILY_MAX)
+
+    /* 对比度：每个语义色对它可能出现的每个承载面都要过 AA 正文。
+     *
+     * ⚠ 读的是**产品槽位**（`--danger` / `--success` / …），不是 pack 的原始令牌。
+     * 为什么这不是"放宽"：pack 是共享资产，它写入 registry 的 `--kits-color-negative`
+     * 是**这套风格的身份**（已 approved、checksum 受保护），要求它为某一个产品的
+     * 某个承载面达标既做不到也不该做。而「一色一义」这条纪律要守的，是
+     * **页面实际使用的那个颜色** —— 也就是产品层映射出来的 `--danger`。
+     * S1 在这两个槽位之间做的正是"语义住在色相里、明度按实测重算"：
+     * 深色 `#FF5A70`（四面 6.20/5.75/5.27/4.68）、浅色 `#C81E33`。
+     *
+     * 判据一个字未改（≥4.5，三位小数，逐面断言）：改的是**被测对象**，
+     * 从"pack 说什么"变成"页面用什么"。
+     *
+     * 注意键名**不带 `--` 前缀** —— `PaletteReading["product"]` 的键是
+     * `brand` / `danger` / `warning` / `success` / `evidence`。
+     * （第一版写成 `"--brand"`，于是 `reading.product["--brand"]` 恒为 undefined，
+     *  探针当场报"收到 undefined"。这类错误必须让它响亮地炸，不能被兜底救活。） */
+    const PRODUCT_SEMANTIC: Record<string, keyof PaletteReading["product"]> = {
+      accent: "brand",
+      negative: "danger",
+      accent2: "warning",
+      positive: "success",
+      evidence: "evidence",
+    }
+    for (const [name, reading] of themes) {
+      for (const { meaning, slot } of HUE_FAMILIES) {
+        const productToken = PRODUCT_SEMANTIC[slot]
+        for (const face of FACES) {
+          const ratio = contrast(reading.product[productToken], reading.packs[face])
+          expect(
+            ratio,
+            `${name}：${meaning} 在 ${face} 面上对比度 ${ratio.toFixed(2)} < 4.5`,
+          ).toBeGreaterThanOrEqual(4.5)
+        }
+      }
+
+      expect(contrast(reading.packs.ink, reading.packs.canvas), `${name}: 主墨 AAA`).toBeGreaterThanOrEqual(7)
+      expect(
+        contrast(reading.packs.inkMuted, reading.packs.canvas),
+        `${name}: 次墨至少 AA`,
+      ).toBeGreaterThanOrEqual(4.5)
+
+      /*
+       * 规则线：这里守的是**可辨**的回归下限（1.2），不是签署值本身的对比度。
+       * 两个主题的方向相反（深色提亮 #4A6C9B、浅色压深 #B7C3D2），但性质相同：
+       * 它必须与周围表面分得开，否则三列会糊成一块。
+       */
+      for (const face of FACES) {
+        const ratio = contrast(reading.packs.rule, reading.packs[face])
+        expect(
+          ratio,
+          `${name}: 规则线对 ${face} 只有 ${ratio.toFixed(2)}，与表面几乎不可分`,
+        ).toBeGreaterThanOrEqual(1.2)
+      }
+
+      // 非正文槽位（签署表标注"仅大字 / 非正文"）：只守住非文本的 3:1 下限，
+      // 不为它假装 AA —— 它本来就允许更弱。
+      for (const face of FACES) {
+        expect(
+          contrast(reading.packs.inkFaint, reading.packs[face]),
+          `${name}: ink-faint 对 ${face} 低于非文本下限 3.0`,
+        ).toBeGreaterThanOrEqual(3)
+      }
+    }
+
+    /* 两个派生槽位：它们不是新取的色，而是 pack 自己的关系在浅色下的解。 */
+    for (const [name, reading] of themes) {
+      expect(
+        contrast(reading.packs.accentInk, reading.packs.accent),
+        `${name}: 压在 accent 上的字必须过 AA（深色 10.36 / 浅色 5.36）`,
+      ).toBeGreaterThanOrEqual(4.5)
+      expect(
+        sameColor(reading.packs.focus, reading.packs.accent),
+        `${name}: focus 在 pack 里就等于 accent，浅色沿用同一关系`,
+      ).toBe(true)
+    }
   })
 })

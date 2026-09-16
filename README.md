@@ -101,17 +101,25 @@ pnpm qa                # Browser QA 全量扫描（自管 server，自起自停�
 |---|---|
 | 身份是 S1 自己的 | `package.json` 的 `name`、`app/layout.tsx` 的 metadata、首页、404、词典；`pnpm factory:init` 逐字扫描 |
 | Reference Sample 已删除 | CRM 路由、内置演示、样例样式层与只服务它们的测试全部移除；边界记在 `init-contract.json` |
-| `console` 风格包已安装并接入 | `lib/kits/kits.lock.json`（registry 0.3.0）· `pnpm qa:doctor` 全过 · `pnpm qa` 与 `tests/art-direction.spec.ts` 的「the declared Style Pack reaches real pixels」 |
+| `console` 风格包已安装并接入双主题 | `lib/kits/kits.lock.json`（registry 0.3.0）· `pnpm qa:doctor` 全过 · `pnpm test` 里的「the declared Style Pack reaches real pixels」（深色 + 浅色各一条） |
 | 初始化边界已冻结 | `init-contract.json` 的 `stage: "product"`，`sampleOwned` 列出的是**真的已经不存在**的路径 |
 | 工厂门禁全绿 | 本 README 的「质量门」一节，逐条真跑过 |
 
 **还没做（不要在演示里承诺）：**
 
 - 十二个组件一个都没有实现；事件契约（8 类消息）与确定性回放器属于后续 S1 工单。
-- `console` 风格包**已经装进本仓并接在深色主题上**（`lib/kits/installed/console`，
-  registry 0.3.0），但签名组件预算仍是 0，所以界面上能看到的仍然只有这一页。
-  pack 的接入链路是 `app/globals.css` → `lib/kits/adapters/s1-tokens.css`（产品所有）
+- `console` 风格包**已经装进本仓并接在两套主题上**（`lib/kits/installed/console`，
+  registry 0.3.0）：深色是 pack 的原生战情室配色，浅色是**产品层签署**的同一批色相 +
+  重算明度（依据：工作区根目录 `S1-浅色主题取值与决策.md`）。接入链路是
+  `app/globals.css` → `lib/kits/adapters/s1-tokens.css`（产品所有）
   → `lib/kits/installed/console/tokens.css`（Kits 托管）：**产品代码永远不直接 import 托管区**。
+  签名组件预算仍是 0，所以界面上能看到的仍然只有这一页。
+
+> **「pack 有没有真的上屏」这条结论来自 `pnpm test`，不来自 `pnpm qa`。**
+> `pnpm qa` 的 sweep 按设计不认识任何 pack id —— 它证明的是"这一页不是浏览器默认样式态"，
+> 拿不到"这个颜色就是 pack 的取值"这个结论。那两条像素断言住在强制门禁 `pnpm test` 里
+> （`tests/art-direction.spec.ts`：深色一条、浅色一条，逐值比对签署表 + 色相族 + 对比度）。
+> 只跑 `pnpm qa` 会看到绿灯，但那不是"颜色对"的证据。
 - `product-contract.json` 目前仍是基线的两条不变量。S1 自己的「绝不能搞错什么」
   尚未由人签署；**Factory 不允许 Agent 生成或改写不变量**，所以这里是空的，
   等签字后替换。

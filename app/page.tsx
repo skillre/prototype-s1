@@ -18,8 +18,9 @@ import { messages } from "@/lib/i18n"
  * 颜色不是写在这一页里的，也不是"只有中性层"：这一页只用语义槽位
  * （`--foreground` / `--surface` / `--hairline` / `--brand` / `--danger` …），
  * 而 `lib/kits/adapters/s1-tokens.css` 把这些槽位绑定到 Kits `console` pack 的 `--kits-*`。
- * 所以**深色主题下的取值就是 pack 的取值**（画布 `#0b1220`、规则线 `#4A6C9B` …）。
- * pack 只在深色主题接入（见那个适配层的说明），浅色主题仍是 Factory 中性层。
+ * 所以**两套主题下的取值都是这套 pack 的取值**：深色是 pack 原生的战情室配色
+ * （画布 `#0b1220`），浅色是产品在这一层签署的同一批色相 + 重算明度（画布 `#F4F6F9`）——
+ * 依据是工作区根目录的 `S1-浅色主题取值与决策.md`。
  * 产品代码里没有任何颜色字面量，换 pack 时改的只有适配层一行。
  */
 export default function HomePage() {

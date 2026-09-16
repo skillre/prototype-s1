@@ -108,7 +108,7 @@ export const zhCN = {
          （id 只能在 adapters/ 里出现，产品要的是「能力」不是「资产名」）。
          哪一套 pack 由 visual-manifest.json 与 lib/kits/kits.lock.json 回答。 */
       visualValue: "Kits 风格包",
-      visualNote: "已安装 · 接入深色主题",
+      visualNote: "已安装 · 双主题接入",
     },
 
     done: {

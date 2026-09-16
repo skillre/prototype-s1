@@ -3,7 +3,7 @@
  *
  * 链路（只有这一条，产品代码不许绕过）：
  *
- *   lib/kits/installed/console/tokens.css   Kits 托管：--kits-* 取值
+ *   lib/kits/installed/console/tokens.css   Kits 托管：--kits-* 取值（原生深色）
  *        ↓  由 style-console.css 引入（kits add 生成的稳定缝）
  *   本文件                                  ← 你在这里：把 --kits-* 映射成产品语义令牌
  *        ↓  app/globals.css 只 import 这一层
@@ -15,54 +15,179 @@
  * 而产品写的是**产品的**词汇（`--background` / `--hairline` / `--muted-foreground`）。
  * 直接把 --kits-* 抄进 JSX 会把 pack 的资产名焊进每一行产品代码，换 pack 就要全量改；
  * 而把取值手抄一份到这里，pack 改值的那天产品不会报错、只会静默过期。
- * 桥接层是唯一一处「知道两边叫什么」的地方，所以它必须只有一处。
+ * 桥接层是唯一一处「知道两边叫什么」的地方，所以它必须只有一处 —— 所以下面
+ * **语义槽位的映射只写一遍**（`[data-kits-pack]` 作用域内），两套主题的差别只在
+ * `--kits-*` 的取值，不在映射本身。
  *
- * ## 为什么只在 `.dark` 下生效
+ * ## 两套主题：深色是 pack 原生的，浅色是**产品**签署的
  *
- * console 的 `darkDirection.strategy` 是 `single-theme`：它原生就是深色，暗色等于
- * 默认值，没有第二套调色板。但本产品此刻的 QA 矩阵是 `desktop × {dark, light}`
- * （见 `.qa/qa.config.mjs`），浅色主题仍然是 Factory 中性层的取值。所以这里把
- * pack 接到**深色主题**上，而不是全局接死：
+ * console 的 `darkDirection.strategy` 是 `single-theme`：它原生只有深色，不提供第二套
+ * 调色板。但人已决定（2026-09-16）**保留双主题，并把浅色做真** —— 依据与取值见
+ * 工作区根目录 `S1-浅色主题取值与决策.md`，那是签署文件，这里是它的实现。
  *
- *   - 深色主题 = console 的战情室配色（画布 #0B1220 / 面板 #0F1A2E / 规则线 #4A6C9B）
- *   - 浅色主题 = Factory 中性层（保持两套主题真的不同，扫描才有意义）
+ * 为什么必须另取一套浅色值（不是审美分歧）：设计稿的五个语义色放到浅面上**不可用**
+ * （AI 青 1.67 / 琥珀 1.89 / 绿 1.94 / 蓝 2.35 / 红 3.54，对 canvas #F4F6F9）。
+ * 所以「一色一义」在双主题下的唯一写法是：**语义住在色相里，明度按主题重算**，
+ * 且每套主题的取值各自实测达到 WCAG-AA 正文对比度。
  *
- * 如果人要的是「S1 永远深色」（pack 的 single-theme 立场指向那个方向），那是一次
- * **产品决定**：退役浅色主题、把 themes 收成 ["dark"]，并重跑视觉验收 —— 不是这一层
- * 可以替人做的。做出那个决定之前，两套主题都必须是真实的。
+ *   · 深色 = console 的战情室配色（画布 #0B1220 / 面板 #0F1A2E / 规则线 #4A6C9B）
+ *   · 浅色 = 同一批色相身份 + 重算的明度（画布 #F4F6F9 / 面板 #FFFFFF / 规则线 #B7C3D2）
  *
- * 只允许在这里覆盖**颜色**。排版 / 间距 / 密度 / 圆角 / 边界 / 动效是 pack 的身份，
- * 改掉之后就不再是这套风格了。
+ * 规则线在两个主题里的方向**相反**：深色要**提亮**（#22344F → #4A6C9B）才看得见，
+ * 浅色要**压深**（→ #B7C3D2）才看得见。方向不同，守的性质是同一个。
+ *
+ * ## 这里允许改什么
+ *
+ * **只允许覆盖颜色。** 排版 / 间距 / 密度 / 圆角 / 边界 / 动效是 pack 的身份，
+ * 改掉之后就不再是这套风格了。浅色作用域里覆盖的 13 个槽位逐条来自签署文件；
+ * 另外两个（`--kits-color-accent-ink` / `--kits-color-focus`）是**派生**的，理由写在
+ * 它们旁边 —— 它们不是新取的一套颜色，而是 pack 自己的关系在浅色下的解。
+ *
+ * 注意：本文件里的 asset id 是**允许**的 —— `lib/kits/adapters/**` 就是「产品唯一可以
+ * 知道资产名」的那一层（Kits 的 boundary 检查豁免它）。产品代码在别处出现它会被判违规。
  */
 @import "./style-console.css";
 
-[data-kits-pack="console"].dark {
+/* -------------------------------------------------------------------------- */
+/* 浅色承载面与墨色：签署取值（S1-浅色主题取值与决策.md §二）                    */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * `:not(.dark)` = 浅色作用域。
+ *
+ * 只覆盖颜色，不动 pack 的排版 / 间距 / 圆角 / 动效；`--kits-*` 的名字与语义不变，
+ * 所以 pack 自己的 `.kits-*` 工具类在浅色下也跟着走 —— 这才叫「同一套 pack 的两套明度」，
+ * 而不是「深色用 pack、浅色用另一套东西」。
+ *
+ * ⚠ 选择器里的 `:root` **不是冗余**，是必需的（2026-09-16 实测发现）。
+ *
+ * `[data-kits-pack="console"].dark` 的特异度是 (0,2,0)，看起来已经高于
+ * `app/globals.css` 的 `.dark` (0,1,0)。但实测计算值显示：`--kits-color-canvas`
+ * 确实是 pack 的 `#0b1220`，而**产品令牌 `--background` 却仍然是 globals.css
+ * 中性层的 `oklch(0.152 0.015 264)`** —— 页面画的是 Factory 的中性色，
+ * 不是 pack 的画布色。两者都是暗蓝、肉眼几乎分不出，所以这个缺陷自己不会暴露。
+ *
+ * 加 `:root` 把特异度提到 (0,3,0)（元素+2 类），让它稳定压过 globals.css 的
+ * 中性层。`app/globals.css` 是 Factory Core 的中性 fallback，**不能删** ——
+ * 所以产品层必须自己保证在它之后生效，而不是指望导入顺序。
+ */
+[data-kits-pack="console"]:root:not(.dark) {
+  /* 承载面 */
+  --kits-color-canvas: #f4f6f9;
+  --kits-color-surface: #ffffff;
+  --kits-color-surface-raised: #e9eff7;
+  --kits-color-surface-sunken: #edf1f7;
+  --kits-color-rule: #b7c3d2;
+
+  /* 墨色（实测：ink 17.29 / ink-muted 6.74 / ink-faint 4.16，对 canvas） */
+  --kits-color-ink: #0b1220;
+  --kits-color-ink-muted: #4a5866;
+
+  /* 语义色：同一色相，明度重算，三个承载面上都 ≥4.5 */
+  --kits-color-accent: #0e7490; /* 青 · AI 正在产出 */
+  --kits-color-accent-2: #9a5b00; /* 琥珀 · 球在你那边（待人授权） */
+  --kits-color-positive: #116a2f; /* 绿 · 已闭环 */
+  --kits-color-negative: #c81e33; /* 红 · 攻击 / 失败 */
+  --kits-data-series-3: #1d4ed8; /* 蓝 · 证据引用可点开 */
+
+  /*
+   * 下面两个是**派生**，不是新取的颜色：
+   *   · accent-ink 在深色下是 `#0B1220`（暗字压亮青）。浅色的 accent 是深青
+   *     `#0E7490`，上面压白字才是 5.36:1（与签署表里「#0E7490 vs 白面 5.36」同一个比值），
+   *     压暗字只有 ~2.4:1 —— 所以这里必须翻成白。
+   *   · focus 在 pack 里**就等于** accent（深色 `#22D3EE`）；浅色沿用同一个关系
+   *     （= `#0E7490`），而不是另挑一个聚焦色。
+   */
+  --kits-color-accent-ink: #ffffff;
+  --kits-color-focus: #0e7490;
+  /* pack 另外提供一个**独立的证据槽位**（`--kits-data-evidence`，pack 自己的注释写着
+     "让「引用一条证据」不必借用任何序列色"）。它落在 pack 的「数据语言」一节 ——
+     属 pack 令牌、随 darkDirection 一起覆盖。不在这里覆盖它，浅色下用该槽位画的
+     证据色会拿到**深色的** #60a5fa。与 series-3 同值：同一语义的两种用法，
+     两个槽位都指向签署表里的 #1D4ED8。 */
+  --kits-data-evidence: #1d4ed8;
+  /* 攻击红在浅色下另有取值：`--danger` 的**主题相关**那一半放在这里
+     （共用块里给的是深色值 `#FF5A70`）。为什么必须按主题给：`--danger` 是
+     "页面实际用的红"，而四个承载面在两套主题里取值不同，同一个红不可能两边都达标。
+     本选择器特异度高于共用块，因此这里的声明会正确地覆盖浅色。 */
+  --danger: #c81e33;
+}
+
+/*
+ * 签署表没有覆盖、因此**有意不覆盖**的三个槽位（照实记在这里，不自己补值）：
+ *
+ *   --kits-color-ink-faint   `#5B6E8C`：浅色下对 canvas/panel/raised = 4.78 / 5.18 / 4.48
+ *                           （独立复算，见 `tests/art-direction.spec.ts`）—— 在 canvas 与
+ *                           panel 上其实过 AA，只有 raised 面差 0.02。比深色下的 3.61 更好，
+ *                           所以保持原值不构成可用性问题。
+ *   --kits-color-ink-ghost   `#3C4D6B`：浅色下 7.87 / 8.52 / 7.36 —— **这里有一个真实的
+ *                           语义倒挂**：它在深色里是最弱的一档（非文本边缘 / 最弱提示线），
+ *                           在浅色里却比 ink-muted（6.74）与 ink-faint（4.78）都更深。
+ *                           本阶段它没有被任何界面使用，所以不构成缺陷；但组件阶段若把它
+ *                           当"弱提示文字"用，会得到"越弱越显眼"的效果。**待人工给浅色取值。**
+ *   --kits-color-rule-strong `#6C90C0`：浅色下 3.04 / 3.29 / 2.84，作为 card 面上的分隔线可辨。
+ *
+ * 这三者是**已知的待核项**：签署文件没有给它们浅色取值。在拿到人的取值之前，
+ * 这里保持 pack 原值 —— 「自己另取一套」比「保持原值并写下来」更危险。
+ */
+
+/* -------------------------------------------------------------------------- */
+/* 语义槽位映射：只写一遍，两套主题共用                                          */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * ⚠ 这里的 `:root` 与上面浅色作用域同因，**不是冗余**。
+ *
+ * 不加它时实测：`--kits-color-canvas` 是 pack 的 `#0b1220`，但 **产品令牌
+ * `--background` 仍然是 `app/globals.css` 中性层的 `oklch(0.152 0.015 264)`** ——
+ * 页面画的是 Factory 的中性色而不是 pack 的画布色。两个颜色都是暗蓝，肉眼分不出，
+ * 所以它不会自己暴露；是像素断言（读计算值 + 归一化后比较）把它抓出来的。
+ *
+ * `:root` 把特异度提到 (0,2,0)（元素+2 类），稳定压过 globals.css 的
+ * `.dark` (0,1,0) 与 `:root` (0,1,0)。
+ */
+[data-kits-pack="console"]:root {
   /* 画面基底 */
   --background: var(--kits-color-canvas);
   --foreground: var(--kits-color-ink);
 
-  /* 三级表面：canvas → panel → card（设计稿实测彼此只差 1.08–1.17 的对比度，
-     所以层级由规则线承担，见下面的 --hairline） */
+  /* 三级表面：canvas → panel → card。深色下三个面彼此只差 1.08–1.17 的对比度，
+     所以层级由规则线承担（见下面的 --hairline）；浅色同理，方向相反。 */
   --surface: var(--kits-color-surface);
   --surface-foreground: var(--kits-color-ink);
   --elevated: var(--kits-color-surface-raised);
   --elevated-foreground: var(--kits-color-ink);
 
-  /* 次墨：实测在各面上都 ≥6:1，可以承载次要正文 */
+  /* 次墨：两套主题下都在各承载面上 ≥4.5，可以承载次要正文 */
   --muted: var(--kits-color-surface);
   --muted-foreground: var(--kits-color-ink-muted);
 
-  /* 结构线。pack 把它从设计稿原值 #22344F 提亮到 #4A6C9B：原值对 canvas 只有
-     1.49:1，而结构层级几乎全部由这一根 1px 线承担 —— 投屏 3 米外它会直接消失。 */
+  /* 结构线。深色 #4A6C9B / 浅色 #B7C3D2 —— 方向相反，性质相同：
+     必须比周围表面可辨，否则三列会糊成一块。 */
   --border: var(--kits-color-rule);
   --hairline: var(--kits-color-rule);
 
   /* 一色一义（不得混用）：青 = AI 正在产出；琥珀 = 球在你那边（待人授权）；
-     绿 = 已闭环；红 = 攻击。红在 card 面上只允许大字或非文本元素。 */
+     绿 = 已闭环；红 = 攻击 / 失败（**禁止用于装饰**）。
+
+     ⚠ 攻击红在这里**覆盖** pack 的取值，这是实测换来的，不是偏好：
+       · 设计稿原值 `#F4364C` 在四个承载面上是 canvas 4.88 / panel 4.54 /
+         **card 4.16** / **raise 3.69** —— 后两个面低于 AA 正文的 4.5；
+       · 而它承载的正是"攻击 / 失败"，出现在最需要被看清的地方（攻击者节点、
+         活跃后门、被封禁的源、失败复核）；
+       · `#FF5A70` 在四个面上是 6.20 / 5.75 / 5.27 / **4.68**，全部过 AA，
+         且色相仍是 352°（与设计稿原值 353° 差 1°）——**语义住在色相里，明度按实测重算**。
+     浅色主题的攻击红是 `#C81E33`（同样四面达标），两侧色相同族。 */
   --ring: var(--kits-color-focus);
   --brand: var(--kits-color-accent);
   --brand-foreground: var(--kits-color-accent-ink);
   --success: var(--kits-color-positive);
   --warning: var(--kits-color-accent-2);
-  --danger: var(--kits-color-negative);
+  --danger: #ff5a70;
+  /* 证据引用蓝：`#e-41` 这类引用 chip 的颜色。它必须与"告警红"分开 ——
+     引用不是告警，点开它是在看依据，不是在看问题。
+     用 pack 的 **独立证据槽位**（pack 自己的注释：`--kits-data-evidence` 是
+     "让「引用一条证据」不必借用任何序列色"），而不是借 `--kits-data-series-3` ——
+     那个是**序列**色，引用与序列是同一语义的两种用法，但槽位不同。 */
+  --evidence: var(--kits-data-evidence);
 }
