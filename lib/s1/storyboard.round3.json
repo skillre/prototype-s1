@@ -1,0 +1,387 @@
+{
+  "schemaVersion": 1,
+  "id": "s1-round3-storyboard",
+  "title": "S1 战情室 · 回合 3 回放剧本（按节拍）",
+  "builtFrom": "S1-回合3种子事件流.json（事实底本，全部取值反向可查）",
+  "note": "这是**种子数据与组件之间的那一层**：把静止的事实排成一条可推进的时间轴，每一步说明「此刻哪条消息到达、哪个组件改变、观众看到什么」。它不是动效设计——时间轴的精确编排（哪个动作在第几秒）仍未定义，这里只定**顺序与因果**。",
+  "contract": {
+    "messageTypes": [
+      "alert",
+      "context_package",
+      "plan_update",
+      "tool_call",
+      "action_card",
+      "approval",
+      "audit_event",
+      "sediment"
+    ],
+    "rule": "每一步的 `emits` 只能取上面八个之一；`evidenceRefs` 必须能在种子数据的 evidence 段找到；`affects` 必须指向十二个组件之一",
+    "countersRule": "顶栏三个计数是派生值：只能由已发生的 audit_event 聚合重算，不得由脚本直接赋值（不变量 evidence.counters-derive-from-events）"
+  },
+  "components": [
+    {
+      "id": "command-bar",
+      "label": "① 态势指挥条",
+      "seed": "headerStats"
+    },
+    {
+      "id": "plan-panel",
+      "label": "② 任务计划面板",
+      "seed": "plan"
+    },
+    {
+      "id": "finding-stream",
+      "label": "③ 研判流",
+      "seed": "findings"
+    },
+    {
+      "id": "tool-console",
+      "label": "④ 工具控制台",
+      "seed": "toolCalls"
+    },
+    {
+      "id": "attack-graph",
+      "label": "⑤ 攻击链实体画布",
+      "seed": "entities+impactView"
+    },
+    {
+      "id": "authority",
+      "label": "⑥ 处置与授权卡片区",
+      "seed": "actionCards"
+    },
+    {
+      "id": "audit-timeline",
+      "label": "⑧ 审计时间线",
+      "seed": "audit"
+    },
+    {
+      "id": "ask-s1",
+      "label": "⑨ 问 S1",
+      "seed": "askS1"
+    },
+    {
+      "id": "en-pipeline",
+      "label": "⑩ E+N 数据汇流视图",
+      "seed": "findings.f2"
+    },
+    {
+      "id": "sediment",
+      "label": "⑪ 战果与沉淀面板",
+      "seed": "sediment"
+    },
+    {
+      "id": "roster",
+      "label": "⑫ AI 数字员工花名册",
+      "seed": "headerStats.roster"
+    },
+    {
+      "id": "report-stream",
+      "label": "⑭ 报告流式生成",
+      "seed": "report"
+    }
+  ],
+  "beats": [
+    {
+      "step": 1,
+      "at": "T+0.0s",
+      "label": "双源到达 · 同一事件",
+      "emits": "alert",
+      "evidenceRefs": [
+        "#e-41"
+      ],
+      "affects": [
+        "en-pipeline",
+        "finding-stream"
+      ],
+      "audienceSees": "管道上出现两路粒子（探针 / EDR），尚未汇合；研判流开始打字机输出——结论还没成形。",
+      "openQuestion": "两路粒子的具体运动参数（速度/数量）未定义。"
+    },
+    {
+      "step": 2,
+      "at": "T+0.9s",
+      "label": "汇流 · 上下文包成形",
+      "emits": "context_package",
+      "evidenceRefs": [
+        "#e-41",
+        "#e-77"
+      ],
+      "affects": [
+        "en-pipeline",
+        "finding-stream",
+        "attack-graph"
+      ],
+      "audienceSees": "两路粒子合为一条、卡片上闪过 `{app01 · conf .93 · ev[#e-41,#e-77]}`；画布上长出一个新节点而不是一次性画好整张图。",
+      "openQuestion": "「合流」的视觉表达（粒子碰撞 vs 两线并成一线）未定义。"
+    },
+    {
+      "step": 3,
+      "at": "T+1.4s",
+      "label": "计划先于动作 · AI 拆解任务",
+      "emits": "plan_update",
+      "evidenceRefs": [
+        "#e-41",
+        "#e-77"
+      ],
+      "affects": [
+        "plan-panel",
+        "roster"
+      ],
+      "audienceSees": "计划面板先出现一份 checklist 再动手；前三条逐条点亮，每条右侧挂执行者徽章（调查/取证/处置 Agent）。",
+      "invariant": "计划必须先于处置动作出现，否则第 9 步的「划掉重写」不成立。"
+    },
+    {
+      "step": 4,
+      "at": "T+1.4s",
+      "label": "顶栏建立底噪",
+      "emits": "audit_event",
+      "evidenceRefs": [],
+      "affects": [
+        "command-bar"
+      ],
+      "audienceSees": "今日自主闭环 / 人工介入 / 平均处置三个数字开始按已发生事件重算并跳动。",
+      "invariant": "这三个数字只能由前 3 步已发生的 audit_event 聚合得出；本步不得直接赋值。"
+    },
+    {
+      "step": 5,
+      "at": "T+2.3s",
+      "label": "研判成立 · 结论带置信度与证据",
+      "emits": "alert",
+      "evidenceRefs": [
+        "#e-41",
+        "#e-77"
+      ],
+      "affects": [
+        "finding-stream",
+        "attack-graph"
+      ],
+      "audienceSees": "结论打字机输出完整、置信度 97% 落定、三个证据 chip 可点开；画布上与结论相关的边被点亮。",
+      "invariant": "本步之后，这条结论必须至少有一条可定位证据（evidence.every-claim-cites-a-source）。"
+    },
+    {
+      "step": 6,
+      "at": "T+3.2s",
+      "label": "低风险动作自主执行 · 带后悔药",
+      "emits": "action_card",
+      "evidenceRefs": [
+        "#e-41"
+      ],
+      "affects": [
+        "authority",
+        "attack-graph",
+        "plan-panel"
+      ],
+      "audienceSees": "封禁卡直接标「L3 授权策略内 · 已自动执行」并开始 00:41 回滚倒计时；画布上攻击者的边变色。",
+      "invariant": "本步是「清单内 + 可回滚」才允许自动执行（authority.no-unlisted-autonomous-action）。"
+    },
+    {
+      "step": 7,
+      "at": "T+3.2s",
+      "label": "留痕",
+      "emits": "audit_event",
+      "evidenceRefs": [
+        "#e-41",
+        "#e-77"
+      ],
+      "affects": [
+        "audit-timeline",
+        "command-bar"
+      ],
+      "audienceSees": "审计时间线出现第一条：`16:20:31 调查 Agent · 关联网络回连 + EDR 进程链`。",
+      "note": "时间戳是设计稿真值，不是生成的。"
+    },
+    {
+      "step": 8,
+      "at": "T+4.0s",
+      "label": "取证完成 · 文件与 hash 被固定",
+      "emits": "audit_event",
+      "evidenceRefs": [
+        "#e-79"
+      ],
+      "affects": [
+        "audit-timeline",
+        "plan-panel",
+        "attack-graph"
+      ],
+      "audienceSees": "时间线第二条 `16:20:38`；计划第 2 条打勾；画布上 webshell2.jsp 节点标「定位完成 · hash 比对中」。"
+    },
+    {
+      "step": 9,
+      "at": "T+4.6s",
+      "label": "重规划 · 划掉重写（本场最关键的动效）",
+      "emits": "plan_update",
+      "evidenceRefs": [
+        "#e-41",
+        "#e-77"
+      ],
+      "affects": [
+        "plan-panel"
+      ],
+      "audienceSees": "旧计划行「持续观察后门」被划掉，改写为「升级：立即进入主机清除」——观众亲眼看到它临场改方案，而不是跑剧本。",
+      "invariant": "重规划必须由一条**新证据**触发（本步依据 #e-77 的进程链 + 回连活跃），否则它就是编排好的表演（audit.replay-is-faithful 的可复现性也依赖这一点）。"
+    },
+    {
+      "step": 10,
+      "at": "T+5.4s",
+      "label": "每步动作前的处置说明卡",
+      "emits": "tool_call",
+      "evidenceRefs": [
+        "#e-41",
+        "#e-77"
+      ],
+      "affects": [
+        "tool-console"
+      ],
+      "audienceSees": "控制台先出现说明卡（依据 / 动作 / 影响 / 回滚），再逐字打出命令；每行左侧标注会话与托管账号。",
+      "invariant": "说明卡必须先于命令出现——「观众看到的不是命令一闪而过」。"
+    },
+    {
+      "step": 11,
+      "at": "T+6.8s",
+      "label": "命令流式下发 · 回显",
+      "emits": "tool_call",
+      "evidenceRefs": [
+        "#e-79"
+      ],
+      "affects": [
+        "tool-console"
+      ],
+      "audienceSees": "`$ ls -la … | grep jsp` → `$ cat upload/webshell2.jsp | head -5` → `deleted: webshell2.jsp · exit 0` 逐行出现。"
+    },
+    {
+      "step": 12,
+      "at": "T+8.0s",
+      "label": "跨面板因果 · 节点碎裂",
+      "emits": "tool_call",
+      "evidenceRefs": [
+        "#e-79"
+      ],
+      "affects": [
+        "tool-console",
+        "attack-graph"
+      ],
+      "audienceSees": "`rm` 落下的瞬间，左列画布上 webshell 节点碎裂消失；随后 `ls` 复核返回空，节点位置盖「已清除」章。",
+      "invariant": "同一条消息必须同时改变两个面板——跨面板因果是本项目的核心卖点，不是装饰。"
+    },
+    {
+      "step": 13,
+      "at": "T+8.0s",
+      "label": "留痕",
+      "emits": "audit_event",
+      "evidenceRefs": [
+        "#e-79"
+      ],
+      "affects": [
+        "audit-timeline",
+        "command-bar"
+      ],
+      "audienceSees": "时间线第三条 `16:20:52 处置 Agent · rm 删除 · 复核 exit 0`。"
+    },
+    {
+      "step": 14,
+      "at": "T+9.0s",
+      "label": "根因追问 → 需要人拍板",
+      "emits": "action_card",
+      "evidenceRefs": [
+        "#e-79"
+      ],
+      "affects": [
+        "authority",
+        "plan-panel"
+      ],
+      "audienceSees": "授权卡出现：五件套齐备（做什么 / 依据 / 影响与风险 / 回滚 / 替代方案），三键可点，SLA 倒计时 02:17。",
+      "invariant": "涉及业务代码变更的动作必须停在待批状态（authority.no-unlisted-autonomous-action）。"
+    },
+    {
+      "step": 15,
+      "at": "T+9.0s",
+      "label": "审批往返（现场把领导视线引向审批端）",
+      "emits": "approval",
+      "evidenceRefs": [
+        "#e-79"
+      ],
+      "affects": [
+        "authority",
+        "audit-timeline",
+        "command-bar"
+      ],
+      "audienceSees": "人工批准后卡片状态翻转，白名单下发；人工介入计数 +1。",
+      "openQuestion": "批准是异步等待真人点击还是演示脚本代批？**未定**——影响 SLA 倒计时的演示可信度，需人拍板。"
+    },
+    {
+      "step": 16,
+      "at": "T+10.2s",
+      "label": "报告流式生成",
+      "emits": "sediment",
+      "evidenceRefs": [
+        "#e-41",
+        "#e-77",
+        "#e-79"
+      ],
+      "affects": [
+        "report-stream",
+        "sediment"
+      ],
+      "audienceSees": "底栏报告进度推进、三行正文逐行出现；右列沉淀卡弹出三条（新剧本 / 白名单入基线库 / 攻击者画像）。",
+      "invariant": "沉淀物必须能被完整导出再导入（sediment.survives-export）。"
+    },
+    {
+      "step": 17,
+      "at": "T+10.2s",
+      "label": "留痕 + 计数封账",
+      "emits": "audit_event",
+      "evidenceRefs": [],
+      "affects": [
+        "audit-timeline",
+        "command-bar"
+      ],
+      "audienceSees": "时间线第四条 `16:21:00 报告 Agent · 生成《事件处置报告》草稿`；顶栏计数停在最终值。",
+      "invariant": "审计序列重放必须能重建全部面板状态（audit.replay-is-faithful）。"
+    },
+    {
+      "step": 18,
+      "at": "任意时刻",
+      "label": "被盘问 · 结论先行 + 证据可点开",
+      "emits": "alert",
+      "evidenceRefs": [
+        "#e-41",
+        "#e-77",
+        "#e-79"
+      ],
+      "affects": [
+        "ask-s1"
+      ],
+      "audienceSees": "预置三问任一被点：`现在最大风险是什么？` / `谁批准的删除操作？` / `如果攻击者换个新 IP 再来一次会怎样？` —— 回答挂证据链。",
+      "invariant": "回答一律「结论先行 + 证据可点开」，不得出现无引用回答。"
+    }
+  ],
+  "frameInvariants": [
+    {
+      "id": "boundary.demo-is-labelled-as-demo",
+      "scope": "全片（不属于任何单一节拍）",
+      "mustHoldAt": "T+0 起持续可见，直至回放结束",
+      "howImplemented": "shell 常驻一处可见的演示环境标识（不是只在首屏出现、也不是可关闭的 toast）。规格 §八 要求「所有『计划中』的组件必须带概念演示角标」——因此标识分两层：(a) 全场级：这是演示环境、数据与客户真实系统隔离；(b) 组件级：尚未真跑的组件另带自己的角标。",
+      "howTested": "每个路由断言存在可见（非 aria-hidden、非 display:none）的演示标识；组件级角标由各组件的测试断言。**不得**用 aria-hidden 或隐藏元素冒充可见。",
+      "whyItMatters": "现场一定会有人问「这真的是实时的吗」。让页面自己回答，比让讲解者回答安全得多——而如果标识只在开场闪一下，它就不构成回答。",
+      "signedBy": "human",
+      "signedAt": "2026-09-16"
+    },
+    {
+      "id": "evidence.counters-derive-from-events",
+      "scope": "全片（任何时刻）",
+      "mustHoldAt": "从第一个事件到回放结束的每一帧",
+      "howImplemented": "顶栏三个计数（今日自主闭环 / 人工介入 / 平均处置）不是独立状态，而是**从已发生事件序列选择性聚合出来的派生值**：每来一条 audit_event 重算一次，禁止任何 `count++` 或直接赋值。回放器必须同时维护那条背景事件序列本身（可回放、可复现），而不只是维护计数的当前值。",
+      "howTested": "(a) 断言顶栏每个值 === 从背景事件序列重算的结果；(b) 同一脚本跑两次得到同一序列与同一计数；(c) 不存在「计数变了但没有对应事件」的状态——在事件流上做一次 diff，拒绝任何无来源的跳变。",
+      "whyItMatters": "设计文档 §四① 要求数字持续跳动（建立『它在自主运转』的底噪），而『每个数字都有出处』又是这套界面最想卖的信任感。人可以接受一个会跳的数字，不能接受一个跳了却查不到来源的数字——现场只要有人问一句『128 是哪 128 起』，这个界面就当场失信。",
+      "signedBy": "human",
+      "signedAt": "2026-09-16"
+    }
+  ],
+  "openItems": [
+    "**动效时序已定，不再是未决项（2026-09-17，由 `lib/s1/timeline.ts` 回答）**：四条审计行取设计稿真值（16:20:31 / :38 / :52 / 16:21:00，逐字），其余节拍取整数秒偏移；仅两处例外用了种子里的真实测量（第 2 拍 = 开场 + 930ms ← `findings[1].elapsedMs`；第 3 拍 = 开场 + 1000ms ← `plan.steps[0].detail = '0.9s 前完成'`）。时间轴末拍在第 17 拍（约 27 秒），距「90 秒内出现 ≥2 个非传统信号」这条验收有充分余量。**注意「事实时间」与「解说时间」是两个时钟**，`replay.ts` 分别维护。",
+    "**审批端：机制已定，选择仍待裁决。** `approval` 是序列里的一条普通消息（第 15 拍），脚本代批与真人点击都会派发它。若选「等真人点」，组件把揭示停在 `cursorAtBeat(14)`，点击后派发同一条消息即可 —— 这是实现层面的开关，不是需要改数据的事。**但它决定 SLA 倒计时是不是真倒计时**，所以仍是人的决定。",
+    "**背景事件序列的形态已定（2026-09-17）**：当日事件簿，窗口 08:00:00 → 16:20:57，130 起闭环（128 自主 + 2 人工批），394 条消息，确定性生成（时长来自 8 槽位固定模式表 + 确定性余数分配，总处置时长**恰好 5330 秒 = 130 × 41**）。最后两起的事实时间落在解说窗口内，所以开场读 126 / 2、结束读 128 / 3 / 41s —— 既满足设计文档「数字持续跳动」，又满足不变量「每跳有出处」。",
+    "**⚠ 源设计稿自身有一处内部矛盾（我忠实抽取的结果，不是实现偏差）**：`headerStats.liveStatus` 写「待人工授权 **0** 项」，而 `actionCards[1]` 是一张带 137 秒 SLA 倒计时的待批卡片。同一帧里两者不可能同时为真 —— 这是设计稿的**帧混合**（顶栏画在一个时刻、卡片画在另一个时刻）。数据层已记录在案并选择「按剧本时序推进」，4 处差异逐条钉成了断言。**但顶栏那行文案怎么处理仍是人的决定**：建议让「待人工授权 N 项」也变成**派生值**（与另三个计数同类），于是它在第 14 拍之前是 0、之后是 1，自然消解这个矛盾。",
+    "本剧本未覆盖：环节 1（突破三条路径）、环节 2（植入·回合1）、环节 3 的封禁特写。原因：设计稿画布是「回合 3 实况」的静帧，其余环节的画面内容没有设计稿依据 —— 不得凭想象补。",
+    "`plan.progressPercent = 68`、`roundTimer 00:18.4` 这类静帧值按种子原样存为数据，**没有派生定义**；它们的动画规则仍缺。"
+  ]
+}

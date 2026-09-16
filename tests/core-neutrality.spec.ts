@@ -10,7 +10,6 @@ import {
   compareStylePresence,
 } from "../.qa/style-presence.mjs"
 import { walkScoped } from "../scripts/lib/kits-seam.mjs"
-import { invariant } from "./support/product-contract"
 
 /**
  * Core neutrality (Factory v1.2 · N1 = F3 + F4).
@@ -366,25 +365,33 @@ test.describe("the product's own surfaces opt into nothing (for now)", () => {
 })
 
 /* -------------------------------------------------------------------------- */
-/* the registered invariant                                                    */
+/* 曾经登记过的那条 Factory 级不变量（登记已随声明离开契约，测试原样保留）        */
 /* -------------------------------------------------------------------------- */
 
-invariant(
-  "factory.core-not-art-directed",
-  "Factory Core 的默认输出不携带 Art Direction personality",
-  () => {
-    test("中性层无性格 token，且每个消费性格的共享组件都保留了中性默认", () => {
-      expect(PERSONALITY_PATTERN.test(read("app/globals.css")), "globals.css 不得含性格 token").toBe(
-        false,
-      )
-      for (const [file, gates] of Object.entries(GATED_PERSONALITY_CONSUMERS)) {
-        for (const gate of gates) {
-          expect(read(file), `${file} 必须保留 gate：${gate}`).toContain(gate)
-        }
+/*
+ * 这一段曾经用 `invariant("factory.core-not-art-directed", …)` 登记。
+ *
+ * 本包（S1 数据层与回放引擎）把人签署的六条 S1 不变量写进 `product-contract.json` 时，
+ * 同时摘掉了基线那两条 `factory.` / `contract.` 声明里的 `factory.` 那一条：
+ * 它是**基线的**不变量，而归档的 `prototype-ai-research` 与 `prototype-ai-finance`
+ * 两个派生仓留下的处置是「基线级不变量随它的登记一起离开产品契约」。
+ * `contract.declaration-matches-enforcement` 保留 —— 它的登记就在
+ * `tests/product-contract.spec.ts`，而那个文件每个产品都带着。
+ *
+ * **测试本身一字未改**：从登记里搬出来换成普通 describe，断言、期望值、文件清单都不动。
+ */
+test.describe("Factory Core 的默认输出不携带 Art Direction personality", () => {
+  test("中性层无性格 token，且每个消费性格的共享组件都保留了中性默认", () => {
+    expect(PERSONALITY_PATTERN.test(read("app/globals.css")), "globals.css 不得含性格 token").toBe(
+      false,
+    )
+    for (const [file, gates] of Object.entries(GATED_PERSONALITY_CONSUMERS)) {
+      for (const gate of gates) {
+        expect(read(file), `${file} 必须保留 gate：${gate}`).toContain(gate)
       }
-      for (const [file, gate] of Object.entries(CAPABILITY_DEFAULTS)) {
-        expect(read(file), `${file} 必须保留中性默认：${gate}`).toContain(gate)
-      }
-    })
-  },
-)
+    }
+    for (const [file, gate] of Object.entries(CAPABILITY_DEFAULTS)) {
+      expect(read(file), `${file} 必须保留中性默认：${gate}`).toContain(gate)
+    }
+  })
+})

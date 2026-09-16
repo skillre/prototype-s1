@@ -244,17 +244,31 @@ test.describe("no generated semantics", () => {
     }
   })
 
-  test("the shipped contract declares only starter-level invariants", () => {
-    // A starter invariant is true of every derived product. A domain invariant
-    // in the starter would be inherited residue, which is exactly what the
-    // initialization boundary exists to prevent.
+  test("the shipped contract declares this product's own invariants", () => {
+    /*
+     * 原断言是基线规则：starter 里出现产品领域不变量 = 继承来的残留。
+     * 本仓是**产品**（`init-contract.json` 的 `stage: "product"`），规则因此反过来：
+     * 领域不变量在这里是**全部意义**，`product-contract.json` 就是它们的家；
+     * 而基线级的 `factory.*` 不变量不该在没有对应登记的情况下留下来
+     * （与 `prototype-ai-research` / `prototype-ai-finance` 的处置一致）。
+     *
+     * `contract.declaration-matches-enforcement` 例外且**必须**在：它的登记就在这个文件里，
+     * 契约不声明它，`pnpm factory:contract` 就会报 `contract/undeclared`。
+     */
     const contract = JSON.parse(read(CONTRACT_FILENAME))
-    for (const entry of contract.invariants) {
-      expect(
-        entry.id.startsWith("factory.") || entry.id.startsWith("contract."),
-        `starter contract 不得声明产品领域不变量：${entry.id}`,
-      ).toBe(true)
-    }
+    const ids = contract.invariants.map((entry: { id: string }) => entry.id)
+
+    for (const id of ids) expect(id, `${id} 不是合法 id`).toMatch(ID_PATTERN)
+    expect(ids.length).toBeGreaterThan(0)
+
+    // 门禁自己的不变量：登记在本文件里，所以契约必须声明它。
+    expect(ids).toContain("contract.declaration-matches-enforcement")
+
+    // 没有登记方的基线级不变量不该留在这里。
+    expect(ids.filter((id: string) => id.startsWith("factory."))).toEqual([])
+
+    // 反方向：这个产品自己的语义必须有家（否则「没人问过」会被当成「没问题」）。
+    expect(ids.filter((id: string) => !id.startsWith("contract.")).length).toBeGreaterThan(0)
   })
 
   test("the schema and the module agree", () => {

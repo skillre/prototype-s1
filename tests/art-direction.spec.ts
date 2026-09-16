@@ -15,6 +15,7 @@ import {
   loadPackManifest,
   resolveKitsRoot,
 } from "../scripts/lib/kits-runtime.mjs"
+import { invariant } from "./support/product-contract"
 
 /**
  * The Art Direction contract (Factory v1.2 · A1 = F1 + F2 + F8).
@@ -1009,133 +1010,139 @@ test.describe("the declared Style Pack reaches real pixels", () => {
     expect(sameColor(light.packs.canvas, SIGNED.light.canvas)).toBe(true)
   })
 
-  test("五个语义：一色一义（色相族跨主题不变、族间互异）且每个承载面都过 AA", async ({ page }) => {
-    const readTheme = async (theme: "dark" | "light") => {
-      await page.setViewportSize({ width: 1440, height: 900 })
-      await page.emulateMedia({ colorScheme: theme })
-      await page.goto("/", { waitUntil: "domcontentloaded" })
-      return (await page.evaluate(PALETTE_PROBE)) as PaletteReading
-    }
-
-    const dark = await readTheme("dark")
-    const light = await readTheme("light")
-    const themes = [
-      ["dark", dark],
-      ["light", light],
-    ] as const
-
-    /*
-     * 色相族判定 —— 这是 `color.every-hue-has-one-meaning`（候选不变量）的核心，
-     * 也是"两套主题确实是同一个语义体系"的唯一机器证据。
-     * 用 HSL 色相角，而不是"两个颜色不一样"这种弱代理：那个代理在两个语义被
-     * 换成同一色相时会照样通过。
-     */
-    for (const { meaning, slot } of HUE_FAMILIES) {
-      const [hueDark, hueLight] = [hueOf(dark.packs[slot]), hueOf(light.packs[slot])]
-      expect(
-        hueDistance(hueDark, hueLight),
-        `${meaning}：深色 ${hueDark.toFixed(1)}° 与浅色 ${hueLight.toFixed(1)}° 不在同一色相族（上限 ${SAME_FAMILY_MAX}°）`,
-      ).toBeLessThanOrEqual(SAME_FAMILY_MAX)
-    }
-
-    for (const [name, reading] of themes) {
-      for (let i = 0; i < HUE_FAMILIES.length; i += 1) {
-        for (let j = i + 1; j < HUE_FAMILIES.length; j += 1) {
-          const distance = hueDistance(
-            hueOf(reading.packs[HUE_FAMILIES[i].slot]),
-            hueOf(reading.packs[HUE_FAMILIES[j].slot]),
-          )
-          expect(
-            distance,
-            `${name}：${HUE_FAMILIES[i].meaning} 与 ${HUE_FAMILIES[j].meaning} 的色相只差 ${distance.toFixed(1)}°，一个色相被两个语义借用了`,
-          ).toBeGreaterThanOrEqual(DISTINCT_MEANING_MIN)
-        }
-      }
-    }
-
-    // 负对照：判定器必须能失败 —— 拿浅色的"青"去比深色的"红"，必须被判成不同族。
-    // 没有这一条，"色相族相同"可能只是判定器永远返回 true。
-    // 注意取的是 PRODUCT_SIGNED（产品实际用的红），不是 SIGNED —— 后者只列未重写的槽位。
-    expect(
-      hueDistance(hueOf(SIGNED.light.accent), hueOf(PRODUCT_SIGNED.dark.negative)),
-      "色相族判定器没有区分能力（青 vs 红被判成同族）",
-    ).toBeGreaterThan(SAME_FAMILY_MAX)
-
-    /* 对比度：每个语义色对它可能出现的每个承载面都要过 AA 正文。
-     *
-     * ⚠ 读的是**产品槽位**（`--danger` / `--success` / …），不是 pack 的原始令牌。
-     * 为什么这不是"放宽"：pack 是共享资产，它写入 registry 的 `--kits-color-negative`
-     * 是**这套风格的身份**（已 approved、checksum 受保护），要求它为某一个产品的
-     * 某个承载面达标既做不到也不该做。而「一色一义」这条纪律要守的，是
-     * **页面实际使用的那个颜色** —— 也就是产品层映射出来的 `--danger`。
-     * S1 在这两个槽位之间做的正是"语义住在色相里、明度按实测重算"：
-     * 深色 `#FF5A70`（四面 6.20/5.75/5.27/4.68）、浅色 `#C81E33`。
-     *
-     * 判据一个字未改（≥4.5，三位小数，逐面断言）：改的是**被测对象**，
-     * 从"pack 说什么"变成"页面用什么"。
-     *
-     * 注意键名**不带 `--` 前缀** —— `PaletteReading["product"]` 的键是
-     * `brand` / `danger` / `warning` / `success` / `evidence`。
-     * （第一版写成 `"--brand"`，于是 `reading.product["--brand"]` 恒为 undefined，
-     *  探针当场报"收到 undefined"。这类错误必须让它响亮地炸，不能被兜底救活。） */
-    const PRODUCT_SEMANTIC: Record<string, keyof PaletteReading["product"]> = {
-      accent: "brand",
-      negative: "danger",
-      accent2: "warning",
-      positive: "success",
-      evidence: "evidence",
-    }
-    for (const [name, reading] of themes) {
-      for (const { meaning, slot } of HUE_FAMILIES) {
-        const productToken = PRODUCT_SEMANTIC[slot]
-        for (const face of FACES) {
-          const ratio = contrast(reading.product[productToken], reading.packs[face])
-          expect(
-            ratio,
-            `${name}：${meaning} 在 ${face} 面上对比度 ${ratio.toFixed(2)} < 4.5`,
-          ).toBeGreaterThanOrEqual(4.5)
-        }
+  invariant(
+    "color.every-hue-has-one-meaning",
+    "一色一义：同一语义跨主题同色相、族间互异，且每个语义色在它出现的每个承载面上都过 AA",
+    () => {
+    test("五个语义：一色一义（色相族跨主题不变、族间互异）且每个承载面都过 AA", async ({ page }) => {
+      const readTheme = async (theme: "dark" | "light") => {
+        await page.setViewportSize({ width: 1440, height: 900 })
+        await page.emulateMedia({ colorScheme: theme })
+        await page.goto("/", { waitUntil: "domcontentloaded" })
+        return (await page.evaluate(PALETTE_PROBE)) as PaletteReading
       }
 
-      expect(contrast(reading.packs.ink, reading.packs.canvas), `${name}: 主墨 AAA`).toBeGreaterThanOrEqual(7)
-      expect(
-        contrast(reading.packs.inkMuted, reading.packs.canvas),
-        `${name}: 次墨至少 AA`,
-      ).toBeGreaterThanOrEqual(4.5)
+      const dark = await readTheme("dark")
+      const light = await readTheme("light")
+      const themes = [
+        ["dark", dark],
+        ["light", light],
+      ] as const
 
       /*
-       * 规则线：这里守的是**可辨**的回归下限（1.2），不是签署值本身的对比度。
-       * 两个主题的方向相反（深色提亮 #4A6C9B、浅色压深 #B7C3D2），但性质相同：
-       * 它必须与周围表面分得开，否则三列会糊成一块。
+       * 色相族判定 —— 这是已登记的不变量 `color.every-hue-has-one-meaning`（登记在本块外层）的核心，
+       * 也是"两套主题确实是同一个语义体系"的唯一机器证据。
+       * 用 HSL 色相角，而不是"两个颜色不一样"这种弱代理：那个代理在两个语义被
+       * 换成同一色相时会照样通过。
        */
-      for (const face of FACES) {
-        const ratio = contrast(reading.packs.rule, reading.packs[face])
+      for (const { meaning, slot } of HUE_FAMILIES) {
+        const [hueDark, hueLight] = [hueOf(dark.packs[slot]), hueOf(light.packs[slot])]
         expect(
-          ratio,
-          `${name}: 规则线对 ${face} 只有 ${ratio.toFixed(2)}，与表面几乎不可分`,
-        ).toBeGreaterThanOrEqual(1.2)
+          hueDistance(hueDark, hueLight),
+          `${meaning}：深色 ${hueDark.toFixed(1)}° 与浅色 ${hueLight.toFixed(1)}° 不在同一色相族（上限 ${SAME_FAMILY_MAX}°）`,
+        ).toBeLessThanOrEqual(SAME_FAMILY_MAX)
       }
 
-      // 非正文槽位（签署表标注"仅大字 / 非正文"）：只守住非文本的 3:1 下限，
-      // 不为它假装 AA —— 它本来就允许更弱。
-      for (const face of FACES) {
-        expect(
-          contrast(reading.packs.inkFaint, reading.packs[face]),
-          `${name}: ink-faint 对 ${face} 低于非文本下限 3.0`,
-        ).toBeGreaterThanOrEqual(3)
+      for (const [name, reading] of themes) {
+        for (let i = 0; i < HUE_FAMILIES.length; i += 1) {
+          for (let j = i + 1; j < HUE_FAMILIES.length; j += 1) {
+            const distance = hueDistance(
+              hueOf(reading.packs[HUE_FAMILIES[i].slot]),
+              hueOf(reading.packs[HUE_FAMILIES[j].slot]),
+            )
+            expect(
+              distance,
+              `${name}：${HUE_FAMILIES[i].meaning} 与 ${HUE_FAMILIES[j].meaning} 的色相只差 ${distance.toFixed(1)}°，一个色相被两个语义借用了`,
+            ).toBeGreaterThanOrEqual(DISTINCT_MEANING_MIN)
+          }
+        }
       }
-    }
 
-    /* 两个派生槽位：它们不是新取的色，而是 pack 自己的关系在浅色下的解。 */
-    for (const [name, reading] of themes) {
+      // 负对照：判定器必须能失败 —— 拿浅色的"青"去比深色的"红"，必须被判成不同族。
+      // 没有这一条，"色相族相同"可能只是判定器永远返回 true。
+      // 注意取的是 PRODUCT_SIGNED（产品实际用的红），不是 SIGNED —— 后者只列未重写的槽位。
       expect(
-        contrast(reading.packs.accentInk, reading.packs.accent),
-        `${name}: 压在 accent 上的字必须过 AA（深色 10.36 / 浅色 5.36）`,
-      ).toBeGreaterThanOrEqual(4.5)
-      expect(
-        sameColor(reading.packs.focus, reading.packs.accent),
-        `${name}: focus 在 pack 里就等于 accent，浅色沿用同一关系`,
-      ).toBe(true)
-    }
-  })
+        hueDistance(hueOf(SIGNED.light.accent), hueOf(PRODUCT_SIGNED.dark.negative)),
+        "色相族判定器没有区分能力（青 vs 红被判成同族）",
+      ).toBeGreaterThan(SAME_FAMILY_MAX)
+
+      /* 对比度：每个语义色对它可能出现的每个承载面都要过 AA 正文。
+       *
+       * ⚠ 读的是**产品槽位**（`--danger` / `--success` / …），不是 pack 的原始令牌。
+       * 为什么这不是"放宽"：pack 是共享资产，它写入 registry 的 `--kits-color-negative`
+       * 是**这套风格的身份**（已 approved、checksum 受保护），要求它为某一个产品的
+       * 某个承载面达标既做不到也不该做。而「一色一义」这条纪律要守的，是
+       * **页面实际使用的那个颜色** —— 也就是产品层映射出来的 `--danger`。
+       * S1 在这两个槽位之间做的正是"语义住在色相里、明度按实测重算"：
+       * 深色 `#FF5A70`（四面 6.20/5.75/5.27/4.68）、浅色 `#C81E33`。
+       *
+       * 判据一个字未改（≥4.5，三位小数，逐面断言）：改的是**被测对象**，
+       * 从"pack 说什么"变成"页面用什么"。
+       *
+       * 注意键名**不带 `--` 前缀** —— `PaletteReading["product"]` 的键是
+       * `brand` / `danger` / `warning` / `success` / `evidence`。
+       * （第一版写成 `"--brand"`，于是 `reading.product["--brand"]` 恒为 undefined，
+       *  探针当场报"收到 undefined"。这类错误必须让它响亮地炸，不能被兜底救活。） */
+      const PRODUCT_SEMANTIC: Record<string, keyof PaletteReading["product"]> = {
+        accent: "brand",
+        negative: "danger",
+        accent2: "warning",
+        positive: "success",
+        evidence: "evidence",
+      }
+      for (const [name, reading] of themes) {
+        for (const { meaning, slot } of HUE_FAMILIES) {
+          const productToken = PRODUCT_SEMANTIC[slot]
+          for (const face of FACES) {
+            const ratio = contrast(reading.product[productToken], reading.packs[face])
+            expect(
+              ratio,
+              `${name}：${meaning} 在 ${face} 面上对比度 ${ratio.toFixed(2)} < 4.5`,
+            ).toBeGreaterThanOrEqual(4.5)
+          }
+        }
+
+        expect(contrast(reading.packs.ink, reading.packs.canvas), `${name}: 主墨 AAA`).toBeGreaterThanOrEqual(7)
+        expect(
+          contrast(reading.packs.inkMuted, reading.packs.canvas),
+          `${name}: 次墨至少 AA`,
+        ).toBeGreaterThanOrEqual(4.5)
+
+        /*
+         * 规则线：这里守的是**可辨**的回归下限（1.2），不是签署值本身的对比度。
+         * 两个主题的方向相反（深色提亮 #4A6C9B、浅色压深 #B7C3D2），但性质相同：
+         * 它必须与周围表面分得开，否则三列会糊成一块。
+         */
+        for (const face of FACES) {
+          const ratio = contrast(reading.packs.rule, reading.packs[face])
+          expect(
+            ratio,
+            `${name}: 规则线对 ${face} 只有 ${ratio.toFixed(2)}，与表面几乎不可分`,
+          ).toBeGreaterThanOrEqual(1.2)
+        }
+
+        // 非正文槽位（签署表标注"仅大字 / 非正文"）：只守住非文本的 3:1 下限，
+        // 不为它假装 AA —— 它本来就允许更弱。
+        for (const face of FACES) {
+          expect(
+            contrast(reading.packs.inkFaint, reading.packs[face]),
+            `${name}: ink-faint 对 ${face} 低于非文本下限 3.0`,
+          ).toBeGreaterThanOrEqual(3)
+        }
+      }
+
+      /* 两个派生槽位：它们不是新取的色，而是 pack 自己的关系在浅色下的解。 */
+      for (const [name, reading] of themes) {
+        expect(
+          contrast(reading.packs.accentInk, reading.packs.accent),
+          `${name}: 压在 accent 上的字必须过 AA（深色 10.36 / 浅色 5.36）`,
+        ).toBeGreaterThanOrEqual(4.5)
+        expect(
+          sameColor(reading.packs.focus, reading.packs.accent),
+          `${name}: focus 在 pack 里就等于 accent，浅色沿用同一关系`,
+        ).toBe(true)
+      }
+    })
+    },
+  )
 })

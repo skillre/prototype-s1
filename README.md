@@ -104,10 +104,13 @@ pnpm qa                # Browser QA 全量扫描（自管 server，自起自停�
 | `console` 风格包已安装并接入双主题 | `lib/kits/kits.lock.json`（registry 0.3.0）· `pnpm qa:doctor` 全过 · `pnpm test` 里的「the declared Style Pack reaches real pixels」（深色 + 浅色各一条） |
 | 初始化边界已冻结 | `init-contract.json` 的 `stage: "product"`，`sampleOwned` 列出的是**真的已经不存在**的路径 |
 | 工厂门禁全绿 | 本 README 的「质量门」一节，逐条真跑过 |
+| **数据层与确定性回放引擎**（2026-09-17） | `lib/s1/**` + `stores/incident-store.ts` + `tests/s1-invariants.spec.ts`（45 条断言）。事件契约八类消息、18 节拍结构化数据、当日事件簿底座（130 起闭环）、计数聚合、回放、审计重放、沉淀导出/导入都在这一层；`pnpm test` 里五条已签署不变量各有正例与**负对照** |
 
 **还没做（不要在演示里承诺）：**
 
-- 十二个组件一个都没有实现；事件契约（8 类消息）与确定性回放器属于后续 S1 工单。
+- 十二个组件一个都没有实现 —— 数据层与回放引擎已建好，但**还没有任何界面消费它**：
+  「界面上的数字显示对不对」完全未验证（那条要 DOM 的不变量 `boundary.demo-is-labelled-as-demo`
+  也留在组件阶段）。
 - `console` 风格包**已经装进本仓并接在两套主题上**（`lib/kits/installed/console`，
   registry 0.3.0）：深色是 pack 的原生战情室配色，浅色是**产品层签署**的同一批色相 +
   重算明度（依据：工作区根目录 `S1-浅色主题取值与决策.md`）。接入链路是
@@ -120,9 +123,11 @@ pnpm qa                # Browser QA 全量扫描（自管 server，自起自停�
 > 拿不到"这个颜色就是 pack 的取值"这个结论。那两条像素断言住在强制门禁 `pnpm test` 里
 > （`tests/art-direction.spec.ts`：深色一条、浅色一条，逐值比对签署表 + 色相族 + 对比度）。
 > 只跑 `pnpm qa` 会看到绿灯，但那不是"颜色对"的证据。
-- `product-contract.json` 目前仍是基线的两条不变量。S1 自己的「绝不能搞错什么」
-  尚未由人签署；**Factory 不允许 Agent 生成或改写不变量**，所以这里是空的，
-  等签字后替换。
+- `product-contract.json` 里是**人已签署的六条 S1 不变量**（加上门禁自己的
+  `contract.declaration-matches-enforcement`，共 7 条）：证据引用、分级授权、审计可重放、
+  沉淀可导出、计数由事件派生、一色一义。`pnpm factory:contract` 双向核对通过。
+  `boundary.demo-is-labelled-as-demo` **故意不在契约里** —— 它的判红方式需要 DOM，
+  没有对象就声明会让门禁报「声明了没测试」；它留给组件阶段（原文在 `lib/s1/storyboard.ts`）。
 
 ## 与 Factory 的关系
 

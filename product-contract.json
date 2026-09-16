@@ -3,8 +3,33 @@
   "schemaVersion": 1,
   "invariants": [
     {
-      "id": "factory.core-not-art-directed",
-      "statement": "Factory Core 的默认输出不携带 Art Direction personality：新路由不会自动继承环境光、Hero 光或图表辉光；性格必须由产品显式 opt-in。",
+      "id": "evidence.every-claim-cites-a-source",
+      "statement": "凡出现结论或置信度的卡片，必须至少挂一条可定位的证据引用（原始报文 / 进程链 / 文件 hash）；不允许出现无引用的结论，「问 S1」的回答同样不例外。",
+      "enforcement": "test"
+    },
+    {
+      "id": "authority.no-unlisted-autonomous-action",
+      "statement": "L3 / L4 自主执行的每个动作都必须命中可回滚动作清单；清单外或不可回滚的动作必须产出一张待批的授权卡片，不得直接执行。",
+      "enforcement": "test"
+    },
+    {
+      "id": "audit.replay-is-faithful",
+      "statement": "全量留痕必须能忠实重建界面：从审计事件序列重放，得到的计划、证据链与处置状态与原状态逐字段一致。",
+      "enforcement": "test"
+    },
+    {
+      "id": "sediment.survives-export",
+      "statement": "沉淀物（新检测剧本 / 白名单策略 / 攻击者画像）必须能被完整带出再带回来：导出再导入后，闭环计数、审批次数与事件链一致。",
+      "enforcement": "test"
+    },
+    {
+      "id": "evidence.counters-derive-from-events",
+      "statement": "界面上的聚合计数（今日 AI 自主闭环 / 人工介入 / 平均处置）必须由事件流聚合重算得出，不得由脚本直接赋值；任一时刻的计数都能反查到构成它的那一批事件。",
+      "enforcement": "test"
+    },
+    {
+      "id": "color.every-hue-has-one-meaning",
+      "statement": "每套主题里一个色相只能承载一个语义；同一语义在深色与浅色主题下必须保持同一色相（明度可不同，且各主题的取值必须各自实测达到 WCAG-AA 正文对比度）。",
       "enforcement": "test"
     },
     {

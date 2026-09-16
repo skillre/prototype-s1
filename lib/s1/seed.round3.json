@@ -1,0 +1,459 @@
+{
+  "schemaVersion": 1,
+  "id": "s1-round3-scenario-seed",
+  "title": "S1 战情室 · 回合 3 实况种子事件流",
+  "sourceOfTruth": {
+    "design": "s1-ai-native-console.pen（Pencil 设计稿 v2.17，391 节点 / 166 文本节点，画布 1680×1050）",
+    "proseSpec": "S1-设计稿实测与实现规格.md §三（组件清单与实测文案）",
+    "scenario": "picc-s1-demo-scenario-alternatives.md 环节 4（再传新壳 vs 根因修复）",
+    "extractedAt": "2026-09-16"
+  },
+  "note": "这是**从真实设计稿反推出来的种子数据**，不是设计。它的用途是给 S1 的确定性回放器一份可断言的事实底本 —— 界面上的每一个数字、IP、hash、时间戳都必须能在这里找到出处（这是不变量 evidence.every-claim-cites-a-source 的物质基础）。时间戳取自设计稿审计时间线上的原值（16:20:31–16:21:00），因此它们是**可被逐字核对**的。",
+  "environment": {
+    "businessSystem": "在线理赔服务平台",
+    "isolation": "演示环境，与客户真实业务系统、数据完全隔离",
+    "disclosure": "界面必须常驻表明这是演示环境（不变量 boundary.demo-is-labelled-as-demo）",
+    "dataSources": [
+      {
+        "id": "probe",
+        "label": "探针 · 网络流量",
+        "detail": "镜像 #p-102 · 10Gbps",
+        "capability": "只监听不阻断；拦截由 S1 编排防火墙/EDR 执行"
+      },
+      {
+        "id": "edr",
+        "label": "EDR · 主机遥测",
+        "detail": "agent app01 · 进程链"
+      }
+    ]
+  },
+  "entities": [
+    {
+      "id": "attacker:0421",
+      "kind": "attacker",
+      "label": "攻击者 #0421",
+      "state": "已识别",
+      "detail": "IP 203.0.113.7 → 换IP .41",
+      "fingerprint": "三步试探 → 换 IP 回连 → 重传新壳",
+      "fingerprintMatches": 3
+    },
+    {
+      "id": "asset:dmz-app01",
+      "kind": "asset",
+      "label": "DMZ 应用服务器",
+      "state": "控制中",
+      "detail": "app01 · tomcat · 反序列化入口"
+    },
+    {
+      "id": "file:webshell1.jsp",
+      "kind": "file",
+      "label": "webshell1.jsp",
+      "state": "已清除",
+      "hash": "8f2a…c41d",
+      "evidenceFixed": true
+    },
+    {
+      "id": "file:webshell2.jsp",
+      "kind": "file",
+      "label": "webshell2.jsp",
+      "state": "定位完成",
+      "detail": "回合3 · 新文件 · hash 比对中"
+    },
+    {
+      "id": "data:policy-db",
+      "kind": "data",
+      "label": "保单数据库",
+      "state": "未触及",
+      "detail": "推演：横向移动目标",
+      "dataClass": "客户数据"
+    },
+    {
+      "id": "asset:member-system",
+      "kind": "asset",
+      "label": "会员系统账号",
+      "state": "0 异常"
+    }
+  ],
+  "impactView": {
+    "language": "业务语言",
+    "rows": [
+      {
+        "target": "门户 · 1 台应用服",
+        "status": "活跃后门"
+      },
+      {
+        "target": "保单库 · 客户数据",
+        "status": "未触及"
+      },
+      {
+        "target": "会员系统账号",
+        "status": "0 异常"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "id": "#e-41",
+      "kind": "packet",
+      "source": "probe",
+      "label": "原始报文",
+      "note": "回连报文"
+    },
+    {
+      "id": "#e-77",
+      "kind": "process-chain",
+      "source": "edr",
+      "label": "进程链 tomcat→cmd"
+    },
+    {
+      "id": "#e-79",
+      "kind": "file-hash",
+      "source": "edr",
+      "label": "文件 hash",
+      "target": "file:webshell2.jsp"
+    }
+  ],
+  "plan": {
+    "eventId": "#4021",
+    "owner": "调查 Agent 自主拆解",
+    "steps": [
+      {
+        "id": "p1",
+        "actor": "取证 Agent",
+        "state": "done",
+        "label": "网络侧研判 · 回连特征确认",
+        "detail": "0.9s 前完成"
+      },
+      {
+        "id": "p2",
+        "actor": "取证 Agent",
+        "state": "done",
+        "label": "主机取证 · 定位可疑文件",
+        "detail": "文件已固定 hash"
+      },
+      {
+        "id": "p3",
+        "actor": "处置 Agent",
+        "state": "done",
+        "label": "止血 · 封禁攻击源 IP",
+        "detail": "L3 自动执行 · 可回滚"
+      },
+      {
+        "id": "p4",
+        "actor": "调查 Agent",
+        "state": "running",
+        "label": "根因定位 · 为什么能再传进来",
+        "detail": "进行中…"
+      },
+      {
+        "id": "p5",
+        "actor": "调查 Agent",
+        "state": "replanned",
+        "label": "升级：立即进入主机清除",
+        "detail": "依据新证据新增"
+      },
+      {
+        "id": "p6",
+        "actor": "处置 Agent",
+        "state": "blocked",
+        "label": "修复上传接口 · 需人工授权",
+        "detail": "挂起待授权"
+      },
+      {
+        "id": "p7",
+        "actor": "报告 Agent",
+        "state": "pending",
+        "label": "复盘沉淀 · 剧本生成"
+      }
+    ],
+    "replan": {
+      "from": "旧计划「持续观察后门」",
+      "to": "依据新证据改为「立即清除」"
+    }
+  },
+  "findings": [
+    {
+      "id": "f1",
+      "confidence": 0.97,
+      "conclusion": "判定：webshell2.jsp 为同指纹后门，攻击者 #0421 第三次回传",
+      "evidenceRefs": [
+        "#e-41",
+        "#e-77"
+      ],
+      "extraChips": [
+        "手法指纹匹配×2"
+      ],
+      "nextStep": "建议清除并修复上传入口（低风险自动 / 高风险待授权）",
+      "sources": [
+        "probe",
+        "edr"
+      ]
+    },
+    {
+      "id": "f2",
+      "confidence": 0.93,
+      "conclusion": "网络侧回连告警与 EDR 主机异常上下文已合并为同一事件",
+      "evidenceRefs": [
+        "#e-41",
+        "#e-77"
+      ],
+      "sources": [
+        "probe",
+        "edr"
+      ],
+      "contextPackage": "{app01 · conf .93 · ev[#e-41,#e-77]}",
+      "mergeLabel": "合流 → E+N 判定闭环",
+      "elapsedMs": 930
+    }
+  ],
+  "toolCalls": [
+    {
+      "id": "t1",
+      "session": "svc-s1-auto@bastion → DMZ-app01",
+      "disclosure": "堡垒机托管会话 · 全程留痕",
+      "brief": "# 处置说明卡 · 依据证据#e-41/#e-77 · 影响：仅删除已验证后门文件 · 回滚：备份 /tmp/ws2.bak"
+    },
+    {
+      "id": "t2",
+      "command": "$ ls -la /opt/tomcat/webapps/upload/ | grep jsp",
+      "exitCode": 0
+    },
+    {
+      "id": "t3",
+      "command": "$ cat upload/webshell2.jsp | head -5",
+      "exitCode": 0
+    },
+    {
+      "id": "t4",
+      "command": "rm upload/webshell2.jsp",
+      "output": "deleted: webshell2.jsp · exit 0",
+      "exitCode": 0
+    },
+    {
+      "id": "t5",
+      "command": "$ ls upload/ | grep webshell",
+      "output": "(空输出) 复核通过 ✓ 后门已清除 · 节点已从攻击链摘除",
+      "exitCode": 0
+    }
+  ],
+  "actionCards": [
+    {
+      "id": "a1",
+      "kind": "auto",
+      "title": "封禁攻击源 203.0.113.7",
+      "autonomy": "L3",
+      "decision": "L3 授权策略内 · 已自动执行",
+      "rollbackWindowMs": 41000,
+      "basis": "证据#e-41 回连报文",
+      "impact": "只影响攻击源",
+      "rollback": "可一键回滚"
+    },
+    {
+      "id": "a2",
+      "kind": "approval-required",
+      "title": "修复上传接口扩展名白名单",
+      "target": "upload_avatar.jsp",
+      "five": {
+        "what": "为 upload_avatar.jsp 增加 .jpg/.png 白名单",
+        "basis": "#e-79 文件 hash · 攻击链 3 次复用同一入口",
+        "impact": "① 改动一处业务接口 ② 影响面：上传功能",
+        "rollback": "基线备份 config.old · 一键回退",
+        "alternative": "不修则 4 回合后仍可再传"
+      },
+      "actions": [
+        "批准",
+        "驳回",
+        "改参数后批准"
+      ],
+      "sla": {
+        "ms": 137000,
+        "timeoutPolicy": "超时默认挂起不执行"
+      }
+    }
+  ],
+  "audit": [
+    {
+      "at": "16:20:31",
+      "actor": "调查 Agent",
+      "basisRefs": [
+        "#e-41",
+        "#e-77"
+      ],
+      "action": "关联网络回连 + EDR 进程链"
+    },
+    {
+      "at": "16:20:38",
+      "actor": "取证 Agent",
+      "basisRefs": [
+        "#e-79"
+      ],
+      "action": "定位 webshell2.jsp · 固定 hash #e-79"
+    },
+    {
+      "at": "16:20:52",
+      "actor": "处置 Agent",
+      "basisRefs": [
+        "#e-79"
+      ],
+      "action": "rm 删除 · 复核 exit 0"
+    },
+    {
+      "at": "16:21:00",
+      "actor": "报告 Agent",
+      "basisRefs": [],
+      "action": "生成《事件处置报告》草稿"
+    }
+  ],
+  "sediment": [
+    {
+      "id": "s1",
+      "label": "新增检测剧本章节 · 反序列化→webshell 链特征"
+    },
+    {
+      "id": "s2",
+      "label": "上传白名单策略 · 已入基线库 · 全网生效"
+    },
+    {
+      "id": "s3",
+      "label": "攻击者画像 #0421 · 手法指纹 3 次匹配"
+    }
+  ],
+  "headerStats": {
+    "autonomousClosedToday": 128,
+    "humanInterventions": 3,
+    "avgHandlingSeconds": 41,
+    "currentEvent": "进行中：1 起高危事件 · 攻击者 #0421 第 3 回合",
+    "liveStatus": "AI 调查中 · 待人工授权 0 项",
+    "autonomyLadder": [
+      "L0",
+      "L1",
+      "L2",
+      "L3",
+      "L4"
+    ],
+    "scenePolicy": "场景策略：L4 限定自主",
+    "roundTimer": {
+      "round": 3,
+      "label": "攻击→告警→处置",
+      "value": "00:18.4"
+    },
+    "roster": [
+      {
+        "short": "调",
+        "role": "调查 Agent"
+      },
+      {
+        "short": "取",
+        "role": "取证 Agent"
+      },
+      {
+        "short": "处",
+        "role": "处置 Agent"
+      },
+      {
+        "short": "报",
+        "role": "报告 Agent"
+      }
+    ],
+    "rosterLabel": "4 个 AI 数字员工在岗"
+  },
+  "askS1": {
+    "placeholder": "如果攻击者换个新 IP 再来一次会怎样？",
+    "hint": "自然语言 · 结论先行 · 证据可点开",
+    "presets": [
+      "现在最大风险是什么？",
+      "谁批准的删除操作？"
+    ]
+  },
+  "report": {
+    "title": "《事件处置报告》流式生成中",
+    "progressPercent": 68,
+    "lines": [
+      "时间线：4 回合对抗 · 处置动作 11 步 · 人工授权 1 次",
+      "证据清单：#e-41 回连报文 · #e-77 进程链 · #e-79 文件 hash",
+      "影响评估：1 台应用服务器 · 敏感数据未触及 · 可导出交付"
+    ]
+  },
+  "layoutFacts": {
+    "canvas": {
+      "width": 1680,
+      "height": 1050
+    },
+    "headerHeight": 76,
+    "footerHeight": 130,
+    "columns": [
+      {
+        "id": "attack-canvas",
+        "width": 500,
+        "height": "fill"
+      },
+      {
+        "id": "battle-column",
+        "width": 600,
+        "height": "fill"
+      },
+      {
+        "id": "trust-column",
+        "width": 366,
+        "height": "fill"
+      }
+    ],
+    "askS1Width": 640,
+    "noPageScroll": true,
+    "minReadablePx": 20,
+    "conclusionTextPx": [
+      28,
+      36
+    ],
+    "readableAtMeters": 3,
+    "rootPadding": 20,
+    "rootGap": 14,
+    "headerPadding": 16,
+    "headerGap": 20,
+    "footerPadding": 12,
+    "footerGap": 12,
+    "columnGap": 14,
+    "columnPadding": 12,
+    "controlHeightPx": 38,
+    "rowHeightPx": 28,
+    "sectionGapPx": 24,
+    "verifiedFrom": "s1-ai-native-console.pen 逐帧读出（root pad=20 gap=14；① pad=16 gap=20；三列 500/600/366 gap=14 pad=12；底栏 pad=12 gap=12）",
+    "scaleToFit": {
+      "algorithm": "SCALE = Math.min(1, innerWidth/1680, innerHeight/1050)",
+      "canvas": {
+        "width": 1680,
+        "height": 1050
+      },
+      "orientation": "保真优先，最大化清晰度（宽屏 1:1 不放大，窄屏才缩）",
+      "verifiedAt": "2026-09-16",
+      "verifiedBy": "真实 Chromium（Playwright）四视口实测：1440 0.8571 / 1920 1.0 / 2560 1.0 / 1280 0.6857，横向溢出全部为 0，widthDrift 全部为 0，scrollX 全部为 0",
+      "computedFontStaysDesignValue": true,
+      "lineHeightScalesToo": "渲染行框 = font-size × line-height × scale，因此面板内可容纳行数随 scale 变化，实现时必须按 scale 复核"
+    }
+  },
+  "decisions": [
+    {
+      "id": "counters-are-derived",
+      "decidedAt": "2026-09-16",
+      "decidedBy": "human",
+      "title": "顶栏聚合计数是派生值，不是装饰数字",
+      "decision": "允许跳动，但每跳必须可追溯到一条事件。",
+      "consequences": [
+        "headerStats 的 128 / 3 / 41s 必须由背景事件流聚合重算得出，不得由脚本直接赋值。",
+        "回放器须维护一条可回放的背景事件序列：每一起闭环至少有一条 audit_event 作为出处。",
+        "同一脚本跑两次必须得到同一序列（可复现）。",
+        "任一时刻的计数都能反查到构成它的那一批事件。",
+        "不得出现「计数跳了但没有对应事件」的状态。"
+      ],
+      "supportsInvariant": "evidence.counters-derive-from-events",
+      "tension": "设计文档 §四① 要求「数字持续跳动（模拟真实流量）」；设计稿把该数固定为 128。本条同时满足两者：可以跳，但每跳有出处。"
+    }
+  ],
+  "openItems": [
+    "动效时序（哪个动作在第几秒发生）尚未定义：设计稿是静帧，本文件只提供顺序与时间戳，不提供播放节奏。设计文档 §五 有「开场 90s」「环节约 3–5 分钟」「收束 60 秒」这类时长意图，但逐动作的时间轴仍是空白。",
+    "④ 工具控制台的命令在本阶段**不落到真实主机**（已签署决定 2：脚本化回放）。",
+    "report.progressPercent 的 68% 是设计稿静帧值；若回放要动它，需要一条与 report.lines 同步的进度定义，本文件不提供。",
+    "设计文档 §五 收束画面的「全程 19 分 42 秒」只存在于文档与最终定格，**本种子不含该字段** —— 它属于整场演示的总账，不属于回合 3 的实况。",
+    "背景事件序列的规模与形态未定：决定 counters-are-derived 要求回放器生成能聚合出 128 / 3 / 41s 的事件底座，但「128 起各自长什么样、跨度多长、每条的字段密度」还没有定义。这是 S1 实现阶段的第一件设计工作，不得由实现者顺手编造。"
+  ]
+}
