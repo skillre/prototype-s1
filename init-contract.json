@@ -1,0 +1,42 @@
+{
+  "$schema": "./lib/init-contract.schema.json",
+  "schemaVersion": 1,
+  "stage": "product",
+  "baselineIdentity": {
+    "packageName": "prototype-starter",
+    "metadataTitle": "原型工作台 Prototype Starter",
+    "landingMarker": "data-factory-landing"
+  },
+  "sampleOwned": [
+    "app/crm/",
+    "app/demo/",
+    "app/_sample/",
+    "app/sample-command-center.css",
+    "lib/activity-groups.ts",
+    "lib/ai-summary.ts",
+    "lib/crm-data.ts",
+    "lib/insights.ts",
+    "lib/mock-data.ts",
+    "stores/crm-store.ts",
+    "stores/dashboard-store.ts",
+    "tests/crm.spec.ts",
+    "tests/crm-navigation.spec.ts",
+    "tests/command-center.spec.ts",
+    "tests/demo.spec.ts",
+    "tests/demo-advanced.spec.ts"
+  ],
+  "productFacing": [
+    "package.json",
+    "README.md",
+    "app/layout.tsx",
+    "app/page.tsx",
+    "app/not-found.tsx",
+    "lib/i18n/zh-CN.ts"
+  ],
+  "sampleMarkers": [
+    "智悟云",
+    "云图分析",
+    "zhiwu.cn",
+    "yuntu.cn"
+  ]
+}

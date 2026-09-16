@@ -1,0 +1,20 @@
+{
+  "$schema": "../../lib/visual-manifest.schema.json",
+  "productType": "ai-finance-console",
+  "firstVisual": "深色空间里从左上打下来的环境光，标题浮在光里，下方一条发光曲线",
+  "stylePack": "cinematic",
+  "signatureComponents": ["interactive-hero", "data-cursor"],
+  "signatureComponentBudget": 2,
+  "effects": ["ambient-glow"],
+  "motionDirection": "atmospheric",
+  "density": "medium",
+  "avoid": ["generic-ai-dashboard", "card-everywhere", "animation-everywhere"],
+  "deviations": [
+    {
+      "axis": "layout",
+      "from": "marketing-hero + card grid",
+      "to": "单列叙事 + 一条可下钻的主曲线",
+      "reason": "演示场景里观众只跟一条主线；卡片网格会把注意力摊平，而这份原型的重点是趋势本身"
+    }
+  ]
+}

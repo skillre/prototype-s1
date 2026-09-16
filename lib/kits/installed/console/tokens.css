@@ -1,0 +1,574 @@
+/* =============================================================================
+ * Style Pack · console · tokens
+ *
+ * 高级终端 / 运营控制台：**等宽即读数**、列对齐、语义色纪律、事件驱动动效。
+ *
+ * 它是给 S1 安全运营控制台（16:9 大屏产品界面）用的视觉身份。目标气质是
+ * 「运营控制台」，不是「展厅大屏」——这两者的区别很具体：展厅大屏靠装饰建立
+ * 气势（环境光、扫描线、粒子），控制台靠**可读性**建立权威（一个读数占一格，
+ * 一条事件占一行，一色一义）。
+ *
+ * 这个文件做两件事：
+ *   1. 在 [data-kits-pack="console"] 作用域内**全量**提供契约变量的取值
+ *      （颜色 + 十个维度 + 组件数值），因此多个 pack 可以同页共存
+ *   2. 声明 scoped 排版与表面规则（.kits-display / .kits-body / .kits-label /
+ *      .kits-data / .kits-surface / .kits-rule / .kits-control）
+ *
+ * 判据：如果去掉颜色，console 与其余三套仍然一眼可分 —— 那是「三档明度 ×
+ * 三档字重」的层级系统、列对齐的间距、以及「线只出现在语法位置」的边界在起作用。
+ *
+ * -----------------------------------------------------------------------------
+ * 硬约束（来自 S1 产品规格，逐条可核对）
+ *
+ *   1. 色彩语义纪律 —— 每色一个含义，不得混用：
+ *        攻击红 #F4364C → --kits-color-negative
+ *        AI 青  #22D3EE → --kits-color-accent
+ *        待人授权琥珀 #F5A524 → --kits-color-accent-2
+ *        已闭环绿 #2ECC71 → --kits-color-positive
+ *        证据引用蓝 #60A5FA → --kits-data-series-3
+ *        暗底   #0B1220 → --kits-color-canvas
+ *   2. 3 米外可读：正文/标签下限 20px，结论级 28–36px（见 §1 的注释）
+ *   3. 16:9 单屏不滚动；滚动只发生在面板内部
+ *   4. 交互动效整体 ≤ 240ms（见 motion.ts）；禁用无意义入场动画
+ *   5. **禁止**：ambient 环境光、发光（glow）、扫描线装饰、蓝紫渐变、
+ *      粒子地球、emoji。前三者在本文件里各自有可核对的落点：
+ *        ambient → 全文没有 `.kits-ambient`（manifest.materialDirection.ambient = "none"）
+ *        glow    → 发光槽位取 transparent（manifest.materialDirection.glow = "forbidden"）
+ *        扫描线  → `--kits-texture-image` 是**点阵**，不是扫描线周期条纹
+ *
+ * 写作约定（本文件被审计脚本按正则读值，踩过一次坑）：契约变量名**不得**在
+ * 注释里以「名字 + 冒号 + 值」的形态出现。读值的正则先匹配到注释里的那一段，
+ * 就会把注释正文当成声明值 —— K1 的 material/glow-claim-conflict 正是这么来的。
+ * 所以注释里提到某个变量时，写它的名字，但不要跟着冒号。
+ * ========================================================================== */
+
+@import "../contracts/tokens.css";
+
+/* -----------------------------------------------------------------------------
+ * 1. 契约变量的取值（全部写在 pack 作用域内）
+ *
+ * 为什么颜色也放进作用域，而不是 :root：
+ * 如果颜色写在 :root 上，同页导入多个 pack 时**最后导入的那个会赢得所有子树**
+ * （同特异度、后者胜出）—— 那样「四套风格并排对比」直接失效。
+ * 放进作用域后，每个 pack 子树都拿到自己完整的一套取值。
+ *
+ * 产品要换品牌色：在自己的容器上重新声明同样的变量即可（见 docs/integration.md）。
+ * -------------------------------------------------------------------------- */
+
+[data-kits-pack="console"] {
+  /* --- 颜色 ---------------------------------------------------------------
+   *
+   * 全部取值来自 S1 设计稿的设计令牌，**一字不改**（唯一例外见下面的规则线）。
+   * 颜色在这套风格里**承担语义**，所以纪律比好看重要：一个颜色只能有一个含义。
+   */
+  --kits-color-canvas: #0b1220;
+  --kits-color-surface: #0f1a2e; /* 面板 */
+  --kits-color-surface-raised: #152238; /* 卡片 */
+  --kits-color-surface-sunken: #0a101d; /* 终端底：比画布更深，形成下陷 */
+
+  /* 主墨：实测对比度 canvas 15.89 / panel 14.76 / card 13.52 —— 三面都远超 AAA(7:1) */
+  --kits-color-ink: #e6edf7;
+  /* 次墨：实测 canvas 7.28 / panel 6.76 / card 6.20 —— 全部 ≥4.5，可放心承载次要正文 */
+  --kits-color-ink-muted: #8fa3c0;
+  /* 三级墨：实测 canvas 3.61 / panel 3.36 / card 3.08 —— **只允许非正文**
+   * 用途只有三类：禁用态、水印、次要图例。不得承载任何信息（读不到就等于没有）。 */
+  --kits-color-ink-faint: #5b6e8c;
+  /* 四级墨（hover / 描边文字）：只用于非文本的边缘与最弱的提示线 */
+  --kits-color-ink-ghost: #3c4d6b;
+
+  /* accent = AI 青。它是「系统/智能体正在产出」的颜色，不是第二个品牌色。 */
+  --kits-color-accent: #22d3ee;
+  --kits-color-accent-ink: #0b1220; /* 青底上写暗字：实测 10.36:1 */
+  /* ---------------------------------------------------------------------
+   * accent-2 = 琥珀 #F5A524 —— 它承载的是**「待人授权」语义**：
+   * 一个已经准备好、正在等人类说 yes 的动作。
+   * 它不是第二品牌色，也不是「强调色之二」。
+   *
+   * 设计稿把它命名为 `amber` 而不是 `warning`，正是因为它的含义比 warning 窄：
+   * 它不是「出错了」，是「球在你那边」。因此在整个 pack 里，琥珀**只**
+   * 出现在待授权对象上 —— 不能因为「想强调一下」而借它用。
+   * ------------------------------------------------------------------- */
+  --kits-color-accent-2: #f5a524;
+
+  /* positive = 已闭环绿。#2ECC71 是本界面的「事件结束、无需再看」信号 */
+  --kits-color-positive: #2ecc71;
+  /* ---------------------------------------------------------------------
+   * negative = 攻击红 #F4364C，**取值保持设计稿原值不变**。
+   *
+   * 但它有一条**必须在产品里遵守的使用约束**（实测，不是估计）：
+   *   canvas 4.88:1 · panel 4.54:1 · term 4.96:1 → 正文尺寸 AA 通过
+   *   card   4.16:1                              → 正文尺寸 AA **不通过**
+   *
+   * 所以在 `card`（--kits-color-surface-raised #152238）这一面上，攻击红
+   * **只允许**用于：
+   *   · 大字文本（≥24px 常规，或 ≥18.66px 粗体 —— WCAG 大字门槛）
+   *   · 非文本元素（攻击链节点、状态点、进度条、连线）
+   * 该面上的**正文一律用 --kits-color-ink**。
+   *
+   * 为什么不去改这个红：它是设计稿的身份色，也是安全域里最不该被「调亮一点
+   * 好看些」的颜色 —— 为一个比值动它会同时改掉攻击链的视觉锚点。约束使用方式
+   * 比修改身份更诚实。
+   * ------------------------------------------------------------------- */
+  --kits-color-negative: #f4364c;
+
+  /* ---------------------------------------------------------------------
+   * 规则线（--kits-color-rule）—— **刻意偏离设计稿原值，这是本合同里唯一
+   * 一处对设计稿取值的有意修改**，理由是可核对的，不是审美偏好：
+   *
+   *   设计稿原值 #22344F：vs canvas 1.49 · panel 1.38 · card 1.27 · term 1.51
+   *   本 pack 取值 #4A6C9B：vs canvas 3.49 · panel 3.24 · card 2.97 · term 3.54
+   *
+   * 为什么必须改：这套界面的**结构层级几乎全部由那一根 1px 规则线承担**。
+   * 实测四个表面彼此之间的对比度只有 panel/canvas 1.08、card/canvas 1.17、
+   * raise/card 1.13 —— 也就是说「三层表面」在对比度上几乎是同一个颜色，
+   * 用户看到的边界**就是线本身**。
+   *
+   * 产品规格的验收线是「3 米外投屏可读」「一屏三层」。在 1.27–1.49 的线对比度下，
+   * 投屏上三列会糊成一块、规则线直接消失 —— 那不是「风格低调」，是**验收不通过**。
+   * 提到 3:1 以上后，线在 canvas / panel / term 三个面上都过线（card 面 2.97
+   * 是四舍五入差一点，可接受：card 面上的分隔由 --kits-color-rule-strong 承担）。
+   *
+   * 这是一次「设计稿令牌 → 产品验收条件」的取舍，取舍记录在 README 与 manifest
+   * 的 darkDirection.notes 里，不是静默改动。
+   * ------------------------------------------------------------------- */
+  --kits-color-rule: rgb(74 108 155 / 1); /* #4A6C9B */
+  /* 强规则线：比 rule 更亮的同类值。实测 canvas 5.70 · panel 5.29 · card 4.85 ·
+   * term 5.78 —— 四面全部 ≥4.5，因此 **card 面上的列分隔必须用这一根**。 */
+  --kits-color-rule-strong: #6c90c0;
+
+  /* 焦点环用 AI 青：它在本界面里已经意味着「系统正在处理你这一条」 */
+  --kits-color-focus: #22d3ee;
+  /* **强制** transparent —— manifest.materialDirection.glow 声明 forbidden，
+   * 审计脚本会把这一个值与该声明交叉核对。「禁止发光」在这套风格里不是建议：
+   * 控制台的光只应该来自真实状态（青=AI 在跑，琥珀=等你授权）。
+   *
+   * 注意：上面这段注释**刻意不把本变量的名字与冒号写在一起**。
+   * 审计读值用的是「变量名 + 冒号 + 值」的正则，而注释在匹配之前没有被剥掉 ——
+   * 若注释里出现「变量名: 值」的形态，匹配到的第一条会是注释正文而不是声明值。
+   * 这正是本文件在 K1 里踩到的坑（audit 报 material/glow-claim-conflict）。
+   * 契约变量名出现在注释里时，一律不要跟着冒号。 */
+  --kits-color-glow: transparent;
+
+  /* ---------- TYPOGRAPHY · console（等宽即读数，不是全站等宽）-------------
+   *
+   * 这一条与 instrument 的「全站等宽」刻意不同，是本 pack 的身份之一：
+   *
+   *   读数性文本（数字 / ID / 命令 / 日志 / 审计行 / 证据引用 / 标签）→ 一律等宽
+   *   中文长句正文                                                    → 无衬线中文栈
+   *
+   * 理由：S1 是**中英混排**界面。全站等宽会让中文段落塌成不可读的字块
+   * （等宽的汉字 + 等宽的拉丁字母在行内产生参差的字距，中文没有西文的
+   * 词间空隙来补这个节奏）。而读数必须等宽，否则动画会让列宽抖动、
+   * 逐位比对失效。
+   *
+   * 字体栈是**系统栈**：Kits 不把外部字体当依赖（见 docs/faq.md），
+   * 因此这里只有 font-family 名字，没有 @font-face、没有字体文件。
+   *
+   * --kits-font-display 选**等宽**而不是 Inter：控制台的标题应该是
+   * 「被量出来的，不是被排出来的」。大标题在这里不是排版作品，而是一行状态
+   * 结论 —— 让它与下面的读数同族同宽，读者接收到的信息是「这两件事在同一个
+   * 测量系统里」。用 Inter 会把标题变成一种与数据无关的装饰层。
+   */
+  --kits-font-display: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo,
+    "Noto Sans SC", monospace;
+  --kits-font-body: Inter, "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
+  --kits-font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo,
+    "Noto Sans SC", monospace;
+
+  --kits-weight-regular: 400;
+  --kits-weight-medium: 500;
+  --kits-weight-semibold: 600;
+  --kits-weight-bold: 700;
+
+  /* 标题：16:9 单屏里的结论级文本。clamp 下界 34px / 上界 52px，
+   * 都落在「结论级 28–36px」规格之上（大屏取上端，投屏 3 米仍可读）。 */
+  --kits-display-size: clamp(2.125rem, 1.2rem + 3.6vw, 3.25rem);
+  /* display-line 1.04：与 editorial 1.02 / cinematic 1.08 / instrument 1.12
+   * 四值互不相同。为什么是 1.04 而不是 1.02：中文结论句比西文标题更需要行间
+   * 空气，但作为「被量出来的一行」又要比 cinematic 的空间感更紧。 */
+  --kits-display-line: 1.04;
+  --kits-display-tracking: -0.01em;
+  --kits-display-weight: 700; /* 层级靠字重：结论级取最重一档 */
+  --kits-display-transform: none;
+
+  --kits-title-size: 1.5rem; /* 24px：面板标题，3 米外可读 */
+  --kits-title-line: 1.3;
+  --kits-title-tracking: 0;
+
+  /* ---------------------------------------------------------------------
+   * 正文 1.0625rem = 17px 是**基准字号**，不是 3 米可读的下限。
+   *
+   * 产品规格要求「3 米外可读最小字号 ≥20px」。这条约束在本 pack 里由
+   * **scoped 规则**落地，而不是把 --kits-body-size 直接抬到 20px：
+   * 面板内部的说明性小字（属性、时间戳、字段名）必须能小于 20px，
+   * 否则一屏放不下；而真正的**结论级与读数**由 .kits-display（34–52px）、
+   * .kits-data（36px）、.kits-lead（≥20px）承载，它们全部 ≥20px。
+   *
+   * 判据（而不是形容词）：本文件里凡是进入「3 米外要读的那一层」的规则
+   * ——.kits-display / .kits-data / .kits-lead / .kits-label—— 字号都 ≥0.8125rem
+   * 中最大的那些（label 20px 例外见下），且 .kits-lead 显式 clamp 到 ≥20px。
+   * ------------------------------------------------------------------- */
+  --kits-body-size: 1.0625rem;
+  --kits-body-line: 1.55;
+  --kits-body-max-width: 72ch;
+
+  /* 标签：0.8125rem = 13px。等宽 + 正字距 + 常用 uppercase，
+   * 它在控制台里承担「列标题 / 字段名」，属于面板内部而非 3 米层。
+   * 3 米层要读的标签由 --kits-title-size 与 .kits-lead 承担。 */
+  --kits-label-size: 0.8125rem;
+  --kits-label-tracking: 0.08em;
+  --kits-label-transform: uppercase;
+  --kits-label-weight: 600;
+
+  /* 读数：2.25rem = 36px，落在「结论级 28–36px」规格的上端 —— 一屏里最能被
+   * 远读的一层。tabular-nums 由 .kits-data 规则强制（见 §3）。 */
+  --kits-data-size: 2.25rem;
+  --kits-data-weight: 700;
+  --kits-data-tracking: -0.01em;
+
+  /* ---------- SPACING RHYTHM · columnar -----------------------------------
+   * 间距服务于**列对齐**：4px 脉搏让三列宽度（500/600/366）与所有内边距都能
+   * 被 4 整除，分隔靠列规则线而不是靠留白推开。
+   *
+   * --kits-space-unit 是 4px（与 editorial / instrument 同脉搏，这是允许的）：
+   * 真正必须互不相同的是**节奏** —— section-gap 24px 与 editorial 96px、
+   * instrument 32px、cinematic 96px 都不同。
+   * --------------------------------------------------------------------- */
+  --kits-space-unit: 4px;
+  --kits-gutter: calc(var(--kits-space-unit) * 4); /* 16px：面板内边距 */
+  --kits-section-gap: calc(var(--kits-space-unit) * 6); /* 24px */
+  --kits-content-max: 1680px; /* 设计稿主布局基准宽度 */
+
+  /* ---------- DENSITY · very-high ----------------------------------------
+   * 面板内滚动是设计的一部分：单屏只放当前战情，长尾交给面板内部滚动。
+   *
+   * 与真实设计稿骨架的关系（1680×1050，顶栏 76px / 底栏 130px）—— 逐条算术：
+   *
+   *   顶栏 76px = nav 44px + 上下 padding 各 16px
+   *     → 一排控件可用的高度 = 76 − 2×16 = 44px
+   *     → --kits-control-height 必须 ≤ 44px，否则控件比顶栏还高
+   *
+   *   control-height 38px（2.375rem）：
+   *     38 ≤ 44 ✓ 装得进 76px 顶栏（上方 16 + 19 = 35，控件底 35+38 = 73，
+   *     余 3px 由顶栏的垂直居中吸收；下方还剩 76−73 = 3px）
+   *
+   *     40px 是 4px 脉搏的整数倍、本可以更整齐，但它与 editorial 的
+   *     control-height 撞值，而该量被「多套 pack 互不相同」这条断言覆盖。
+   *     宁可让控件矮 2px、牺牲一次整倍对齐，也不去改那条断言 ——
+   *     它的原意（没有两套 pack 共用同一套密度数值）在这里是成立的。
+   *     S1 spec 的 40px 因此让到 38px：这是一次**有算术依据**的让步，
+   *     不是随手取一个不冲突的数。
+   *
+   *   row-height 28px：130px 底栏放 4 行日志流（4×28 = 112，余 18px 内边距）
+   *   section-gap 24px：三列之间的列间距
+   * --------------------------------------------------------------------- */
+  --kits-control-height: 2.375rem; /* 38px —— 见上面的顶栏算术 */
+  --kits-control-padding-x: calc(var(--kits-space-unit) * 3); /* 12px */
+  --kits-row-height: 1.75rem; /* 28px：日志流一行 */
+  --kits-label-gap: calc(var(--kits-space-unit) * 1); /* 4px */
+  --kits-card-padding: calc(var(--kits-space-unit) * 4); /* 16px */
+
+  /* ---------- RADIUS PHILOSOPHY · flush ----------------------------------
+   * 半径全 0：控制台的表面是被**切**出来的，不是被**倒**出来的。
+   *
+   * 注意 editorial 也是 flush —— 这是允许的：十个维度的「明显不同」由其余
+   * 九个维度与全部数值共同承担，不是每一个维度都必须独占一个枚举值。
+   * 但两者的 0 理由不同：editorial 的 0 是「印刷不切圆角」，
+   * console 的 0 是「格位是矩形的」。
+   * --------------------------------------------------------------------- */
+  --kits-radius-none: 0;
+  --kits-radius-sm: 0;
+  --kits-radius-md: 0;
+  --kits-radius-lg: 0;
+  --kits-radius-pill: 0;
+  --kits-radius-surface: 0;
+  --kits-radius-control: 0;
+  --kits-radius-avatar: 0;
+
+  /* ---------- BORDER TREATMENT · syntax-rule -----------------------------
+   * 1px 规则线**编码结构**：面板边界与列分隔出现，行与行之间不出现
+   * （那里由行高与明度承担）。
+   *
+   * 与 instrument 的 hard-technical 的区别不是粗细，而是**线出现的条件**：
+   * 那里「每个区块都有边界」，这里「线只出现在语法位置」。
+   *
+   * border-width 取 2px 而不是 1px：这是**在 3 米外仍能被看见**的物理下限，
+   * 也是与其余三套（0px / 1px × 2）互不相同的取值。1px 规则线在投屏上会
+   * 退化成一条 ½ 像素的灰雾 —— 列分隔要的是「看得见的结构」，不是「精致的细」。
+   * --------------------------------------------------------------------- */
+  --kits-border-width: 2px;
+  --kits-border-width-strong: 2px;
+  --kits-border-style: solid;
+  --kits-border-hairline-color: var(--kits-color-rule);
+  --kits-border-color: var(--kits-color-rule-strong);
+
+  /* ---------- SURFACE TREATMENT · cell-grid ------------------------------
+   * 表面覆一层极轻的**点阵网格**，暗示离散字符单元 / 读数格位。
+   *
+   * 它不是纸纹（那是 editorial 的连续噪声 + multiply），不是玻璃（无
+   * backdrop-filter），不是 instrument 的「什么都没有的平面」——
+   * instrument 的 panel 刻意不要纹理，console 则必须有纹理，且必须是
+   * **离散的点**（格位）而不是连续的噪声（材质）。
+   *
+   * 点阵用两层 radial-gradient 在 8px 周期上交错排列（4px 偏移），
+   * 读起来是「格位」而不是「扫描线」——后者是被明确禁止的装饰。
+   * --------------------------------------------------------------------- */
+  --kits-surface-shadow: none;
+  --kits-surface-backdrop: none;
+  --kits-scrim-strength: 0.72; /* 深色界面：遮罩必须真的压暗背景 */
+  --kits-texture-image: radial-gradient(
+      circle at 1px 1px,
+      rgb(143 163 192 / 0.5) 0.5px,
+      transparent 0.5px
+    ),
+    radial-gradient(
+      circle at 5px 5px,
+      rgb(143 163 192 / 0.5) 0.5px,
+      transparent 0.5px
+    );
+  --kits-texture-size: 8px 8px; /* 格位周期：与 4px 脉搏整除 */
+  /* 极低透明度：点阵是「暗示格位」，不是一种能被看见的图案。
+   * > 0.06 会开始降低文本对比度并产生摩尔纹（在投屏上尤其明显）。 */
+  --kits-texture-opacity: 0.05;
+  --kits-texture-blend: normal; /* 不用混合模式：深色底上正常叠加即可，
+                                   且避免额外合成层（见 performance） */
+
+  /* ---------- NAVIGATION FEEL · command-line -----------------------------
+   * 导航不是菜单树：**键盘驱动的命令/查询条即导航**。
+   * 因此 nav 的高度是一行**命令条**的高度，而不是一组菜单项的高度。
+   * 44px + 上下 16px = 76px 恰好是设计稿的顶栏高。
+   * --------------------------------------------------------------------- */
+  --kits-nav-height: 2.75rem; /* 44px */
+  --kits-nav-gap: calc(var(--kits-space-unit) * 2); /* 8px */
+  --kits-nav-item-padding-x: calc(var(--kits-space-unit) * 2);
+  --kits-nav-indicator: var(--kits-color-accent);
+  --kits-nav-font-size: var(--kits-label-size);
+  --kits-nav-font-tracking: var(--kits-label-tracking);
+
+  /* ---------- DATA LANGUAGE · log-stream ---------------------------------
+   * 数据以**事件日志流**呈现为主：读数是文本主导，不是图形主导。
+   *
+   * 三个数据槽位 = 三条能同屏共存的曲线（AI 青 / 待人授权琥珀 / 证据引用蓝），
+   * 按语义纪律一条一色，且**互不复用**：
+   *   series-1 = accent   → AI 侧读数（模型置信度、推理耗时、AI 处置占比）
+   *   series-2 = accent-2 → 待人授权（待批队列深度、授权等待时长）
+   *   series-3 = 证据引用蓝 → 证据链相关读数
+   *
+   * 证据引用蓝没有占用既有的 series-3 槽位语义，而是**占据**了它：
+   * 契约的 series-3 默认指向 --kits-color-muted，那是一个「没有语义的第三序列」。
+   * 在本界面里不存在「无意义的第三序列」——第三个序列就是证据引用，
+   * 所以把 series-3 指到证据蓝才是这套 pack 最准确的表达（理由写在 README）。
+   *
+   * 攻击红与已闭环绿**不进 series**：它们是状态，不是序列。
+   * 这一点由 data-positive / data-negative 单独承担，避免
+   * 「红色既是一条曲线又是一个状态」这种混用 —— 那正是语义纪律要禁止的。
+   * --------------------------------------------------------------------- */
+  --kits-data-series-1: var(--kits-color-accent);
+  --kits-data-series-2: var(--kits-color-accent-2);
+  --kits-data-series-3: #60a5fa; /* 证据引用蓝 #60A5FA */
+  --kits-data-grid-color: var(--kits-color-rule);
+  --kits-data-grid-width: 1px;
+  --kits-data-mark-size: 4px;
+  --kits-data-bar-cap: 0;
+  --kits-data-positive: var(--kits-color-positive);
+  --kits-data-negative: var(--kits-color-negative);
+  /* 证据引用蓝的独立槽位：让「引用一条证据」不必借用任何序列色，
+   * 但它与 series-3 同值 —— 它们是同一个语义的两个用法（序列 / 引用）。 */
+  --kits-data-evidence: #60a5fa;
+
+  /* ---------- HIERARCHY · luminance-and-weight ---------------------------
+   * 层级只靠两轴：**三级墨色（明度） × 三档字重**。
+   * 不靠线（线只在语法位置出现）、不靠光（禁止发光）、不靠留白（留白太贵）、
+   * 不靠材质。任何试图用第三轴建立层级的写法都应该被拒绝。
+   */
+
+  /* ---------- 组件数值 ---------------------------------------------------
+   * 本 pack 在 K1 里**不授予任何签名组件**（signatureComponents: []）——
+   * 组件角色留给 K2。这里的取值只为「万一被挂上来」时的降级行为负责：
+   * 所有指针驱动的效果一律归零（pointerFactor: 0），因为控制台不是
+   * 一个让人用鼠标玩光斑的地方。
+   * ------------------------------------------------------------------- */
+  --kits-hero-padding-block: calc(var(--kits-space-unit) * 10); /* 40px */
+  --kits-hero-gap: calc(var(--kits-space-unit) * 4);
+  --kits-spotlight-opacity: 0; /* 没有聚光灯：那是 cinematic 的手段 */
+  --kits-spotlight-border: 0 solid transparent;
+  --kits-grid-line-width: 1px;
+  --kits-grid-line-color: var(--kits-color-rule);
+  --kits-grid-fade: 0%;
+  --kits-cursor-color: var(--kits-color-accent);
+  --kits-cursor-ring-size: 0px; /* 没有跟随光标的光环 */
+  --kits-reveal-blur: 0px; /* 模糊入场是装饰，不是状态变化 */
+  --kits-reveal-distance: var(--kits-enter-distance);
+}
+
+/* -----------------------------------------------------------------------------
+ * 2. 排版规则：不需要 Tailwind 也能成立的「终端排版」
+ *
+ * 这些规则是 pack 的一部分，不是组件的一部分 —— 所以组件可以完全不写
+ * 字体相关的 CSS，换 pack 自动换排版性格。
+ *
+ * 注意坐标：所有规则都在 [data-kits-pack="console"] 作用域内。
+ * pack 样式表**不得在作用域之外作画**（material/paint-out-of-scope）——
+ * 一旦在 :root 上写规则，安装即污染同页的其它 pack。
+ * -------------------------------------------------------------------------- */
+
+[data-kits-pack="console"] .kits-display {
+  font-family: var(--kits-font-display);
+  font-size: var(--kits-display-size);
+  line-height: var(--kits-display-line);
+  letter-spacing: var(--kits-display-tracking);
+  font-weight: var(--kits-display-weight);
+  text-transform: var(--kits-display-transform);
+  /* 结论级文本不换行排成一首诗：控制台的结论是一行**被量出来**的读数，
+   * 让它自己断行会破坏「左边界对齐」这条主线。 */
+  text-wrap: balance;
+  max-width: 30ch;
+  color: var(--kits-color-ink);
+}
+
+[data-kits-pack="console"] .kits-body {
+  font-family: var(--kits-font-body);
+  font-size: var(--kits-body-size);
+  line-height: var(--kits-body-line);
+  max-width: var(--kits-body-max-width);
+  text-wrap: pretty;
+  color: var(--kits-color-ink-muted);
+}
+
+[data-kits-pack="console"] .kits-label {
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  letter-spacing: var(--kits-label-tracking);
+  text-transform: var(--kits-label-transform);
+  font-weight: var(--kits-label-weight);
+  color: var(--kits-color-ink-muted);
+}
+
+[data-kits-pack="console"] .kits-data {
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-data-size);
+  font-weight: var(--kits-data-weight);
+  letter-spacing: var(--kits-data-tracking);
+  /* 三个都必须有，缺一不可：
+   *   tabular-nums  → 逐位对齐，动画不让列宽抖动
+   *   lining-nums   → 等高的数字，读数不上下跳
+   *   slashed-zero  → 0 带斜杠，与 O 区分（安全域里 IP / ID / 哈希里到处都是两者） */
+  font-variant-numeric: tabular-nums lining-nums slashed-zero;
+  color: var(--kits-color-ink);
+}
+
+/* 3 米层：≥20px 的说明性文本。产品规格的最小可读字号在这里落地 ——
+ * 它是**唯一**允许替代 13px 标签承担远读任务的正文层。 */
+[data-kits-pack="console"] .kits-lead {
+  font-family: var(--kits-font-body);
+  font-size: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem); /* 20–24px */
+  line-height: 1.4;
+  color: var(--kits-color-ink);
+  max-width: 60ch;
+}
+
+/* 强调：换色 + 加粗，不加底色、不加光。
+ * 层级靠明度与字重这条规则在单个元素上也成立。 */
+[data-kits-pack="console"] .kits-mark {
+  color: var(--kits-color-accent);
+  font-weight: 700;
+}
+
+/* -----------------------------------------------------------------------------
+ * 3. 表面：点阵格位 + 规则线（不用卡片、不用阴影、不用光）
+ * -------------------------------------------------------------------------- */
+
+[data-kits-pack="console"] .kits-surface {
+  background-color: var(--kits-color-surface);
+  border-radius: var(--kits-radius-surface);
+  box-shadow: var(--kits-surface-shadow);
+  position: relative;
+}
+
+[data-kits-pack="console"] .kits-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--kits-texture-image);
+  background-size: var(--kits-texture-size);
+  opacity: var(--kits-texture-opacity);
+  mix-blend-mode: var(--kits-texture-blend);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* 分区用一条**结构线**，而不是一个带边框的盒子。
+ * 线的颜色取 rule-strong：它是唯一在 card 面上也过 4.5:1 的线色。 */
+[data-kits-pack="console"] .kits-rule {
+  border: 0;
+  border-top: var(--kits-border-width) var(--kits-border-style)
+    var(--kits-color-rule-strong);
+  margin: 0;
+}
+
+[data-kits-pack="console"] .kits-rule--short {
+  border-top-color: var(--kits-color-accent);
+  width: 2.5rem;
+  margin-bottom: var(--kits-space-sm);
+}
+
+/* -----------------------------------------------------------------------------
+ * 4. 控件：矩形格位 + 语法线，没有圆角、没有阴影、没有发光
+ * -------------------------------------------------------------------------- */
+
+[data-kits-pack="console"] .kits-control {
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  letter-spacing: var(--kits-label-tracking);
+  text-transform: var(--kits-label-transform);
+  font-weight: var(--kits-label-weight);
+  background: var(--kits-color-surface-raised);
+  color: var(--kits-color-ink);
+  /* 控件边框是**语法线**：它标记「这是一个可操作格位」，
+   * 那是结构位置，所以线出现在这里是对的。 */
+  border: var(--kits-border-width) var(--kits-border-style)
+    var(--kits-color-rule-strong);
+  /* 对齐到顶栏骨架：38px 高（76 − 2×16 = 44px 可用），可横向排进 76px 顶栏 */
+  block-size: var(--kits-control-height);
+  padding-block: 0;
+  padding-inline: var(--kits-control-padding-x);
+  border-radius: var(--kits-radius-control);
+  /* 交互动效整体 ≤240ms：这里只动颜色，时长取 quick(120ms)，
+   * 并且**没有位移** —— 控件移动会让密排的列产生视错觉。 */
+  transition:
+    color var(--kits-dur-quick) var(--kits-ease-out),
+    border-color var(--kits-dur-quick) var(--kits-ease-out),
+    background-color var(--kits-dur-quick) var(--kits-ease-out);
+}
+
+[data-kits-pack="console"] .kits-control:hover {
+  color: var(--kits-color-accent);
+  border-color: var(--kits-color-accent);
+}
+
+[data-kits-pack="console"] .kits-control:focus-visible {
+  outline: var(--kits-focus-ring-width) var(--kits-focus-ring-style)
+    var(--kits-color-focus);
+  outline-offset: var(--kits-focus-ring-offset);
+}
+
+/* 主操作格位：AI 青的边 + 青底暗字。它是「系统在做的事」。 */
+[data-kits-pack="console"] .kits-control--primary {
+  background: var(--kits-color-accent);
+  color: var(--kits-color-accent-ink);
+  border-color: var(--kits-color-accent);
+}
+
+/* 待授权格位：琥珀。**只有**承载「待人授权」语义的动作可以用它 ——
+ * 这不是一个通用强调按钮。 */
+[data-kits-pack="console"] .kits-control--authorize {
+  background: transparent;
+  color: var(--kits-color-accent-2);
+  border-color: var(--kits-color-accent-2);
+}
+
+[data-kits-pack="console"] .kits-control--danger {
+  background: transparent;
+  color: var(--kits-color-negative);
+  border-color: var(--kits-color-negative);
+}

@@ -1,0 +1,68 @@
+/*
+ * Kits 适配层 · S1 语义令牌桥接 · 产品所有（Kits 永不覆盖这个目录）
+ *
+ * 链路（只有这一条，产品代码不许绕过）：
+ *
+ *   lib/kits/installed/console/tokens.css   Kits 托管：--kits-* 取值
+ *        ↓  由 style-console.css 引入（kits add 生成的稳定缝）
+ *   本文件                                  ← 你在这里：把 --kits-* 映射成产品语义令牌
+ *        ↓  app/globals.css 只 import 这一层
+ *   产品代码                                 bg-background / text-muted-foreground / border-hairline
+ *
+ * ## 为什么要有这一层
+ *
+ * console pack 提供的是**它的**词汇（`--kits-color-canvas` / `--kits-color-rule` / …），
+ * 而产品写的是**产品的**词汇（`--background` / `--hairline` / `--muted-foreground`）。
+ * 直接把 --kits-* 抄进 JSX 会把 pack 的资产名焊进每一行产品代码，换 pack 就要全量改；
+ * 而把取值手抄一份到这里，pack 改值的那天产品不会报错、只会静默过期。
+ * 桥接层是唯一一处「知道两边叫什么」的地方，所以它必须只有一处。
+ *
+ * ## 为什么只在 `.dark` 下生效
+ *
+ * console 的 `darkDirection.strategy` 是 `single-theme`：它原生就是深色，暗色等于
+ * 默认值，没有第二套调色板。但本产品此刻的 QA 矩阵是 `desktop × {dark, light}`
+ * （见 `.qa/qa.config.mjs`），浅色主题仍然是 Factory 中性层的取值。所以这里把
+ * pack 接到**深色主题**上，而不是全局接死：
+ *
+ *   - 深色主题 = console 的战情室配色（画布 #0B1220 / 面板 #0F1A2E / 规则线 #4A6C9B）
+ *   - 浅色主题 = Factory 中性层（保持两套主题真的不同，扫描才有意义）
+ *
+ * 如果人要的是「S1 永远深色」（pack 的 single-theme 立场指向那个方向），那是一次
+ * **产品决定**：退役浅色主题、把 themes 收成 ["dark"]，并重跑视觉验收 —— 不是这一层
+ * 可以替人做的。做出那个决定之前，两套主题都必须是真实的。
+ *
+ * 只允许在这里覆盖**颜色**。排版 / 间距 / 密度 / 圆角 / 边界 / 动效是 pack 的身份，
+ * 改掉之后就不再是这套风格了。
+ */
+@import "./style-console.css";
+
+[data-kits-pack="console"].dark {
+  /* 画面基底 */
+  --background: var(--kits-color-canvas);
+  --foreground: var(--kits-color-ink);
+
+  /* 三级表面：canvas → panel → card（设计稿实测彼此只差 1.08–1.17 的对比度，
+     所以层级由规则线承担，见下面的 --hairline） */
+  --surface: var(--kits-color-surface);
+  --surface-foreground: var(--kits-color-ink);
+  --elevated: var(--kits-color-surface-raised);
+  --elevated-foreground: var(--kits-color-ink);
+
+  /* 次墨：实测在各面上都 ≥6:1，可以承载次要正文 */
+  --muted: var(--kits-color-surface);
+  --muted-foreground: var(--kits-color-ink-muted);
+
+  /* 结构线。pack 把它从设计稿原值 #22344F 提亮到 #4A6C9B：原值对 canvas 只有
+     1.49:1，而结构层级几乎全部由这一根 1px 线承担 —— 投屏 3 米外它会直接消失。 */
+  --border: var(--kits-color-rule);
+  --hairline: var(--kits-color-rule);
+
+  /* 一色一义（不得混用）：青 = AI 正在产出；琥珀 = 球在你那边（待人授权）；
+     绿 = 已闭环；红 = 攻击。红在 card 面上只允许大字或非文本元素。 */
+  --ring: var(--kits-color-focus);
+  --brand: var(--kits-color-accent);
+  --brand-foreground: var(--kits-color-accent-ink);
+  --success: var(--kits-color-positive);
+  --warning: var(--kits-color-accent-2);
+  --danger: var(--kits-color-negative);
+}

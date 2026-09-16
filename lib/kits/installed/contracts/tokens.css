@@ -1,0 +1,322 @@
+/* =============================================================================
+ * Kits · Style Pack Contract —— 变量词汇表（v0.1）
+ *
+ * 这个文件**不定义风格**，只定义「风格可以说哪些话」。
+ *
+ *   契约层（本文件）  声明变量名 + 中立兜底值
+ *   风格层（pack）    为这些变量填上自己的值
+ *   产品层            只写 data-kits-pack="..."，不写任何字面量
+ *
+ * 组件（components/*）只允许引用 `var(--kits-*)`。任何组件里出现的
+ * `#hex` / `14px` / `ease-out` 都是契约违规。
+ *
+ * 生命周期：未绑定 pack 时使用本文件的中立值，页面仍然可用、可读、无错。
+ * ========================================================================== */
+
+:root {
+  /* ---------------------------------------------------------------------------
+   * 1. TYPOGRAPHY —— 排版性格
+   *
+   * 三个 pack 的差异主要来自 `--kits-font-display`（标题用什么字）与
+   * `--kits-display-*`（标题怎么排），而不是单纯的字号大小。
+   * 字体家族刻意使用系统栈：Kits 不把外部字体当成依赖（见 docs/faq.md）。
+   * ------------------------------------------------------------------------- */
+  --kits-font-display: ui-sans-serif, system-ui, sans-serif;
+  --kits-font-body: ui-sans-serif, system-ui, sans-serif;
+  --kits-font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --kits-weight-regular: 400;
+  --kits-weight-medium: 500;
+  --kits-weight-semibold: 600;
+  --kits-weight-bold: 700;
+
+  /* 标题：字面 + 行高 + 字距，三者必须一起变才叫「排版不同」 */
+  --kits-display-size: clamp(2rem, 1.2rem + 3vw, 3.25rem);
+  --kits-display-line: 1.15;
+  --kits-display-tracking: -0.01em;
+  --kits-display-weight: var(--kits-weight-semibold);
+  --kits-display-transform: none;
+
+  --kits-title-size: 1.125rem;
+  --kits-title-line: 1.35;
+  --kits-title-tracking: 0;
+
+  --kits-body-size: 0.9375rem;
+  --kits-body-line: 1.6;
+  --kits-body-max-width: 62ch;
+
+  --kits-label-size: 0.75rem;
+  --kits-label-tracking: 0.02em;
+  --kits-label-transform: none;
+  --kits-label-weight: var(--kits-weight-medium);
+
+  /* 数据读数：数字必须等宽，否则动画会让布局抖动 */
+  --kits-data-size: 1.75rem;
+  --kits-data-weight: var(--kits-weight-semibold);
+  --kits-data-tracking: 0;
+
+  /* ---------------------------------------------------------------------------
+   * 2. SPACING RHYTHM —— 间距节奏
+   *
+   * `--kits-space-unit` 是节奏的脉搏：4px 的节奏是文件，8px 是空间，12px 是仪器。
+   * `--kits-gutter` / `--kits-section-gap` 决定「大留白」还是「密集」。
+   * ------------------------------------------------------------------------- */
+  --kits-space-unit: 8px;
+  --kits-space-2xs: calc(var(--kits-space-unit) * 0.5);
+  --kits-space-xs: var(--kits-space-unit);
+  --kits-space-sm: calc(var(--kits-space-unit) * 1.5);
+  --kits-space-md: calc(var(--kits-space-unit) * 2);
+  --kits-space-lg: calc(var(--kits-space-unit) * 3);
+  --kits-space-xl: calc(var(--kits-space-unit) * 5);
+  --kits-space-2xl: calc(var(--kits-space-unit) * 8);
+
+  --kits-gutter: var(--kits-space-md);
+  --kits-section-gap: var(--kits-space-xl);
+  --kits-content-max: 72rem;
+
+  /* ---------------------------------------------------------------------------
+   * 3. DENSITY —— 信息密度
+   *
+   * 决定「控件多高、行多高、一屏放多少条数据」。
+   * ------------------------------------------------------------------------- */
+  --kits-control-height: 2.25rem;
+  --kits-control-padding-x: var(--kits-space-sm);
+  --kits-row-height: 2.5rem;
+  --kits-label-gap: var(--kits-space-xs);
+  --kits-card-padding: var(--kits-space-md);
+
+  /* ---------------------------------------------------------------------------
+   * 4. RADIUS PHILOSOPHY —— 圆角哲学
+   *
+   * 不是「圆多少」，而是「这个风格相信什么」：
+   * square 相信结构与秩序，continuous 相信材质与光，pill 相信亲和。
+   * ------------------------------------------------------------------------- */
+  --kits-radius-none: 0;
+  --kits-radius-sm: 2px;
+  --kits-radius-md: 4px;
+  --kits-radius-lg: 8px;
+  --kits-radius-pill: 999px;
+  --kits-radius-surface: var(--kits-radius-md);
+  --kits-radius-control: var(--kits-radius-md);
+  --kits-radius-avatar: var(--kits-radius-pill);
+
+  /* ---------------------------------------------------------------------------
+   * 5. BORDER TREATMENT —— 边界处理
+   * ------------------------------------------------------------------------- */
+  --kits-border-width: 1px;
+  --kits-border-width-strong: 1px;
+  --kits-border-style: solid;
+  /* hairline 是「分隔」，border 是「边界」。两者必须不同，否则页面全在画表格。 */
+  --kits-border-hairline-color: var(--kits-color-rule);
+  --kits-border-color: var(--kits-color-rule-strong);
+
+  /* ---------------------------------------------------------------------------
+   * 6. SURFACE TREATMENT —— 表面处理
+   * ------------------------------------------------------------------------- */
+  --kits-surface-shadow: none;
+  --kits-surface-backdrop: none;
+  /* 遮罩强度：ambient-glow 风格用高遮罩压暗背景，paper 风格几乎不用遮罩 */
+  --kits-scrim-strength: 0.08;
+  /* 表面纹理（noise / scanline / none），由 pack 决定 */
+  --kits-texture-image: none;
+  --kits-texture-opacity: 0;
+  --kits-texture-blend: normal;
+
+  /* ---------------------------------------------------------------------------
+   * 7. NAVIGATION FEEL —— 导航手感
+   * ------------------------------------------------------------------------- */
+  --kits-nav-height: 3.5rem;
+  --kits-nav-gap: var(--kits-space-md);
+  --kits-nav-item-padding-x: var(--kits-space-sm);
+  --kits-nav-indicator: var(--kits-color-rule-strong);
+  --kits-nav-font-size: var(--kits-label-size);
+  --kits-nav-font-tracking: var(--kits-label-tracking);
+
+  /* ---------------------------------------------------------------------------
+   * 8. DATA VISUALIZATION LANGUAGE —— 数据语言
+   * ------------------------------------------------------------------------- */
+  --kits-data-series-1: var(--kits-color-accent);
+  --kits-data-series-2: var(--kits-color-accent-2);
+  --kits-data-series-3: var(--kits-color-muted);
+  --kits-data-grid-color: var(--kits-color-rule);
+  --kits-data-grid-width: 1px;
+  --kits-data-mark-size: 3px;
+  --kits-data-bar-cap: var(--kits-radius-none);
+  --kits-data-positive: var(--kits-color-positive);
+  --kits-data-negative: var(--kits-color-negative);
+
+  /* ---------------------------------------------------------------------------
+   * 9. MOTION —— 由 motion.ts 注入（见 motionToCssVars）
+   *
+   * 组件只读这些变量。pack 换掉 motion.ts，所有组件动效随之改变。
+   * reduced-motion 与移动端降级也通过这里的变量表达，见文件末尾。
+   * ------------------------------------------------------------------------- */
+  --kits-dur-instant: 90ms;
+  --kits-dur-quick: 160ms;
+  --kits-dur-base: 240ms;
+  --kits-dur-slow: 420ms;
+  --kits-dur-ambient: 6000ms;
+  --kits-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --kits-ease-inout: cubic-bezier(0.4, 0, 0.2, 1);
+  --kits-ease-linear: linear;
+  --kits-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --kits-stagger-step: 60ms;
+  --kits-ambient-cycle: 6000ms;
+  --kits-enter-distance: 12px;
+  --kits-pointer-factor: 0;
+
+  /* ---------------------------------------------------------------------------
+   * 10. HIERARCHY & COLOR —— 颜色与层级
+   *
+   * 本文件只给出**中立兜底值**：未绑定任何 pack 时页面依然可读、无错。
+   *
+   * 颜色由 pack 在 `[data-kits-pack]` 作用域内全量提供（不是 :root）：
+   *   - 这样多个 pack 可以在同一页共存而互不污染；
+   *   - 产品要换品牌色，只需在自己的容器上重新声明同名变量。
+   * 详见 docs/integration.md「品牌色覆盖」一节。
+   * ------------------------------------------------------------------------- */
+  --kits-color-canvas: #f5f5f4;
+  --kits-color-surface: #ffffff;
+  --kits-color-surface-raised: #ffffff;
+  --kits-color-surface-sunken: #ececeb;
+  --kits-color-ink: #1c1917;
+  --kits-color-ink-muted: #6b7280;
+  --kits-color-accent: #2563eb;
+  --kits-color-accent-ink: #ffffff;
+  --kits-color-accent-2: #0891b2;
+  --kits-color-positive: #15803d;
+  --kits-color-negative: #b91c1c;
+  --kits-color-rule: rgb(28 25 23 / 0.12);
+  --kits-color-rule-strong: rgb(28 25 23 / 0.28);
+  --kits-color-focus: #2563eb;
+  --kits-color-glow: transparent;
+
+  /* 层级：靠字号/间距层级，靠光层级，还是靠线与标签层级 */
+  --kits-elevation-1: var(--kits-surface-shadow);
+  --kits-elevation-2: var(--kits-surface-shadow);
+
+  --kits-focus-ring-width: 2px;
+  --kits-focus-ring-offset: 2px;
+  --kits-focus-ring-style: solid;
+}
+
+/* -----------------------------------------------------------------------------
+ * 组件尺寸契约（组件自己声明，pack 只调数值）
+ * -------------------------------------------------------------------------- */
+
+:root {
+  /* InteractiveHero */
+  --kits-hero-padding-block: var(--kits-space-2xl);
+  --kits-hero-gap: var(--kits-space-md);
+  --kits-hero-eyebrow-gap: var(--kits-space-sm);
+  --kits-hero-parallax-depth: 0px;
+
+  /* SpotlightSurface */
+  --kits-spotlight-size: 220px;
+  --kits-spotlight-opacity: 0.35;
+  --kits-spotlight-color: var(--kits-color-accent);
+  --kits-spotlight-border: var(--kits-border-width) var(--kits-border-style)
+    var(--kits-border-color);
+
+  /* AnimatedGrid */
+  --kits-grid-cell: 48px;
+  /*
+   * 指针能力因子（**契约自有，不是风格旋钮**）。
+   *
+   * 触屏上把单元格放大 1.5 倍：间隔太小 + 手指遮挡 = 摩尔纹与视觉噪音。
+   * 这是"移动端降级契约"的一部分，不是风格选择，因此它与
+   * --kits-pointer-factor / --kits-hero-parallax-depth 同类，
+   * 由本文件而非 pack 决定。
+   *
+   * 为什么是**独立变量**而不是直接改 --kits-grid-cell：
+   * v0.1.0 曾在 coarse pointer 块里写
+   *     --kits-grid-cell: calc(var(--kits-grid-cell) * 1.5);
+   * 这有两个错：
+   *   1. 自引用 → 该声明在 computed-value 阶段被判定为无效（循环依赖）；
+   *   2. 即便不循环，它和 pack 的 `[data-kits-pack] { --kits-grid-cell: 64px }`
+   *      特异性相同（0-1-0），而 pack 在源顺序上更晚 → pack 获胜，缩放被吃掉。
+   * 实测：期望 96px，得到 64px。
+   *
+   * 拆成两个名字之后，消费者（pack / 产品）声明的是 --kits-grid-cell，
+   * 契约声明的是 --kits-grid-cell-scale，**两者不可能再互相覆盖**。
+   * 有效值 = calc(基准 × 因子)，在组件自己身上合成（见 animated-grid.css），
+   * 因此无论产品把 pack 作用域放在 html 还是某个容器上都能取到正确的基准。
+   */
+  --kits-grid-cell-scale: 1;
+  --kits-grid-line-color: var(--kits-color-rule);
+  --kits-grid-line-width: 1px;
+  --kits-grid-fade: 40%;
+
+  /* DataCursor */
+  --kits-cursor-size: 8px;
+  --kits-cursor-ring-size: 32px;
+  --kits-cursor-color: var(--kits-color-accent);
+  --kits-cursor-ring-color: var(--kits-color-rule-strong);
+  --kits-cursor-label-size: var(--kits-label-size);
+
+  /* InsightReveal */
+  --kits-reveal-distance: var(--kits-enter-distance);
+  --kits-reveal-stagger: var(--kits-stagger-step);
+  --kits-reveal-blur: 0px;
+}
+
+/* -----------------------------------------------------------------------------
+ * 9b. REDUCED MOTION FALLBACK（强制，不可被 pack 取消）
+ *
+ * 契约要求：所有 pack 都必须支持，且**降级后信息仍然完整**。
+ * 这里用 !important 是刻意的：它保护的是用户的系统偏好，不是风格。
+ * -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  :root,
+  [data-kits-pack] {
+    --kits-dur-instant: 0ms !important;
+    --kits-dur-quick: 0ms !important;
+    --kits-dur-base: 0ms !important;
+    --kits-dur-slow: 0ms !important;
+    --kits-dur-ambient: 1ms !important;
+    --kits-stagger-step: 0ms !important;
+    --kits-enter-distance: 0px !important;
+    --kits-reveal-distance: 0px !important;
+    --kits-pointer-factor: 0 !important;
+    --kits-hero-parallax-depth: 0px !important;
+    --kits-reveal-blur: 0px !important;
+  }
+
+  [data-kits-pack] [data-kits-ambient],
+  [data-kits-pack] [data-kits-motion="ambient"] {
+    animation: none !important;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+ * 10b. 移动端降级（视口 + 指针能力双条件）
+ *
+ * 触屏设备没有 hover，也没有精准指针：所有靠 hover 揭示的信息必须
+ * 在移动端改为常驻或点击展开。见各组件 README 的 mobile fallback 段。
+ * -------------------------------------------------------------------------- */
+
+@media (hover: none), (pointer: coarse) {
+  :root,
+  [data-kits-pack] {
+    --kits-pointer-factor: 0 !important;
+    --kits-hero-parallax-depth: 0px !important;
+    /*
+     * 移动端网格降级：单元格 ×1.5（避免小屏摩尔纹 + 手指遮挡）。
+     *
+     * !important 是刻意的，理由与 reduced-motion 块相同：它保护的是
+     * **能力契约**，不是风格。有了独立变量名，pack 已经不可能"顺手"
+     * 覆盖它；!important 再挡一层 —— 防止有人把这个因子当成风格旋钮
+     * 在 [data-kits-pack] 作用域里重新声明，从而静默关掉移动端降级。
+     *
+     * 注意：元素**自己**的元素级声明仍然优先于这里继承下去的值。
+     * 也就是说产品在一个具体元素上刻意退出降级依然做得到 —— 被挡住的
+     * 只是"祖先作用域里的无意覆盖"。
+     */
+    --kits-grid-cell-scale: 1.5 !important;
+  }
+
+  [data-kits-pack] [data-kits-ambient] {
+    animation: none !important;
+  }
+}

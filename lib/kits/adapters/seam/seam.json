@@ -1,0 +1,12 @@
+{
+  "seamVersion": "0.2.0",
+  "generatedBy": "kits add",
+  "adapterRoot": "lib/kits/adapters",
+  "bindings": {},
+  "notes": [
+    "bindings 的键是你选的语义角色名（pointer / structure / data / style …），值是本次安装里的 asset id。",
+    "Kits 不替你决定哪个资产承担哪个角色 —— 这是产品决策，不是可以推断的事实。",
+    "绑定之后，在 adapters/ 下建一个同名角色文件（见 _template.ts），产品代码只 import 那个文件。",
+    "声明与实现双向核对：kits doctor 会报出「声明无文件」「文件无声明」「绑定指向不在本次安装里的资产」三种缺口。"
+  ]
+}

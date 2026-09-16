@@ -1,0 +1,268 @@
+{
+  "schemaVersion": 1,
+  "registryVersion": "0.3.0",
+  "generatedAt": "2026-09-16T15:00:57.883Z",
+  "source": {
+    "kind": "source-installation",
+    "repo": "prototype-kits",
+    "commit": "26353fac66d00c56a5b6380b7113cf0f07e1aa53",
+    "dirty": false
+  },
+  "layout": {
+    "installedRoot": "lib/kits/installed",
+    "adapterRoot": "lib/kits/adapters",
+    "agentRoot": "lib/kits/.kits",
+    "lockFile": "lib/kits/kits.lock.json"
+  },
+  "compat": {
+    "declaredReactRange": "^18.0.0 || ^19.0.0",
+    "kitsTypesVersion": "19.3.0"
+  },
+  "assets": [
+    {
+      "id": "cli",
+      "type": "package",
+      "version": "0.2.0",
+      "status": "approved",
+      "apiVersion": "1.0.0",
+      "files": [
+        {
+          "path": "lib/kits/.kits/kits.mjs",
+          "checksum": "011793f67dcb4406"
+        },
+        {
+          "path": "lib/kits/.kits/lib/adapters.mjs",
+          "checksum": "ad7feeba52cee440"
+        },
+        {
+          "path": "lib/kits/.kits/lib/boundary.mjs",
+          "checksum": "ab46e770ed0cffa9"
+        },
+        {
+          "path": "lib/kits/.kits/lib/compat.mjs",
+          "checksum": "b33403e6a5de29d9"
+        },
+        {
+          "path": "lib/kits/.kits/lib/errors.mjs",
+          "checksum": "c535ad14b8bf0524"
+        },
+        {
+          "path": "lib/kits/.kits/lib/installer.mjs",
+          "checksum": "e1aa45cf8795d8e0"
+        },
+        {
+          "path": "lib/kits/.kits/lib/lock.mjs",
+          "checksum": "3af1502d36aaf479"
+        },
+        {
+          "path": "lib/kits/.kits/lib/packaging.mjs",
+          "checksum": "da15bc0dbbf8469e"
+        },
+        {
+          "path": "lib/kits/.kits/lib/registry.mjs",
+          "checksum": "d1cbb2033e9652fd"
+        },
+        {
+          "path": "lib/kits/.kits/lib/seam.mjs",
+          "checksum": "4ac986bad027eceb"
+        },
+        {
+          "path": "lib/kits/.kits/README.md",
+          "checksum": "4672202e5eba1f16"
+        }
+      ]
+    },
+    {
+      "id": "console",
+      "type": "style",
+      "version": "0.2.0",
+      "status": "approved",
+      "apiVersion": null,
+      "files": [
+        {
+          "path": "lib/kits/installed/console/index.ts",
+          "checksum": "915248d674977f20"
+        },
+        {
+          "path": "lib/kits/installed/console/manifest.json",
+          "checksum": "bd23ce0b4091d78e"
+        },
+        {
+          "path": "lib/kits/installed/console/motion.ts",
+          "checksum": "21b48e4e4af9bb0a"
+        },
+        {
+          "path": "lib/kits/installed/console/README.md",
+          "checksum": "755c96c07fad7538"
+        },
+        {
+          "path": "lib/kits/installed/console/SKILL.md",
+          "checksum": "30af8f67915207f0"
+        },
+        {
+          "path": "lib/kits/installed/console/tokens.css",
+          "checksum": "230082aa64176efd"
+        }
+      ]
+    },
+    {
+      "id": "contracts",
+      "type": "package",
+      "version": "0.1.1",
+      "status": "approved",
+      "apiVersion": "1.0.0",
+      "files": [
+        {
+          "path": "lib/kits/installed/contracts/contract.ts",
+          "checksum": "4ee71a2acb5e01b1"
+        },
+        {
+          "path": "lib/kits/installed/contracts/index.ts",
+          "checksum": "aa823f32822b652b"
+        },
+        {
+          "path": "lib/kits/installed/contracts/README.md",
+          "checksum": "a5b0fd89d596c04f"
+        },
+        {
+          "path": "lib/kits/installed/contracts/tokens.css",
+          "checksum": "5ecf4a2bcc385cee"
+        }
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "console",
+      "to": "contracts",
+      "requirement": "*"
+    }
+  ],
+  "files": [
+    {
+      "path": "lib/kits/.kits/kits.mjs",
+      "checksum": "011793f67dcb4406",
+      "assetId": "cli"
+    },
+    {
+      "path": "lib/kits/.kits/lib/adapters.mjs",
+      "checksum": "ad7feeba52cee440",
+      "assetId": "cli"
+    },
+    {
+      "path": "lib/kits/.kits/lib/boundary.mjs",
+      "checksum": "ab46e770ed0cffa9",
+      "assetId": "cli"
+    },
+    {
+      "path": "lib/kits/.kits/lib/compat.mjs",
+      "checksum": "b33403e6a5de29d9",
+      "assetId": "cli"
+    },
+    {
+      "path": "lib/kits/.kits/lib/errors.mjs",
+      "checksum": "c535ad14b8bf0524",
+      "assetId": "cli"
+    },
+    {
+      "path": "lib/kits/.kits/lib/installer.mjs",
+      "checksum": "e1aa45cf8795d8e0",
+      "assetId": "cli"
+    },
+    {
+      "path": "lib/kits/.kits/lib/lock.mjs",
+      "checksum": "3af1502d36aaf479",
+      "assetId": "cli"
+    },
+    {
+      "path": "lib/kits/.kits/lib/packaging.mjs",
+      "checksum": "da15bc0dbbf8469e",
+      "assetId": "cli"
+    },
+    {
+      "path": "lib/kits/.kits/lib/registry.mjs",
+      "checksum": "d1cbb2033e9652fd",
+      "assetId": "cli"
+    },
+    {
+      "path": "lib/kits/.kits/lib/seam.mjs",
+      "checksum": "4ac986bad027eceb",
+      "assetId": "cli"
+    },
+    {
+      "path": "lib/kits/.kits/README.md",
+      "checksum": "4672202e5eba1f16",
+      "assetId": "cli"
+    },
+    {
+      "path": "lib/kits/installed/console/index.ts",
+      "checksum": "915248d674977f20",
+      "assetId": "console"
+    },
+    {
+      "path": "lib/kits/installed/console/manifest.json",
+      "checksum": "bd23ce0b4091d78e",
+      "assetId": "console"
+    },
+    {
+      "path": "lib/kits/installed/console/motion.ts",
+      "checksum": "21b48e4e4af9bb0a",
+      "assetId": "console"
+    },
+    {
+      "path": "lib/kits/installed/console/README.md",
+      "checksum": "755c96c07fad7538",
+      "assetId": "console"
+    },
+    {
+      "path": "lib/kits/installed/console/SKILL.md",
+      "checksum": "30af8f67915207f0",
+      "assetId": "console"
+    },
+    {
+      "path": "lib/kits/installed/console/tokens.css",
+      "checksum": "230082aa64176efd",
+      "assetId": "console"
+    },
+    {
+      "path": "lib/kits/installed/contracts/contract.ts",
+      "checksum": "4ee71a2acb5e01b1",
+      "assetId": "contracts"
+    },
+    {
+      "path": "lib/kits/installed/contracts/index.ts",
+      "checksum": "aa823f32822b652b",
+      "assetId": "contracts"
+    },
+    {
+      "path": "lib/kits/installed/contracts/README.md",
+      "checksum": "a5b0fd89d596c04f",
+      "assetId": "contracts"
+    },
+    {
+      "path": "lib/kits/installed/contracts/tokens.css",
+      "checksum": "5ecf4a2bcc385cee",
+      "assetId": "contracts"
+    }
+  ],
+  "adapters": {
+    "templateVersion": "0.2.0",
+    "written": [
+      "lib/kits/adapters/style-console.css",
+      "lib/kits/adapters/style-console.ts",
+      "lib/kits/adapters/style-pack.ts",
+      "lib/kits/adapters/README.md"
+    ],
+    "kept": []
+  },
+  "seam": {
+    "version": "0.2.0",
+    "file": "lib/kits/adapters/seam/seam.json",
+    "written": [
+      "lib/kits/adapters/seam/README.md",
+      "lib/kits/adapters/seam/seam.json",
+      "lib/kits/adapters/seam/_template.ts"
+    ],
+    "kept": []
+  }
+}

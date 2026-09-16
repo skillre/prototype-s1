@@ -1,0 +1,34 @@
+{
+  "$schema": "./lib/factory-policy.schema.json",
+  "schemaVersion": 1,
+  "policyVersion": "1.3.0",
+  "managedBlock": {
+    "document": "AGENTS.md",
+    "marker": "factory-core-policy",
+    "version": "1.3.0",
+    "begin": "<!-- BEGIN:factory-core-policy v1.3.0 -->",
+    "end": "<!-- END:factory-core-policy -->"
+  },
+  "agentOrchestration": {
+    "host": "dsh",
+    "dshSubagents": "required",
+    "productAppFrameworks": "forbidden",
+    "allowedScope": "宿主内拆分/并行只读或彼此独立的任务；宿主的 Subagent 调用不属于产品代码。",
+    "forbiddenScope": "产品应用代码及其运行时依赖（app/components/lib/hooks/stores/scripts）里出现 agent framework / orchestrator runtime / 多 agent 调度依赖。"
+  },
+  "modelRouting": {
+    "provider": "opencode-go-dsv41",
+    "model": "deepseek-flash",
+    "reasoningEffort": "max",
+    "verifiedOn": "2026-09-15"
+  },
+  "concurrency": {
+    "worktree": "single-writer",
+    "sharedPaths": "single-owner",
+    "testAndQa": "serial"
+  },
+  "authorization": {
+    "humanVisualAcceptance": "required-before-release",
+    "deployment": "explicit-user-authorization"
+  }
+}

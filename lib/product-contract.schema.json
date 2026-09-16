@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://prototype-factory.local/schemas/product-contract.schema.json",
+  "title": "Product Semantic Contract",
+  "description": "What this product must never get semantically wrong. Separate from the Visual Manifest on purpose: that one answers `what does it look like`, this one answers `what must stay true`. Shape only — the Factory does not know what any statement means, and never infers one.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "invariants"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Optional schema pointer, for editors only."
+    },
+    "schemaVersion": {
+      "const": 1,
+      "description": "Version of this contract. A different number is a different contract."
+    },
+    "invariants": {
+      "type": "array",
+      "description": "The product's semantic invariants. An empty array is a legitimate product — but it is a decision, and the gate says so out loud.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "statement", "enforcement"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$",
+            "description": "Stable, machine-readable, language-free. Dotted lowercase kebab, at least two segments — e.g. `tension.resolved-requires-fact-change`. Never a Chinese sentence, never a test title."
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 12,
+            "description": "What must never happen, in the product's own language. This sentence is the only context the next reader gets."
+          },
+          "enforcement": {
+            "enum": ["test"],
+            "description": "How the invariant is held. `test` means a test in this repo registers the id through tests/support/product-contract.ts. The list is short on purpose: every value must come with a way to verify it."
+          }
+        }
+      }
+    }
+  }
+}

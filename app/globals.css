@@ -1,0 +1,558 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/*
+ * Kits Style Pack 接入点（Source Installation）。
+ *
+ * 只有这一行：产品代码永远不 import `lib/kits/installed/**`，只走适配层。
+ * 具体桥接规则在 lib/kits/adapters/s1-tokens.css —— 它把 pack 的 `--kits-*`
+ * 映射成下面这套语义令牌，所以 JSX 一行都不用改。换 pack 时改的是适配层那一行。
+ */
+@import "../lib/kits/adapters/s1-tokens.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* =============================================================================
+ * Design System V2 — Tailwind theme bridge
+ *
+ * Everything in this block turns a CSS variable into a Tailwind utility
+ * (`--color-x` → `bg-x`, `--shadow-x` → `shadow-x`, `--text-x` → `text-x`).
+ * `inline` keeps the value symbolic, so anything read here resolves against the
+ * active theme (:root / .dark) at the point of use instead of at build time.
+ * ========================================================================== */
+@theme inline {
+  /* ---- Color: surfaces & text ------------------------------------------- */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-foreground: var(--surface-foreground);
+  --color-elevated: var(--elevated);
+  --color-elevated-foreground: var(--elevated-foreground);
+  --color-interactive: var(--interactive);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* ---- Color: brand & accents ------------------------------------------- */
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-soft: var(--brand-soft);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-soft: var(--accent-soft);
+
+  /* ---- Color: data-visualisation accent --------------------------------- */
+  /* The second series colour. Reserved for charts and data marks — never for
+     chrome. Brand cobalt + this cyan are the only two hues the product owns. */
+  --color-data-accent: var(--data-accent);
+  --color-data-accent-soft: var(--data-accent-soft);
+
+  /* ---- Color: hairline -------------------------------------------------- */
+  /* A separator, not a boundary. Lighter than `--border` so structure can be
+     drawn with spacing + rules instead of with boxes. */
+  --color-hairline: var(--hairline);
+
+  /* ---- Color: semantic status ------------------------------------------- */
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+
+  /* ---- Color: shadcn primitives (kept for component compatibility) ------- */
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-destructive: var(--destructive);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* ---- Typography ------------------------------------------------------- */
+  /* Geist leads, then the CJK stack. Chinese is never synthesized from a Latin
+     face: PingFang / Hiragino / YaHei / Noto each render 中文 at the right
+     optical weight, which is what keeps a dense Chinese UI from looking
+     muddy next to its Latin and numeric neighbours. */
+  --font-sans:
+    var(--font-geist-sans), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+    "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
+  --font-mono:
+    var(--font-geist-mono), "SF Mono", "JetBrains Mono", ui-monospace, monospace;
+  --font-heading:
+    var(--font-geist-sans), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+    "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
+
+  /* ---- Radius ----------------------------------------------------------- */
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+  /* Radius semantics derive from the single `--radius` base — defined here
+     (not in :root) so no token can ever reference itself. */
+  --radius-field: var(--radius);
+  --radius-card: calc(var(--radius) + 0.25rem);
+  --radius-panel: calc(var(--radius) + 0.5rem);
+  --radius-floating: calc(var(--radius) + 0.625rem);
+
+  /* ---- Elevation -------------------------------------------------------- */
+  --shadow-subtle: var(--elevation-subtle);
+  --shadow-card: var(--elevation-card);
+  --shadow-elevated: var(--elevation-elevated);
+  --shadow-floating: var(--elevation-floating);
+
+  /* ---- Motion ----------------------------------------------------------- */
+  --ease-standard: var(--motion-ease-standard);
+  --ease-out-expo: var(--motion-ease-out-expo);
+  --ease-out-back: var(--motion-ease-out-back);
+  --ease-spring: var(--motion-ease-spring);
+  --ease-emphasized: var(--motion-ease-emphasized);
+
+  /* ---- Layout ----------------------------------------------------------- */
+  --container-dashboard: 90rem;
+  --container-content: 75rem;
+  --container-text: 42rem;
+}
+
+/* =============================================================================
+ * Design tokens — the single source of truth.
+ *
+ *   color     background | surface | elevated | interactive | foreground
+ *             muted | border | accent | accent-soft | success | warning
+ *             danger | info                      (all Light + Dark)
+ *   type      text-display | text-title | text-heading | text-body
+ *             text-body-sm | text-caption | text-label    + .numeric utility
+ *   space     p-gutter | gap-stack | gap-section | gap-card        (semantic)
+ *   radius    rounded-field | rounded-card | rounded-panel | rounded-floating
+ *   shadow    shadow-subtle | shadow-card | shadow-elevated | shadow-floating
+ *   motion    duration-instant/fast/normal/slow/glacial
+ *             duration-press/hover/enter/exit/modal/drawer/list/page
+ *             ease-standard/out-expo/out-back/spring/emphasized
+ *   width     max-w-dashboard | max-w-content | max-w-text
+ *
+ * lib/motion-presets.ts mirrors the motion layer — keep the two in sync.
+ * Never hardcode a color, duration or easing outside this file.
+ * ========================================================================== */
+@theme {
+  /* ---- Typography scale ------------------------------------------------- */
+  /* CJK RULE — this is the single most important typographic decision here.
+     Chinese glyphs are full-width and square; negative tracking that flatters
+     Latin display type makes 中文 look cramped and crowded. So letter-spacing
+     is 0 on every token that carries Chinese, and the tight negative tracking
+     lives only on the numeric metrics below (digits are Latin and half-width).
+     Line-heights are also higher than a Latin-only scale would use: 1.05 on a
+     40px Chinese heading clips the glyphs. */
+  --text-display: clamp(2.5rem, 1.75rem + 2.6vw, 3.5rem);
+  --text-display--line-height: 1.18;
+  --text-display--letter-spacing: 0em;
+  --text-display--font-weight: 600;
+  --text-title: 1.75rem;
+  --text-title--line-height: 1.3;
+  --text-title--letter-spacing: 0em;
+  --text-title--font-weight: 600;
+  --text-subtitle: 1.25rem;
+  --text-subtitle--line-height: 1.4;
+  --text-subtitle--letter-spacing: 0em;
+  --text-heading: 1.0625rem;
+  --text-heading--line-height: 1.45;
+  --text-heading--letter-spacing: 0em;
+  --text-heading--font-weight: 600;
+  --text-body: 0.875rem;
+  --text-body--line-height: 1.7;
+  --text-body-sm: 0.8125rem;
+  --text-body-sm--line-height: 1.65;
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.6;
+  --text-label: 0.75rem;
+  --text-label--line-height: 1.45;
+  --text-label--letter-spacing: 0.01em;
+  /* Micro eyebrow — Latin/CJK-neutral; pair with `tracking-[0.16em]`. */
+  --text-eyebrow: 0.6875rem;
+  --text-eyebrow--line-height: 1.4;
+  --text-eyebrow--letter-spacing: 0.16em;
+
+  /* Numeric typography. Digits are half-width, so they CAN take the tight
+     negative tracking that would ruin Chinese. Sizes are the hierarchy:
+     `metric` is the page's protagonist, `metric-sm` is a secondary figure,
+     `numeric` is an in-row figure (table cells, list values). */
+  --text-metric: clamp(2.75rem, 1.6rem + 4vw, 4.25rem);
+  --text-metric--line-height: 1;
+  --text-metric--letter-spacing: -0.04em;
+  --text-metric--font-weight: 600;
+  --text-metric-sm: 1.875rem;
+  --text-metric-sm--line-height: 1.05;
+  --text-metric-sm--letter-spacing: -0.032em;
+  --text-metric-sm--font-weight: 600;
+  --text-numeric: 1.5rem;
+  --text-numeric--line-height: 1.1;
+  --text-numeric--letter-spacing: -0.03em;
+  --text-numeric--font-weight: 600;
+
+  /* ---- Spacing (semantic aliases on the default 4px scale) -------------- */
+  --spacing-gutter: 1rem;
+  --spacing-stack: 2.5rem;
+  --spacing-section: 3.5rem;
+  --spacing-card: 1.25rem;
+
+  /* ---- Motion durations ------------------------------------------------- */
+  /* `--duration-*` are the canonical, documented tokens (usable from JS via
+     `var(--duration-fast)`); the `--transition-duration-*` aliases below give
+     them real Tailwind utilities (`duration-fast`, `duration-enter`, …). */
+  --duration-instant: 100ms;
+  --duration-fast: 180ms;
+  --duration-normal: 280ms;
+  --duration-slow: 500ms;
+  --duration-glacial: 900ms;
+
+  /* Semantic durations — pick by intent, not by feel. */
+  --duration-press: 90ms;
+  --duration-hover: 150ms;
+  --duration-enter: 280ms;
+  --duration-exit: 160ms;
+  --duration-modal: 200ms;
+  --duration-drawer: 340ms;
+  --duration-list: 260ms;
+  --duration-page: 320ms;
+}
+
+/* Tailwind namespace bridge: `--transition-duration-x` → `duration-x`. */
+@theme inline {
+  --transition-duration-instant: var(--duration-instant);
+  --transition-duration-fast: var(--duration-fast);
+  --transition-duration-normal: var(--duration-normal);
+  --transition-duration-slow: var(--duration-slow);
+  --transition-duration-glacial: var(--duration-glacial);
+  --transition-duration-press: var(--duration-press);
+  --transition-duration-hover: var(--duration-hover);
+  --transition-duration-enter: var(--duration-enter);
+  --transition-duration-exit: var(--duration-exit);
+  --transition-duration-modal: var(--duration-modal);
+  --transition-duration-drawer: var(--duration-drawer);
+  --transition-duration-list: var(--duration-list);
+  --transition-duration-page: var(--duration-page);
+}
+
+:root {
+  /* ---- Brand ------------------------------------------------------------ */
+  /* Deep cobalt. Calm, enterprise, deliberately not "AI purple". */
+  --brand: oklch(0.5 0.16 254);
+  --brand-foreground: oklch(0.99 0 0);
+  --brand-soft: oklch(0.951 0.025 254);
+
+  /* ---- Data accent — controlled electric cyan --------------------------- */
+  --data-accent: oklch(0.6 0.125 218);
+  --data-accent-soft: oklch(0.95 0.03 218);
+
+  /* ---- Surfaces --------------------------------------------------------- */
+  /* Cool off-white page, pure-white surface. The gap between the two is wide
+     enough that a panel reads as elevated WITHOUT a border — that is what
+     lets the redesign replace most card outlines with spacing. */
+  --background: oklch(0.982 0.005 252);
+  --foreground: oklch(0.175 0.016 262);
+  --surface: oklch(1 0 0);
+  --surface-foreground: oklch(0.175 0.016 262);
+  --elevated: oklch(1 0 0);
+  --elevated-foreground: oklch(0.175 0.016 262);
+  --interactive: oklch(0.962 0.007 254);
+  --muted: oklch(0.966 0.006 254);
+  --muted-foreground: oklch(0.498 0.018 260);
+  --border: oklch(0.926 0.008 258);
+  --input: oklch(0.916 0.009 258);
+  /* Separators only. Never used as a container outline. */
+  --hairline: oklch(0.938 0.006 256);
+  --ring: oklch(0.58 0.14 254);
+
+  /* ---- Accents ---------------------------------------------------------- */
+  --accent: oklch(0.962 0.008 254);
+  --accent-foreground: oklch(0.24 0.02 260);
+  --accent-soft: oklch(0.952 0.022 254);
+
+  /* ---- Status ----------------------------------------------------------- */
+  --success: oklch(0.54 0.13 158);
+  --success-soft: oklch(0.958 0.032 158);
+  --warning: oklch(0.62 0.135 74);
+  --warning-soft: oklch(0.962 0.042 82);
+  --danger: oklch(0.565 0.19 22);
+  --danger-soft: oklch(0.96 0.032 22);
+  --info: oklch(0.55 0.12 236);
+  --info-soft: oklch(0.956 0.03 236);
+
+  /* ---- shadcn primitive bridge ------------------------------------------ */
+  --card: var(--surface);
+  --card-foreground: var(--surface-foreground);
+  --popover: var(--elevated);
+  --popover-foreground: var(--elevated-foreground);
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-foreground);
+  --secondary: oklch(0.962 0.008 254);
+  --secondary-foreground: oklch(0.24 0.02 260);
+  --destructive: var(--danger);
+
+  /* ---- Charts — cobalt → cyan, then semantic only ----------------------- */
+  /* Series 1 and 2 are the product's own two hues; 3–5 are semantic colours
+     reserved for status (合作中 / 逾期 / 流失风险). No decorative rainbow. */
+  --chart-1: oklch(0.5 0.16 254);
+  --chart-2: oklch(0.6 0.125 218);
+  --chart-3: oklch(0.56 0.13 158);
+  --chart-4: oklch(0.68 0.14 76);
+  --chart-5: oklch(0.58 0.175 22);
+
+  /* ---- Radius ----------------------------------------------------------- */
+  --radius: 0.625rem;
+
+  /* ---- Elevation — soft, multi-layer, never a single hard drop ---------- */
+  --elevation-subtle:
+    0 1px 1px -0.5px oklch(0.19 0.02 262 / 0.05),
+    0 1px 3px oklch(0.19 0.02 262 / 0.04);
+  --elevation-card:
+    0 1px 1.5px -0.5px oklch(0.19 0.02 262 / 0.05),
+    0 4px 10px -4px oklch(0.19 0.02 262 / 0.06),
+    0 14px 32px -14px oklch(0.19 0.02 262 / 0.07);
+  --elevation-elevated:
+    0 2px 4px -2px oklch(0.19 0.02 262 / 0.06),
+    0 12px 28px -10px oklch(0.19 0.02 262 / 0.1),
+    0 28px 56px -24px oklch(0.19 0.02 262 / 0.1);
+  --elevation-floating:
+    0 4px 10px -4px oklch(0.19 0.02 262 / 0.09),
+    0 20px 44px -14px oklch(0.19 0.02 262 / 0.14),
+    0 44px 88px -32px oklch(0.19 0.02 262 / 0.16);
+
+  /* ---- Motion easings --------------------------------------------------- */
+  --motion-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --motion-ease-spring: cubic-bezier(0.34, 1.36, 0.64, 1);
+  --motion-ease-emphasized: cubic-bezier(0.2, 0.9, 0.25, 1);
+
+  /* ---- Sidebar surfaces ------------------------------------------------- */
+  --sidebar: oklch(0.968 0.007 252);
+  --sidebar-foreground: oklch(0.22 0.018 260);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: var(--brand-foreground);
+  --sidebar-accent: oklch(0.935 0.012 254);
+  --sidebar-accent-foreground: oklch(0.22 0.018 260);
+  --sidebar-border: oklch(0.912 0.008 258);
+  --sidebar-ring: var(--ring);
+
+  color-scheme: light;
+}
+
+.dark {
+  /* ---- Brand ------------------------------------------------------------ */
+  --brand: oklch(0.72 0.15 250);
+  --brand-foreground: oklch(0.16 0.02 262);
+  --brand-soft: oklch(0.3 0.06 254);
+
+  /* ---- Data accent ------------------------------------------------------ */
+  --data-accent: oklch(0.78 0.12 200);
+  --data-accent-soft: oklch(0.32 0.045 200);
+
+  /* ---- Surfaces — layered charcoal over a navy undertone ---------------- */
+  /* The three steps (0.152 → 0.202 → 0.238) are deliberately wider apart than
+     v2's, so a surface separates from the page by luminance instead of by a
+     border. That is what stops "dark SaaS with a theme applied". */
+  --background: oklch(0.152 0.015 264);
+  --foreground: oklch(0.968 0.004 260);
+  --surface: oklch(0.202 0.016 264);
+  --surface-foreground: oklch(0.968 0.004 260);
+  --elevated: oklch(0.238 0.017 264);
+  --elevated-foreground: oklch(0.968 0.004 260);
+  --interactive: oklch(0.272 0.018 264);
+  --muted: oklch(0.252 0.015 264);
+  --muted-foreground: oklch(0.706 0.016 258);
+  --border: oklch(1 0 0 / 8%);
+  --input: oklch(1 0 0 / 13%);
+  --hairline: oklch(1 0 0 / 7%);
+  --ring: oklch(0.62 0.14 250);
+
+  /* ---- Accents ---------------------------------------------------------- */
+  --accent: oklch(0.278 0.017 264);
+  --accent-foreground: oklch(0.968 0.004 260);
+  --accent-soft: oklch(0.318 0.05 254);
+
+  /* ---- Status ----------------------------------------------------------- */
+  --success: oklch(0.75 0.135 162);
+  --success-soft: oklch(0.312 0.055 162);
+  --warning: oklch(0.81 0.13 82);
+  --warning-soft: oklch(0.33 0.055 82);
+  --danger: oklch(0.72 0.16 20);
+  --danger-soft: oklch(0.325 0.07 20);
+  --info: oklch(0.75 0.11 236);
+  --info-soft: oklch(0.312 0.05 236);
+
+  /* ---- shadcn primitive bridge ------------------------------------------ */
+  --secondary: oklch(0.264 0.016 264);
+  --secondary-foreground: oklch(0.968 0.004 260);
+
+  /* ---- Charts — brighter so they read on charcoal ----------------------- */
+  --chart-1: oklch(0.72 0.15 250);
+  --chart-2: oklch(0.78 0.12 202);
+  --chart-3: oklch(0.76 0.13 162);
+  --chart-4: oklch(0.83 0.135 82);
+  --chart-5: oklch(0.73 0.155 20);
+
+  /* ---- Elevation — inset hairline + a deep, wide soft shadow ------------ */
+  --elevation-subtle:
+    inset 0 1px 0 0 oklch(1 0 0 / 0.04),
+    0 1px 2px 0 oklch(0 0 0 / 0.4);
+  --elevation-card:
+    inset 0 1px 0 0 oklch(1 0 0 / 0.05),
+    0 2px 6px -2px oklch(0 0 0 / 0.5),
+    0 14px 34px -16px oklch(0 0 0 / 0.7);
+  --elevation-elevated:
+    inset 0 1px 0 0 oklch(1 0 0 / 0.06),
+    0 4px 12px -4px oklch(0 0 0 / 0.55),
+    0 22px 48px -20px oklch(0 0 0 / 0.76);
+  --elevation-floating:
+    inset 0 1px 0 0 oklch(1 0 0 / 0.075),
+    0 8px 20px -6px oklch(0 0 0 / 0.6),
+    0 36px 76px -24px oklch(0 0 0 / 0.85);
+
+  /* ---- Sidebar surfaces ------------------------------------------------- */
+  /* Slightly darker than the page: the rail recedes, content comes forward. */
+  --sidebar: oklch(0.176 0.016 264);
+  --sidebar-foreground: oklch(0.945 0.005 260);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: var(--brand-foreground);
+  --sidebar-accent: oklch(0.256 0.017 264);
+  --sidebar-accent-foreground: oklch(0.978 0.004 260);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: var(--ring);
+
+  color-scheme: dark;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans antialiased;
+  }
+  /* Optical niceties for Chinese copy: slightly looser leading, no fake italic. */
+  body {
+    font-feature-settings: "cv11", "ss01";
+    text-rendering: optimizeLegibility;
+    /* 中文 falls back through the stack above; Latin figures stay tabular-ish
+       in running text without forcing tabular on every paragraph. */
+    font-synthesis-weight: none;
+  }
+  /* Big Chinese headings need the tighter optical size without the negative
+     tracking that a Latin display face would want. `text-balance` alone does
+     not fix a 1.05 line-height, which is why the scale above raised it. */
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  ::selection {
+    background: var(--brand-soft);
+    color: var(--brand);
+  }
+}
+
+/* =============================================================================
+ * Neutral utilities only
+ *
+ * `section-tick` (a structural rule mark) and `kbd-chip` live here. Everything
+ * with art-direction personality — ambient wash, hero lighting, chart glow,
+ * surface sheen, the live halo — moved to `app/sample-command-center.css`,
+ * which only the Reference Sample imports. See AGENTS.md · Core Neutrality.
+ * ========================================================================== */
+
+/** Tabular, tightly-tracked numerals — every metric, amount and date. */
+@utility numeric {
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -0.01em;
+}
+
+/**
+ * Micro eyebrow label — the small tracked line above a section or a metric.
+ * The tracking is what makes 2–4 Chinese characters read as a label rather
+ * than as a truncated sentence.
+ */
+@utility eyebrow {
+  font-size: var(--text-eyebrow);
+  line-height: 1.4;
+  letter-spacing: 0.16em;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+/**
+ * Section marker: a short brand tick before an eyebrow. Used to open an
+ * "open section" that has no card to carry its title.
+ */
+@utility section-tick {
+  display: inline-block;
+  width: 1.25rem;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--brand);
+  vertical-align: 0.28em;
+  margin-right: 0.5rem;
+}
+
+/** Keyboard shortcut chip. */
+@utility kbd-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding-inline: 0.25rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--elevated);
+  color: var(--muted-foreground);
+  font-size: 0.6875rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Skeleton shimmer — defined here so `animate-[skeleton-sheen_…]` has a target. */
+@keyframes skeleton-sheen {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

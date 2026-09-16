@@ -1,0 +1,190 @@
+{
+  "$schema": "../../registry/manifest.schema.json",
+  "id": "console",
+  "name": "Console",
+  "displayName": "运营控制台 · 终端与列",
+  "version": "0.2.0",
+  "status": "approved",
+  "type": "style",
+  "contractVersion": "1.0.0",
+  "summary": "把界面当一台运营控制台来处理：等宽即读数、列对齐的间距、1px 规则线编码结构、每色一个语义。原生深色，为 16:9 单屏大屏的密排读数而设计。",
+  "oneLineFirstVisual": "深色画布上三列被 2px 规则线切开：左列攻击链节点在连线上排开，中列是流式产出的战情结论（等宽大字 + 呼吸点），右列是待人授权队列（琥珀）。顶栏 76px 是一条命令条，底栏 130px 是滚动的日志流。",
+  "recommendedFor": [
+    "pointer",
+    "high-density",
+    "data-heavy"
+  ],
+  "recommendedForNotes": [
+    "安全运营 / 战情控制台（S1：16:9 大屏，一屏三层，结论级读数）",
+    "命令行驱动的查询式导航：键盘优先，目标用户本来就用键盘工作",
+    "需要「读数被读准」的密集界面：等宽 + tabular-nums + slashed-zero 逐位可比",
+    "长时间注视的监控场景：没有环境光、没有发光、交互动效 ≤240ms",
+    "一屏要同时容纳「攻击链 / 战情 / 授权」三类信息的作战面"
+  ],
+  "avoidFor": [
+    "mobile",
+    "touch"
+  ],
+  "avoidForNotes": [
+    "移动端为主的产品：三列 500/600/366 的骨架在 390px 下会退化成单列长页，面板内滚动的前提（单屏不滚动）不再成立",
+    "触控为主要输入的场景：命令条导航与 13px 等宽标签在手指下都无法精确命中",
+    "需要情绪与沉浸感的内容页（终端气质会显得冷）",
+    "以长文阅读为主的产品（等宽读数与列规则线会打断阅读节奏）",
+    "品牌营销页 / 发布会页：这套风格刻意放弃了装饰性表达"
+  ],
+  "darkDirection": {
+    "strategy": "single-theme",
+    "contrastTarget": {
+      "standard": "WCAG-AA",
+      "normalText": 4.5,
+      "largeText": 3
+    },
+    "notes": "console 原生就是深色，暗色等于默认值，不存在第二套调色板 —— 产品**不要**为「暗色」再写一套覆盖，那只会把原生关系改坏。实测对比度（WCAG 相对亮度公式实算，承载文字的四个面）：主墨 #E6EDF7 on term/canvas/panel/card = 16.13 / 15.89 / 14.76 / 13.52（四面 ≫ AAA 7:1）；次墨 #8FA3C0 = 7.39 / 7.28 / 6.76 / 6.20（四面全过 AA 4.5:1，因此 normalText 的实际余量高于 4.5 的下限）；三级墨 #5B6E8C = 3.67 / 3.61 / 3.36 / 3.08 —— 四面都**只够大字/非正文**，所以它在本 pack 里被明确限定为「禁用态 / 水印 / 次要图例」，不承载信息。规则线被刻意提亮：设计稿原值 #22344F 对 canvas 只有 1.49:1，而四个表面彼此的对比度只有 1.02–1.17 —— 结构层级全靠那根线承担，1.49 在投屏上会直接消失。本 pack 取 #4A6C9B（canvas 3.49 / panel 3.24 / term 3.54，card 面 2.97 由 --kits-color-rule-strong #6C90C0 承担，实测 card 4.85），这是本合同里唯一一处对设计稿取值的有意修改，理由是可核对的验收条件而不是审美偏好。攻击红 #F4364C 保持设计稿原值不变（canvas 4.88 / panel 4.54 / term 4.96 通过，card 4.16 不通过）—— card 面上的攻击红只允许用于大字或非文本元素。"
+  },
+  "materialDirection": {
+    "hierarchy": "rule",
+    "ambient": "none",
+    "glow": "forbidden",
+    "notes": "用 1px 规则线分格建立结构层级：线只出现在「语法位置」（面板边界、列分隔），行与行之间不画线，那里由行高与三级明度承担。没有环境光（CSS 里不存在 .kits-ambient），也禁止发光（--kits-color-glow: transparent）—— 控制台的光只应来自真实状态：青=AI 在跑、琥珀=等你授权。注意 roles 里的 ambient 与之不冲突：它授予的是**元素级**的「运行中」呼吸点，不是容器级的环境光层。"
+  },
+  "signatureComponents": [],
+  "optionalComponents": [],
+  "discouragedComponents": [],
+  "effects": [],
+  "designPrinciples": [
+    "一色一义，不得混用：攻击红 #F4364C = negative、AI 青 #22D3EE = accent、待人授权琥珀 #F5A524 = accent-2、已闭环绿 #2ECC71 = positive、证据引用蓝 #60A5FA = 第三个数据序列。没有任何一个颜色可以因为「想强调一下」而被借走。",
+    "等宽即读数，不是全站等宽：数字 / ID / 命令 / 日志 / 审计行 / 证据引用 / 标签一律等宽；中文长句正文回落到无衬线栈 —— 中英混排时全站等宽会让中文段落塌成不可读的字块。",
+    "间距服务于列对齐（columnar）：4px 脉搏让三列宽度与所有内边距都能被 4 整除，分隔靠列规则线而不是靠留白推开。",
+    "层级只靠两轴：三级墨色（明度）× 三档字重。不靠线、不靠光、不靠留白、不靠材质 —— 在 16:9 单屏里留白是最贵的资源，而线与光都被硬约束限制。",
+    "线只出现在语法位置：面板边界与列分隔出现，行与行之间不出现。判断一根线该不该画，问的是「这里是不是一个结构转折」，不是「这里好不好看」。",
+    "16:9 单屏不滚动，滚动只发生在面板内部：单屏只放当前战情，长尾交给面板内的滚动区。这条决定了密度是 very-high 而不是 high。",
+    "动效只由状态变化触发（event-driven）：流式打字 / 呼吸点 / 粒子汇流 / 碎裂盖章 / 划掉重写 —— 每一个都能对应到一个可命名的事件。没有环境动效。",
+    "交互动效整体 ≤240ms：时长刻度整体压在 240ms 以内，没有更慢的交互档位。弹簧缓动被刻意改成无过冲 —— 读数不能在落定过程中短暂地处于错误位置。",
+    "3 米外可读：结论级文本 34–52px、读数 36px、面板标题 24px。真正进入远读层的规则（.kits-display / .kits-data / .kits-lead）字号全部 ≥20px。",
+    "零圆角（flush）、零阴影：表面是被切出来的，不是被倒出来的；深度不靠投影表达，靠规则线与明度。"
+  ],
+  "antiPatterns": [
+    "ambient-glow（环境光是被明确禁止的：控制台的光只能来自真实状态）",
+    "glow / bloom / neon（--kits-color-glow: transparent，审计会把这一条与声明交叉核对）",
+    "scanline-decoration（扫描线装饰在本 pack 里是禁止项；--kits-texture-image 必须是点阵格位而不是周期条纹）",
+    "purple-gradient / 任何装饰性蓝紫渐变（颜色必须携带语义）",
+    "particle-globe（粒子地球是「展厅大屏」的标志，与控制台气质互斥）",
+    "emoji（控制台的字符集是语言与符号，不是表情）",
+    "color-reuse（用 AI 青去强调一个与 AI 无关的东西，或用琥珀当通用强调色 —— 一个颜色两种含义等于两种含义都失效）",
+    "monospace-everything（全站等宽会让中文正文不可读；等宽只覆盖读数性文本）",
+    "border-everywhere（线一旦出现在非语法位置就退化成表格装饰，与 syntax-rule 的立场相反）",
+    "drop-shadow-elevation（表面是平的，投影会破坏格位感）",
+    "soft-radius（半径 > 0 会让控制台变成消费级 App）",
+    "meaningless-entrance-animation（没有状态变化支撑的入场动画在控制台里就是耗电的噪音）",
+    "bouncy-easing（读数在落定过程中的过冲 = 中间态是错的）",
+    "generous-whitespace（留白在这块屏上是最贵的资源：一屏就是一张表）",
+    "color-only-status（青/琥珀/红/绿必须同时有文字或符号标注，不得仅靠颜色区分状态）"
+  ],
+  "typography": {
+    "display": "等宽（JetBrains Mono 回退栈）700 字重，clamp 34–52px，line-height 1.04，字距 -0.01em —— 标题是「被量出来的结论」，不是被排出来的作品",
+    "body": "无衬线（Inter + Noto Sans SC 回退栈）1.0625rem / 1.55 —— 中文长句正文用无衬线，这是本 pack 与 instrument「全站等宽」最大的区别",
+    "label": "等宽 0.8125rem uppercase +0.08em，600 字重（列标题与字段名）",
+    "data": "2.25rem 等宽 700，tabular-nums + lining-nums + slashed-zero（逐位对齐、0 与 O 可区分）",
+    "note": "字体全部走系统栈，Kits 不把外部字体当依赖：这里只有 font-family 名字，没有 @font-face、没有字体文件"
+  },
+  "profile": {
+    "typeVoice": "console",
+    "spacingRhythm": "columnar",
+    "density": "very-high",
+    "radiusPhilosophy": "flush",
+    "borderTreatment": "syntax-rule",
+    "surfaceTreatment": "cell-grid",
+    "navigationFeel": "command-line",
+    "dataLanguage": "log-stream",
+    "motionLanguage": "event-driven",
+    "hierarchyMethod": "luminance-and-weight"
+  },
+  "tokens": {
+    "cssVariables": "tokens.css",
+    "motionModule": "motion.ts",
+    "selector": "[data-kits-pack=\"console\"]",
+    "peakValues": {
+      "spaceUnit": "4px",
+      "sectionGap": "calc(var(--kits-space-unit) * 6)",
+      "sectionGapResolved": "24px",
+      "radiusSurface": "0",
+      "displaySizeMax": "3.25rem",
+      "displayLineHeight": "1.04",
+      "borderWidth": "2px",
+      "borderWidthStrong": "2px",
+      "controlHeight": "2.375rem",
+      "rowHeight": "1.75rem",
+      "navHeight": "2.75rem",
+      "contentMax": "1680px",
+      "textureOpacity": "0.05",
+      "colorRule": "rgb(74 108 155 / 1)",
+      "colorRuleStrong": "#6c90c0"
+    },
+    "colorScope": "[data-kits-pack] 作用域（不是 :root）—— 多 pack 可同页共存而不互相污染",
+    "ownedByPack": true
+  },
+  "motion": {
+    "language": "event-driven",
+    "roles": [
+      "enter",
+      "interact",
+      "data",
+      "ambient"
+    ],
+    "durationRange": "60–240ms（ambient 4000ms）",
+    "pointerFactor": 0,
+    "reducedMotion": "collapseTo 0ms；保留透明度淡入（深色面上直接切断会出现闪白）；保留颜色（颜色是状态语义，冻结它等于删掉一整套状态信号）；ambient 角色整个关闭（呼吸点是唯一无限持续的动画，有静态替代：实心状态点 + 文字状态词）",
+    "mobile": "断点 768px；指针视差关闭（pointerFactor 本来就是 0）；位移缩放 0.5（4px → 2px）；呼吸点动画关闭"
+  },
+  "performance": {
+    "classification": "A",
+    "cost": "纯静态 CSS：零滤镜、零 backdrop-filter、零阴影、零 animation、零混合模式",
+    "jsRuntime": "0 KB",
+    "cssSize": "~8 KB（未压缩）",
+    "notes": [
+      "表面纹理是两层 radial-gradient 点阵在单一伪元素内封闭（background-image + opacity），不用 mix-blend-mode —— 混合模式会额外请求一个合成层，而本 pack 刻意把纹理成本压到与 instrument 同档",
+      "没有 backdrop-filter / box-shadow / filter / text-shadow：这三个是 cinematic 拿 B 档的原因，本 pack 一个都不用",
+      "有真实成本的是**排队等待被本 pack 授权的组件**（尤其按 K2 计划加入的长列表 / 虚拟滚动日志流），而不是 token 层本身 —— 40+ 面板的 DOM 节点数比样式更可能成为瓶颈",
+      "颜色过渡只写 color / border-color / background-color 三个属性，时长 120ms，属性数量被刻意压到最小：密排列上任何一处过渡都会在鼠标划过时放大成拖影"
+    ]
+  },
+  "ssrCompatible": true,
+  "mobileCompatible": true,
+  "reducedMotion": "supported",
+  "a11y": {
+    "minContrast": "ink #e6edf7 on surface-raised #152238 ≈ 13.52:1（最差面；canvas 15.89 / panel 14.76 / term 16.13）",
+    "mutedContrast": "ink-muted #8fa3c0 on surface-raised #152238 ≈ 6.20:1（最差面；全部 ≥4.5）",
+    "accentContrast": "accent #22d3ee on surface-raised #152238 ≈ 8.82:1（accent-ink #0b1220 on accent ≈ 10.36:1）",
+    "notes": [
+      "三级墨 #5b6e8c 在 card 面只有 3.08:1 —— 四面都不过正文 AA，因此它被明确限定为禁用态 / 水印 / 次要图例，不得承载信息",
+      "攻击红 #f4364c 在 card 面 (#152238) 只有 4.16:1，不过正文 AA —— 该面上的攻击红只允许用于大字（≥24px 常规 / ≥18.66px 粗体）或非文本元素，正文一律用 --kits-color-ink。取值保持设计稿原值不变，改的是用法不是身份",
+      "规则线被刻意提亮到 3:1 以上（#4a6c9b：canvas 3.49 / panel 3.24 / term 3.54）—— 这条既是投屏可读性要求，也顺带让「哪一层是哪一层」不依赖颜色区分；card 面由 --kits-color-rule-strong（4.85:1）承担",
+      "颜色语义（青/琥珀/红/绿/蓝）必须同时有文字或符号标注，不得仅靠颜色区分状态 —— 色觉障碍用户与投屏丢色两种情况都会让纯色编码失效",
+      "等宽 + tabular-nums + slashed-zero 是密集读数的可读性措施：0 与 O、1 与 l 在 ID / 哈希 / IP 里必须能被区分",
+      "所有交互动效 ≤240ms，且 reduced-motion 下 collapseTo 0ms；唯一无限循环的动画（呼吸点）在 reduced-motion 与移动端都被关闭，且有静态替代"
+    ]
+  },
+  "dependencies": [],
+  "source": {
+    "kind": "first-party",
+    "origin": "prototype-kits",
+    "license": "UNLICENSED (internal)",
+    "inspiration": [
+      "安全运营中心（SOC）大屏的「一屏三层」信息骨架：攻击链 / 战情 / 授权",
+      "终端模拟器与命令行工具对「等宽即读数」的长期共识",
+      "Bloomberg Terminal 的语义色纪律（一个颜色一个含义，颜色承担判据）",
+      "Industrial HMI 面板的分格方式 —— 但只取「线编码结构」，不取「处处实线分格」",
+      "安全事件日志流的行式阅读节奏（时间戳 + 可引用事件行）"
+    ],
+    "note": "不含任何第三方源码；点阵纹理为内联 radial-gradient，非外部资产。字体名只出现在 font-family 栈里，不引入任何字体依赖或 @font-face。"
+  },
+  "files": {
+    "tokens": "tokens.css",
+    "motion": "motion.ts",
+    "index": "index.ts",
+    "readme": "README.md",
+    "skill": "SKILL.md"
+  },
+  "maintainer": "Prototype Factory",
+  "updatedAt": "2026-09-16"
+}

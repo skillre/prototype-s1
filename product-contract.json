@@ -1,0 +1,16 @@
+{
+  "$schema": "./lib/product-contract.schema.json",
+  "schemaVersion": 1,
+  "invariants": [
+    {
+      "id": "factory.core-not-art-directed",
+      "statement": "Factory Core 的默认输出不携带 Art Direction personality：新路由不会自动继承环境光、Hero 光或图表辉光；性格必须由产品显式 opt-in。",
+      "enforcement": "test"
+    },
+    {
+      "id": "contract.declaration-matches-enforcement",
+      "statement": "任何声明在 product-contract.json 里的不变量都必须有测试登记；任何测试登记的不变量都必须被声明——两个方向都不允许静默缺席。",
+      "enforcement": "test"
+    }
+  ]
+}

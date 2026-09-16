@@ -1,0 +1,21 @@
+/* Kits 适配层 · Style Pack console · v0.2.0
+ *
+ * 这个文件属于**产品**。Kits 重新安装不会覆盖它。
+ *
+ * 引入顺序很重要：契约（含中立兜底值）在前，pack 在后。
+ * pack 自己的 tokens.css 已经 @import 了 @kits/contracts 的目标 ——
+ * 安装时那条说明符已被重写成托管区内的相对路径，因此这里只需要引 pack。
+ */
+@import "../installed/console/tokens.css";
+
+/* 想覆盖品牌色，在这里写（只允许覆盖颜色）：
+ *
+ * [data-kits-pack="console"] {
+ *   --kits-color-accent: #your-brand;
+ *   --kits-color-accent-ink: #ffffff;
+ *   --kits-color-glow: rgb(... / 0.5);
+ * }
+ *
+ * 排版 / 间距 / 密度 / 圆角 / 边界 / 动效一律不要覆盖 ——
+ * 那是 pack 的身份，改掉之后就不再是这套风格了。需要不同性格请换 pack。
+ */

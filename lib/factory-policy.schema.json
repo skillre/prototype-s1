@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://prototype-factory.local/schemas/factory-policy.schema.json",
+  "title": "Factory Core Agent Policy",
+  "description": "机器可读的 Factory Core 管理策略（v1.3.0）。它是 AGENTS.md 里 `<!-- BEGIN:factory-core-policy v1.3.0 -->` 管理块的唯一来源：`pnpm factory:agents --print-block` 由本文件渲染块，`pnpm factory:agents` 逐字校验块与它一致。这里的 `const` 就是「关键值」——校验器不另外抄一份常量，改策略必须改这里。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "policyVersion",
+    "managedBlock",
+    "agentOrchestration",
+    "modelRouting",
+    "concurrency",
+    "authorization"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": {
+      "const": 1,
+      "description": "本契约的版本。"
+    },
+    "policyVersion": {
+      "const": "1.3.0",
+      "description": "管理策略版本。与管理块的 BEGIN 标记中的版本号必须一致。"
+    },
+    "managedBlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["document", "marker", "version", "begin", "end"],
+      "description": "AGENTS.md 里由本策略拥有的块。块内文本可同步（`--print-block`），块外是人类写的文档。",
+      "properties": {
+        "document": { "const": "AGENTS.md" },
+        "marker": { "const": "factory-core-policy" },
+        "version": { "const": "1.3.0" },
+        "begin": { "const": "<!-- BEGIN:factory-core-policy v1.3.0 -->" },
+        "end": { "const": "<!-- END:factory-core-policy -->" }
+      }
+    },
+    "agentOrchestration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["host", "dshSubagents", "productAppFrameworks", "allowedScope", "forbiddenScope"],
+      "description": "v1.3.0 替换掉 v1.2 的「禁止 Multi-agent orchestration」。那是一条过宽的禁令：它同时ban掉了宿主侧的 agent 拆分与本该ban掉的东西，于是规则要么被违反、要么把合法的编排也一起掐死。边界改成两条并存的事实。",
+      "properties": {
+        "host": {
+          "const": "dsh",
+          "description": "编排发生在宿主（DeepSeek Harness）侧，不在产品代码里。"
+        },
+        "dshSubagents": {
+          "const": "required",
+          "description": "在 DSH 宿主内使用多 Subagent 拆分/并行任务是被允许、且被要求的：单 agent 串行做完大范围调研既慢又丢上下文。"
+        },
+        "productAppFrameworks": {
+          "const": "forbidden",
+          "description": "产品应用代码里禁止引入编排框架/编排运行时（agent framework、orchestrator runtime、多 agent 调度依赖）。这条才是 v1.2 那句话真正想守的东西。"
+        },
+        "allowedScope": {
+          "minLength": 1,
+          "description": "许可范围的边界描述，必须与 AGENTS.md 管理块表述一致。",
+          "type": "string"
+        },
+        "forbiddenScope": {
+          "minLength": 1,
+          "description": "禁止范围的边界描述，必须与 AGENTS.md 管理块表述一致。",
+          "type": "string"
+        }
+      }
+    },
+    "modelRouting": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "model", "reasoningEffort", "verifiedOn"],
+      "description": "Subagent 与协作任务的默认路由。三个值不是抄来的约定，是 2026-09-15 用 DSH 模型目录核出来的：provider `opencode-go-dsv41` 广告 model `deepseek-flash`，该 model 的 reasoning efforts 为 low/medium/high/max。",
+      "properties": {
+        "provider": { "const": "opencode-go-dsv41" },
+        "model": { "const": "deepseek-flash" },
+        "reasoningEffort": {
+          "const": "max",
+          "description": "该 provider 广告 low/medium/high/max；策略钉住 max。"
+        },
+        "verifiedOn": {
+          "const": "2026-09-15",
+          "description": "路由值与 DSH 模型目录比对的日期。路由变了要重新核，而不是让这里慢慢过期。"
+        }
+      }
+    },
+    "concurrency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["worktree", "sharedPaths", "testAndQa"],
+      "description": "并行是手段，不是目标。这三条约束的是「怎么写」而不是「写多快」。",
+      "properties": {
+        "worktree": {
+          "const": "single-writer",
+          "description": "单 worktree 单写者：同一棵工作副本同一时间只有一个写者。要并行写就各自独立 worktree——两个写者共享一棵树，冲突不是概率问题，是时间问题。"
+        },
+        "sharedPaths": {
+          "const": "single-owner",
+          "description": "共享路径单 owner：AGENTS.md、package.json、工厂契约与门禁脚本等共享面，同一时间只有一个 owner，其他人只读。"
+        },
+        "testAndQa": {
+          "const": "serial",
+          "description": "test 与 qa 串行：永不并发（Next 16 的 dev server 按项目加锁，并行只会在错误的 server 上出结果）。CI 里同样不得拆成两个并行 job。"
+        }
+      }
+    },
+    "authorization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["humanVisualAcceptance", "deployment"],
+      "description": "两道人工闸门。Agent 可以准备证据，不能代替人按按钮。",
+      "properties": {
+        "humanVisualAcceptance": {
+          "const": "required-before-release",
+          "description": "HVA（人工视觉验收）先于发布。未完成时状态只能是 READY FOR HUMAN VISUAL ACCEPTANCE。"
+        },
+        "deployment": {
+          "const": "explicit-user-authorization",
+          "description": "部署是独立的一次人工授权：源码发布 ≠ Production 部署。详细契约见 docs/vercel-bootstrap.md 第 0 节。"
+        }
+      }
+    }
+  }
+}

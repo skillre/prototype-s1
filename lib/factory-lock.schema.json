@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://prototype-factory.local/schemas/factory-lock.schema.json",
+  "title": "Product Factory Lock",
+  "description": "本仓 factory.lock.json 的契约。\n\n这一份是根控制面 `contracts/factory-lock.schema.json` 的 **Product factory lock** 分支的仓内投影，2026-09-16 同步。那份契约用 `oneOf` 同时描述四种真实的锁形状：\n\n  1. factory-baseline governance lock —— baseline（prototype-starter）自己的锁，记 kind=\"factory-baseline\"、基线身份、受管策略版本与受管面清单，并带 unresolved[] 强制「未知不猜」；\n  2. product lock —— 派生出的产品用的锁，记 factoryVersion、派生来源 baseline、初始化 stage、Kits 与部署来源；\n  3. kits-registry lock —— Kits 平台仓自己的治理锁；\n  4. catalog-hub lock —— 目录/展示仓自己的治理锁。\n\n**为什么这里只有 product 那一支。** 本仓是产品（`init-contract.json` 的 stage = \"product\"），不会是 baseline；而 `scripts/lib/agent-policy.mjs` 的校验器**故意不实现 `oneOf`**（遇到不实现的组合关键字会直接失败，而不是静默跳过）。把 `oneOf` 抄进来会让策略门禁在本仓根本跑不起来——一个跑不起来的关键字保护不了任何东西。所以这里保留分支的**全部字段与约束**，只去掉本仓用不到的另外三支。\n\n**product 形状与 baseline 形状的差别不是风格**：product 分支 `additionalProperties: false` 且**没有 `kind` 字段**、也**没有 `unresolved[]`**。写成 baseline 形状的锁恰好能满足 oneOf 的 baseline 分支并静默 PASS —— 控制面因此新增了 `factory-lock-role-mismatch` 检查（`catalog/projects/ai-finance.json` 记 kind=\"product\"）。「无法核实的外部事实」在这个形状里由 `notes[]` 承担，规则不变：未知不猜，但必须写清楚怎么核的、结果是什么。\n\n两种形状的权威定义始终在根控制面；本文件与它冲突时**以根控制面为准**，并把这里改回来。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "factoryVersion", "baseline", "generatedAt", "stage"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "factoryVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "当前钉住的**工厂版本**（工厂发布版本，与 catalog/compatibility.json 的 supportedVersionRange 同一坐标系）。治理政策版本是另一个轴，记在 `factory-policy.json` 的 policyVersion 与 `notes` 里。"
+    },
+    "baseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repo", "commit", "dirty"],
+      "description": "本产品从哪一版基线派生。`commit` 是**派生来源**的 SHA，不是「当前 HEAD」——产品的 HEAD 永远不等于基线的 SHA，这是正常的。",
+      "properties": {
+        "repo": { "type": "string", "minLength": 1 },
+        "commit": { "type": "string", "pattern": "^[0-9a-f]{7,40}$" },
+        "dirty": {
+          "type": "boolean",
+          "description": "派生时基线仓是否带未提交改动。true 表示这次派生不可复现。"
+        }
+      }
+    },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "stage": {
+      "enum": ["baseline", "product"],
+      "description": "必须与 init-contract.json 的 stage 一致。不一致即为半初始化状态——`pnpm factory:agents` 会逐字核对这两处，光靠 schema 不管用。"
+    },
+    "initContractSha256": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "写锁时 init-contract.json 的 SHA-256。钉住「这把锁对应的是哪一版初始化契约」；与磁盘上的文件不一致即说明锁过期。"
+    },
+    "kits": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["lockPath", "registryVersion", "sourceCommit"],
+      "description": "Kits 安装状态。这三个值必须**读自** lockPath 指向的 `lib/kits/kits.lock.json`，不得手抄；`pnpm factory:agents` 会回读那个文件逐项核对。",
+      "properties": {
+        "lockPath": { "type": "string", "minLength": 1 },
+        "registryVersion": { "type": ["string", "null"] },
+        "sourceCommit": { "type": ["string", "null"], "pattern": "^[0-9a-f]{7,40}$|^$" }
+      }
+    },
+    "deployment": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["provider", "projectName", "productionBranch"],
+      "description": "部署身份。`productionBranch` 核不出来就是 null——「不知道」不等于可以猜一个看起来合理的分支名。",
+      "properties": {
+        "provider": { "enum": ["vercel"] },
+        "projectName": { "type": "string", "minLength": 1 },
+        "productionBranch": { "type": ["string", "null"] }
+      }
+    },
+    "upgradedBy": {
+      "type": ["string", "null"],
+      "description": "执行这次工厂升级的一方。可审计即可，不需要是个人身份。"
+    },
+    "notes": {
+      "type": "array",
+      "description": "锁的散文部分：无法结构化的证据、取舍、以及「没核实什么」。**未知不猜**在这里同样成立——核不出来的东西要写清楚怎么核的、结果是什么。",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}
