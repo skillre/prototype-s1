@@ -6,6 +6,7 @@ import { expect, test, type Page } from "@playwright/test"
 import {
   askS1AnswerFor,
   askS1AnswersOf,
+  askS1RefusalFor,
   askS1UnresolvableRefs,
   attackChainOf,
   buildPlaybackSchedule,
@@ -1071,4 +1072,154 @@ test("本文件的对照物非空（否则上面的断言全都在空集上成�
   const chain: AttackChain = attackChainOf(replayStream(STREAM, CURSOR_END), STREAM)
   expect(chain.nodes.length).toBeGreaterThan(1)
   expect(chain.edges.length).toBeGreaterThan(0)
+})
+
+/* ========================================================================== */
+/* 逐拍扫描：18 拍里没有"特殊的一拍"                                              */
+/* ========================================================================== */
+
+/**
+ * ⑫ 花名册那条判据已经是逐拍扫的（见上面「白名单外的动作只停在人这道门上」）。
+ * 但 ⑨ ⑩ ⑭ 此前只在**挑出来的几拍**上验过 —— 那只说明「那几拍没问题」，
+ * 不说明「每一拍都没问题」，而这两句话在门禁上长得一模一样。
+ *
+ * 这一条把三个派生量在**整条排程的每一帧**上都算一遍，钉两件事：
+ *
+ *   1. **定义域完整**：任何一拍都不抛、不缺、不返回半成品（`.trim()` 之类的空壳）；
+ *   2. **逐拍自洽**：图上那个数等于它的分项重算一遍 —— 而且在每一拍上都成立。
+ *
+ * 用**纯函数**扫（毫秒级、不启浏览器）：这是"每一拍都算得出来"的性质，与渲染无关；
+ * 渲染层另有它自己的断言（DOM 上的数字 = 派生值）。
+ */
+test("逐拍扫描：⑨⑩⑭ 在整条排程的每一帧上都有定义，且逐拍自洽", () => {
+  const known = knownEvidenceIds()
+  const revealTimes = revealTimesBySeq(SCHEDULE)
+
+  let frames = 0
+  let lanesSeen = 0
+  let answersSeen = 0
+  let previousProgress = -1
+  let previousEvidenceTotal = -1
+
+  for (const frame of SCHEDULE) {
+    frames += 1
+    const revealed = revealedMessages(STREAM, frame.cursor)
+
+    /* ── ⑩ 汇流管道 ─────────────────────────────────────────────── */
+    const pipeline = pipelineOf(revealed)
+    lanesSeen += pipeline.lanes.length
+    const evidenceTotal = pipeline.lanes.reduce((sum, lane) => sum + lane.evidenceCount, 0)
+
+    expect(Number.isFinite(evidenceTotal), `第 ${frame.beatStep} 拍：管道总数不是有限数`).toBe(true)
+    expect(
+      evidenceTotal,
+      `第 ${frame.beatStep} 拍：管道上的证据数倒退了（条数只增不减）`,
+    ).toBeGreaterThanOrEqual(previousEvidenceTotal)
+    previousEvidenceTotal = evidenceTotal
+
+    for (const lane of pipeline.lanes) {
+      // 泳道上"报了 N 条"就必须真有 N 条，而且每一条都能在登记簿里定位。
+      expect(
+        lane.evidenceCount,
+        `第 ${frame.beatStep} 拍：${lane.source} 的条数与它自己的引用列表不符`,
+      ).toBe(lane.evidenceRefs.length)
+      for (const ref of lane.evidenceRefs) {
+        expect(known, `第 ${frame.beatStep} 拍：${lane.source} 引用了 ${ref}，登记簿里没有`).toContain(ref)
+      }
+    }
+    // 消费统计自己要对得上（分项之和 == 总数）
+    expect(
+      pipeline.consumed.merged + pipeline.consumed.singleSource,
+      `第 ${frame.beatStep} 拍：消费分项之和 != 消费总数`,
+    ).toBe(pipeline.consumed.total)
+
+    /* ── ⑭ 报告流式生成 ─────────────────────────────────────────── */
+    const report = reportOf(revealed, frame.cursor, frame.at, revealTimes)
+    expect(Number.isInteger(report.progressPercent), `第 ${frame.beatStep} 拍：进度不是整数`).toBe(true)
+    expect(report.progressPercent, `第 ${frame.beatStep} 拍：进度 < 0`).toBeGreaterThanOrEqual(0)
+    expect(report.progressPercent, `第 ${frame.beatStep} 拍：进度 > 100`).toBeLessThanOrEqual(100)
+    expect(
+      report.progressPercent,
+      `第 ${frame.beatStep} 拍：进度倒退了（生成中的报告不会往回长）`,
+    ).toBeGreaterThanOrEqual(previousProgress)
+    previousProgress = report.progressPercent
+
+    expect(
+      report.generatedLines.length,
+      `第 ${frame.beatStep} 拍：已生成行数超过了总行数`,
+    ).toBeLessThanOrEqual(report.totalLines)
+
+    if (!report.available) {
+      expect(report.progressPercent, `第 ${frame.beatStep} 拍：报告还没到，却已经有进度`).toBe(0)
+      expect(report.generatedLines, `第 ${frame.beatStep} 拍：报告还没到，却已经有正文`).toEqual([])
+    }
+    // 报告里引用到的每条证据都要能定位 —— 这是 `evidence.every-claim-cites-a-source`
+    // 在报告上的形态，而且要求在**每一拍**上都成立（不只是终点那一拍）。
+    expect(
+      reportUnresolvableRefs(report.generatedLines),
+      `第 ${frame.beatStep} 拍：报告引用了不存在的证据`,
+    ).toEqual([])
+
+    /* ── ⑨ 问 S1 ────────────────────────────────────────────────── */
+    const answers = askS1AnswersOf(revealed)
+    answersSeen += answers.length
+    expect(
+      askS1UnresolvableRefs(answers),
+      `第 ${frame.beatStep} 拍：回答引用了不存在的证据`,
+    ).toEqual([])
+    for (const answer of answers) {
+      // 空结论是"有壳没内容"，比抛错更难发现 —— 所以显式挡掉。
+      expect(answer.conclusion.trim().length, `第 ${frame.beatStep} 拍：出现空结论`).toBeGreaterThan(0)
+      expect(
+        Number.isFinite(answer.confidencePercent),
+        `第 ${frame.beatStep} 拍：置信度不是有限数`,
+      ).toBe(true)
+    }
+  }
+
+  /*
+   * ⑨ 的**定义域**与另外两格不同，而且这一点值得写下来：
+   * 回答不是回放长出来的，是**问出来的**（`askS1Message` 按需追加）。
+   * 所以纯回放里一条回答都不该有 —— 我第一版在这里写「整条回放必须扫到回答」，
+   * 当场红了，而**红得对**：它证明的是「不问就不答」，不是缺陷。
+   * 反过来，若哪天纯回放里凭空出现了回答，那才是缺陷（编了一条没人问过的结论）。
+   */
+  expect(
+    answersSeen,
+    "不问就不答：纯回放里不该凭空出现任何回答（凭空出现 = 界面在编结论）",
+  ).toBe(0)
+
+  // 两条"证明这条断言真的有对象"的读数 —— 少了它们，上面的循环可能在空集上成立。
+  expect(frames, "必须真的逐帧扫过").toBeGreaterThan(10)
+  expect(lanesSeen, "管道上必须真的扫到泳道").toBeGreaterThan(0)
+})
+
+/**
+ * ⑨ 的**非空路径**按「问题」扫，而不是按「拍」扫 —— 因为回答与拍无关，与问什么有关。
+ * 每条有出处的问题都要：① 答得出来；② 引用能在登记簿里定位；③ 结论非空。
+ * 另配负对照：问一个数据层没有的问题，必须**答不出**，而不是给一句像样的话。
+ */
+test("逐条扫描：⑨ 的每个预置问题都答得出且引用可定位；问不出的必须答不出", () => {
+  const known = knownEvidenceIds()
+  expect(ASK_S1_ANSWERS.length, "预置答案表不能是空的，否则这条断言没有对象").toBeGreaterThan(0)
+
+  for (const preset of ASK_S1_ANSWERS) {
+    const found = askS1AnswerFor(preset.question)
+    expect(found, `「${preset.question}」应该答得出来`).not.toBeNull()
+    expect(found!.presetIndex).toBeGreaterThanOrEqual(0)
+    expect(found!.answer.conclusion.trim().length, `「${preset.question}」的结论是空的`).toBeGreaterThan(0)
+    expect(
+      askS1RefusalFor(preset.question),
+      `「${preset.question}」答得出来，就不该同时被判为拒绝`,
+    ).toBeNull()
+    for (const ref of found!.answer.evidenceRefs) {
+      expect(known, `「${preset.question}」引用了 ${ref}，登记簿里没有`).toContain(ref)
+    }
+  }
+
+  // 负对照：没有出处的问题必须答不出（编一句像样的话才是缺陷）。
+  const unmatched = "今天午饭吃什么"
+  expect(askS1AnswerFor(unmatched), "数据层没有的问题不该有答案").toBeNull()
+  expect(askS1RefusalFor(unmatched), "问不出的问题必须被判为拒绝").toBe("unmatched")
+  expect(askS1RefusalFor("   "), "空输入是另一种拒绝，不该与『问不出』混为一谈").toBe("empty")
 })
