@@ -110,12 +110,18 @@ pnpm qa                # Browser QA 全量扫描（自管 server，自起自停�
 | 部署状态 | `● Ready` | 同上 |
 | 匿名可访问 | `/` 与 `/workbench` 均 **HTTP 200**（普通 `curl`，**没有**用 `vercel curl`） | 匿名请求，故可称 public |
 | 页面确实是改名后的 | `/workbench` 里 `STH` × 6、**`S1` × 0**；`<title>STH · AI 原生安全运营工作台</title>` | 抓线上 HTML 数了一遍 |
+| **Production Branch = `feature/sth-console`** | 部署别名里有 `prototype-sth-git-feature-sth-console-skillres-projects.vercel.app` | Vercel 为分支部署生成的分支别名 |
+| **推 push 会触发生产构建** | push `50efe79` 后 **24 秒**出现一条新的 `Environment: Production` / `Ready` 部署 | `vercel ls` 的部署列表与时间戳 |
 
-**一个必须说清楚的限制**：这个首次部署是 **CLI 上传**创建的（`vercel deploy --prod`），
-所以它**没有 `gitSource`** —— 我**无法**声称"线上这一版 == 某个 commit SHA"。
-Git 集成在 `vercel link` 时已经接上（输出里有 `Connecting GitHub repository … Connected`），
-所以后续 push 会触发**带 SHA** 的构建；那之后才谈得上"部署身份 == 某个已验收 SHA"。
+**一个必须说清楚的限制：我读不到这次部署的 git SHA。**
+Vercel CLI 的 `inspect --json` 只给 `id / name / target / readyState / url / createdAt`，
+**完全不返回 git 元数据**（没有 `gitSource`，也没有 meta 里的 commit 字段）。
+所以我能证明的是「它是 Git 集成在 push 之后触发的、分支是 `feature/sth-console`」，
+**不能**证明「线上这一版 == `50efe79`」。按本仓的规矩，读不到就写读不到，
+不拿"时间上像是它"当成 SHA 相等。
+（另：**首次**部署是 CLI 上传创建的，那条**完全没有 gitSource**，这一点在第一版 README 里已如实写过。）
 
+要看那一版到底对应哪个 commit，去 Vercel 控制台的部署详情页——那里显示 commit 与作者。
 **上了线不等于验收过了。** Agent 侧到此为止：lint / typecheck / test / build / qa 与工厂门禁全绿、
 十二个组件全部落盘；**人眼验收仍然没有做**，所以没有发布授权，
 也**没有 `READY FOR RELEASE` 这个状态** —— HVA 未完成时只能是上面那一个。
