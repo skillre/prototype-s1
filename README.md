@@ -97,9 +97,28 @@ pnpm qa                # Browser QA 全量扫描（自管 server，自起自停�
 
 **状态：`READY FOR HUMAN VISUAL ACCEPTANCE`**（2026-09-17，组件批次 3 交付时）。
 
-Agent 侧到此为止：lint / typecheck / test / build / qa 与三道工厂门禁全绿，
-十二个组件全部落盘。**人眼验收没有做**，所以没有发布授权，
-也**没有 `READY FOR RELEASE` 这个状态** —— HVA 未完成时只能是上面这一个。
+### 线上地址（2026-09-17 建，人授权"直接上线"）
+
+**https://prototype-sth.vercel.app** —— 人眼验收在**这里**做，不需要在本地跑。
+
+已经核过的事实（不是从 URL 猜的）：
+
+| 项 | 值 | 怎么核的 |
+|---|---|---|
+| 项目 | `skillres-projects/prototype-sth`（id `prj_5V18fdptrADhVSWkNLjzASpvZbo0`） | `vercel project inspect` |
+| 部署 target | `production` | `vercel inspect <url>` |
+| 部署状态 | `● Ready` | 同上 |
+| 匿名可访问 | `/` 与 `/workbench` 均 **HTTP 200**（普通 `curl`，**没有**用 `vercel curl`） | 匿名请求，故可称 public |
+| 页面确实是改名后的 | `/workbench` 里 `STH` × 6、**`S1` × 0**；`<title>STH · AI 原生安全运营工作台</title>` | 抓线上 HTML 数了一遍 |
+
+**一个必须说清楚的限制**：这个首次部署是 **CLI 上传**创建的（`vercel deploy --prod`），
+所以它**没有 `gitSource`** —— 我**无法**声称"线上这一版 == 某个 commit SHA"。
+Git 集成在 `vercel link` 时已经接上（输出里有 `Connecting GitHub repository … Connected`），
+所以后续 push 会触发**带 SHA** 的构建；那之后才谈得上"部署身份 == 某个已验收 SHA"。
+
+**上了线不等于验收过了。** Agent 侧到此为止：lint / typecheck / test / build / qa 与工厂门禁全绿、
+十二个组件全部落盘；**人眼验收仍然没有做**，所以没有发布授权，
+也**没有 `READY FOR RELEASE` 这个状态** —— HVA 未完成时只能是上面那一个。
 
 看什么、怎么判红：工作区根目录的 **`STH-人眼验收清单.md`**（那份文件属于控制面，不在本仓）。
 它开头那段「状态」写于批次 2，有两条已经过期，以本节的更正为准：
