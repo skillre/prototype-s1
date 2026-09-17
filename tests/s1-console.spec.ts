@@ -9,6 +9,7 @@ import {
 } from "../components/prototype/workbench/geometry"
 import {
   buildPlaybackSchedule,
+  frameForBeatRequest,
   planSignature,
   promptSignals,
   revealedMessages,
@@ -515,5 +516,118 @@ test.describe("④ 工具控制台的数据形状", () => {
       "data-echo-complete",
       "true",
     )
+  })
+})
+
+/* ========================================================================== */
+/* 深链 ?cursor=：与 ?beat= 是**同一份真相的两个入口**                            */
+/* ========================================================================== */
+
+/**
+ * ## 为什么这一节是补上的（2026-09-17）
+ *
+ * `?beat=<拍>` 与 `?cursor=<毫秒>` 都是**讲解用的深链**：`S1-人眼验收清单.md` 明确告诉人
+ * 「可以把某一帧当链接发出去」。但测试一直**只覆盖 `?beat=`** ——
+ * `?cursor=` 那条路径在方案 §五「本包未验证的部分」里挂了很久，是已知的空白。
+ *
+ * 它值得单测，因为它有一个别处没有的性质：**两个入口读的是同一份排程**。
+ * 于是「同一个画面」必须只有一个说法 —— 如果两个入口给出不同的读数，
+ * 演示里发出去的链接就会与讲解人屏幕上的东西不一致，而且**没有任何东西会因此变红**。
+ */
+test.describe("深链 ?cursor=", () => {
+  /** 用 `?cursor=` 打开（`autoplay=0` 保证可判定的静止帧）。 */
+  async function openAtCursor(page: Page, query: string) {
+    await page.setViewportSize(VIEWPORT)
+    await page.goto(`${WORKBENCH}?${query}&autoplay=0`, { waitUntil: "domcontentloaded" })
+    await expect(page.getByTestId("workbench")).toBeVisible()
+    await settled(page)
+  }
+
+  const readPosition = (page: Page) =>
+    page.getByTestId("replay-position").evaluate((node) => ({
+      ms: node.getAttribute("data-replay-cursor-ms"),
+      seq: node.getAttribute("data-replay-cursor-seq"),
+      requestedBeat: node.getAttribute("data-requested-beat"),
+      clamped: node.getAttribute("data-beat-clamped"),
+    }))
+
+  test("正例：同一帧的两个入口（?beat= / ?cursor=）读数逐值相同", async ({ page }) => {
+    const beat = 9
+    const target = frameForBeatRequest(SCHEDULE, beat)
+    expect(target, `第 ${beat} 拍必须有帧`).not.toBeNull()
+    const frame = target!.frame
+
+    /*
+     * 前置条件（否则这条断言不可比）：这一帧的**播放时刻在排程里唯一**。
+     * 剧本里第 6/7 拍与 14/15 拍共享同一个揭示时刻 —— 对那种帧，
+     * `frameAt( progress )` 会取同刻的**最后**一帧，两个入口因此可能合法地给出不同帧。
+     * 所以先证明这一拍不是那两处，再比。
+     */
+    expect(
+      SCHEDULE.filter((candidate) => candidate.at === frame.at).length,
+      `第 ${beat} 拍的帧时刻必须在排程里唯一，否则两个入口不可比`,
+    ).toBe(1)
+
+    await openAt(page, beat)
+    const viaBeat = await readPosition(page)
+    await openAtCursor(page, `cursor=${frame.at}`)
+    const viaCursor = await readPosition(page)
+
+    expect(viaCursor.ms, "同一个画面不能有两个说法").toBe(viaBeat.ms)
+    expect(viaCursor.seq, "序号也要一致 —— 只比毫秒分不开同刻的帧").toBe(viaBeat.seq)
+    expect(viaCursor.ms).toBe(String(frame.cursor.revealedAtMs))
+    expect(viaCursor.seq).toBe(String(frame.cursor.seq))
+
+    // 走 `?cursor=` 的那次**没有请求任何一拍**，所以它不能声称夹取过。
+    expect(viaCursor.requestedBeat).toBe("-1")
+    expect(viaCursor.clamped).toBe("false")
+  })
+
+  test("越界不崩：?cursor= 超过排程总长时停在最后一帧", async ({ page }) => {
+    const last = SCHEDULE[SCHEDULE.length - 1]!
+    await openAtCursor(page, "cursor=99999999")
+    const position = await readPosition(page)
+    expect(position.ms).toBe(String(last.cursor.revealedAtMs))
+    // 而且界面仍然是有内容的（不是白屏、不是停在一帧残缺状态）
+    await expect(page.getByTestId("replay-phase")).toBeVisible()
+  })
+
+  test("非法值不崩、也不悄悄改变行为：?cursor=abc 与「明确要求开场」完全等价", async ({ page }) => {
+    const opening = countersFromEvents(STREAM, CURSOR_OPENING)
+
+    await openAtCursor(page, "cursor=abc")
+    const viaInvalid = await readPosition(page)
+    const invalidAutonomous = await counterValue(page, "autonomousClosedToday").textContent()
+    const invalidInterventions = await counterValue(page, "humanInterventions").textContent()
+
+    /*
+     * 判据是**与「明确要求开场」逐值相同**，而不是去钉某个文案。
+     *
+     * 这里我第一版写错过：我断言 `?cursor=abc&autoplay=0` 的阶段读数会是「尚未开场」，
+     * 实际是「已暂停」—— 因为 `autoplay=0` 说的就是「不播」，阶段词讲的是这件事，
+     * 与游标落在哪一帧无关。**那是我的测试假设错了，不是产品错了。**
+     * 换成「非法值与 `cursor=0` 等价」之后，这条断言才真的在守「回落是确定的」。
+     */
+    await openAtCursor(page, "cursor=0")
+    const viaZero = await readPosition(page)
+
+    expect(viaInvalid.ms, "非法值必须与明确要求开场落在同一帧").toBe(viaZero.ms)
+    expect(viaInvalid.seq).toBe(viaZero.seq)
+    expect(viaInvalid.requestedBeat).toBe("-1")
+    expect(viaInvalid.clamped).toBe("false")
+
+    // 而且那一帧就是开场：计数等于开场计数，不是 0 / 0（那是"没量到"，不是"开场"）。
+    expect(invalidAutonomous).toBe(String(opening.autonomousClosedToday))
+    expect(invalidInterventions).toBe(String(opening.humanInterventions))
+  })
+
+  test("优先级：?beat= 与 ?cursor= 同时给出时，以 ?beat= 为准", async ({ page }) => {
+    // 这是 `initialPosition()` 里写明并实现的行为（先看 beat，再看 cursor）。
+    const target = frameForBeatRequest(SCHEDULE, 11)
+    expect(target).not.toBeNull()
+    await openAtCursor(page, `beat=11&cursor=0`)
+    const position = await readPosition(page)
+    expect(position.requestedBeat).toBe("11")
+    expect(position.ms).toBe(String(target!.frame.cursor.revealedAtMs))
   })
 })
