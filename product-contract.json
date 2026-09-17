@@ -33,6 +33,11 @@
       "enforcement": "test"
     },
     {
+      "id": "boundary.demo-is-labelled-as-demo",
+      "statement": "shell 常驻一处可见的演示环境标识（不是只在首屏出现、也不是可关闭的 toast）：全场级说明这是演示环境、数据与客户真实系统隔离，组件级给尚未真跑的组件另加角标；从 T+0 起持续可见直至回放结束，不得用 aria-hidden 或隐藏元素冒充可见。",
+      "enforcement": "test"
+    },
+    {
       "id": "contract.declaration-matches-enforcement",
       "statement": "任何声明在 product-contract.json 里的不变量都必须有测试登记；任何测试登记的不变量都必须被声明——两个方向都不允许静默缺席。",
       "enforcement": "test"

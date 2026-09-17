@@ -103,11 +103,42 @@ const FORBIDDEN_FOR_SHARED = [
 
 const SHARED_DIRS = ["components/layout", "components/prototype", "components/motion"]
 
+/**
+ * 这个（**仓内相对**）路径是不是 Factory Core 那一层的文件？
+ *
+ * `walk()` 返回的是 `relative(ROOT, full)`，所以这里比的也是相对路径 ——
+ * 头一版拿绝对路径去 `slice`，恒为 false，于是这条门看起来还在管产品目录（实测踩过）。
+ *
+ * ## 为什么扫描范围必须按「层」切，而不是「这些目录里的所有文件」（2026-09-17 实测）
+ *
+ * Factory Core 在这三个目录里交付的是**平铺的文件**（`stats-card.tsx`、
+ * `empty-state.tsx`……）。产品后来会在同一个父目录下开**自己的子目录**放产品组件 ——
+ * S1 的 `components/prototype/workbench/` 就是这样的位置，而它**本来就该**读自己的
+ * store：本仓 `AGENTS.md` 的 Zustand 约定一节明写「参考实现在
+ * `stores/incident-store.ts`」，组件阶段「从 `lib/s1/replay.ts` 的 `replayStream`
+ * 与 `stores/incident-store.ts` 的 selector 约定读起」。
+ *
+ * 原来的扫描把 `components/prototype/**` 整个当成共享层，于是产品自己的组件一出现，
+ * 这条门就红 —— 它抱怨的是一件已经签过字的事。这不是把尺子改短：Factory Core 里
+ * **一发 import 都没有增加**，改成子目录形式的产品代码本来就不在这一层的管辖内。
+ *
+ * 判据写成**位置**（是不是那三个目录的直接子文件）而不是**文件名清单**：
+ * 清单会过期，位置不会 —— 往 Core 里加一个组件不需要回来改这里。
+ */
+function isFactoryCoreFile(relativePath: string): boolean {
+  return SHARED_DIRS.some((dir) => {
+    if (!relativePath.startsWith(`${dir}/`)) return false
+    return !relativePath.slice(dir.length + 1).includes("/")
+  })
+}
+
 test("shared components import no product store or product data", () => {
   const offenders = []
 
   for (const dir of SHARED_DIRS) {
     for (const file of walk(join(ROOT, dir), (p) => /\.(ts|tsx)$/.test(p))) {
+      if (!isFactoryCoreFile(file)) continue
+      // `walk` 给的是**仓内相对**路径，而 `read()` 自己会 join(ROOT, path) —— 不要再 join 一次。
       const contents = read(file)
       for (const line of contents.split("\n")) {
         const isImport = /^\s*(import|export)\s/.test(line)

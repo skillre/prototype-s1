@@ -1,0 +1,1929 @@
+/*
+ * S1 工作台 · 战情室 —— 产品自己的样式层。
+ *
+ * ## 这里允许写什么
+ *
+ * 只有**布局**与**状态修饰**。视觉常量一律来自 pack：
+ *
+ *   排版     → pack 的语义类（`.kits-display` `.kits-lead` `.kits-body`
+ *              `.kits-label` `.kits-data`），或 pack 的令牌
+ *              （`--kits-title-size` / `--kits-font-mono` / `--kits-weight-*`）
+ *   表面     → `.kits-surface`（含点阵格位）· `.kits-rule`（结构线）
+ *   控件     → `.kits-control`（含 hover / focus-visible / 38px 高）
+ *   颜色     → 语义槽位（`--surface` / `--hairline` / `--brand` / `--warning` /
+ *              `--success` / `--danger` / `--evidence`），它们在
+ *              `lib/kits/adapters/s1-tokens.css` 里绑定到 console pack
+ *   时长缓动 → `--kits-dur-*` / `--kits-ease-*` / `--kits-stagger-step` /
+ *              `--kits-ambient-cycle`（由适配层注入 `<html>`）
+ *   骨架尺寸 → `--s1-*`，由 `geometry.ts` 的**唯一一份**实测值写入（见该文件）
+ *
+ * 本文件里**没有** `#hex`、没有 `rgb()`、没有 `px` 时长、没有 cubic-bezier 字面量；
+ * `tests/s1-console.spec.ts` 会逐条扫描这一点（放宽一处就等于给整层开口子）。
+ *
+ * ## 一色一义（不得混用）
+ *
+ *   青 `--brand`      = AI 正在产出（类型机光标、值班中的员工、自主执行）
+ *   琥珀 `--warning`  = 球在你那边（待授权、受阻等待、SLA）
+ *   绿 `--success`    = 已闭环（完成的勾）
+ *   红 `--danger`     = 攻击 / 失败（本批的中列不出现它：那是左列画布的事）
+ *   证据蓝 `--evidence` = 证据引用（chip 与引用编号）
+ *   红不得用于装饰；本文件里一次都没有。
+ */
+
+/* -------------------------------------------------------------------------- */
+/* 0 · 画布：1680×1050 + scale-to-fit                                          */
+/* -------------------------------------------------------------------------- */
+
+.s1-viewport {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.s1-canvas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1-root-gap);
+  width: var(--s1-canvas-w);
+  height: var(--s1-canvas-h);
+  padding: var(--s1-root-pad);
+  /* scale-to-fit 的唯一版本：SCALE = min(1, w/1680, h/1050)，由 geometry.ts 算。 */
+  transform: scale(var(--s1-scale));
+  transform-origin: 0 0;
+  background: var(--background);
+  font-family: var(--kits-font-body);
+  /* 画布本身不滚动；滚动只发生在面板内部。 */
+  overflow: hidden;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 1 · ① 态势指挥条（76px）                                                     */
+/* -------------------------------------------------------------------------- */
+
+/* ① 的宽度预算（实测）：六个区块的自然宽度合计约 1862px + 5×20 gap，而 1680 画布
+   去掉左右 padding 只有 1640px 可用 —— 也就是**内容比骨架宽约 320px**。
+   处理方式写在这里，而不是让压缩随机落地：
+     · 读数类区块（三个计数 / 攻防计时）**不收缩**：它们的文字一旦挤在一起，
+       读者会把两个数读成一个（实测就是这么坏的：三个标签连成了一串）；
+     · 结论文本区（`--grow` 的状态行）可以收缩：它自己有 ellipsis，缩了仍然读得通；
+     · 其余区块按比例吸收剩下的差额。
+   ⚠ 这是**已记录的偏离**（设计稿在 1680 里画得下、本 pack 的字号下装不下 320px），
+   不是顺手改的数值：① 的 76px / padding 16 / gap 20 / 各区块内容一个字都没动。 */
+.s1-header {
+  display: flex;
+  align-items: center;
+  gap: var(--s1-header-gap);
+  height: var(--s1-header-h);
+  padding: 0 var(--s1-header-pad);
+  border-bottom: var(--kits-border-width) var(--kits-border-style)
+    var(--kits-border-hairline-color);
+  background: var(--surface);
+}
+
+/* 读数：不收缩。三个计数与攻防计时是这一屏的「等宽读数」——它们一旦被挤，
+   标签会盖住相邻的读数（实测就是这样：三个标签叠成一串），所以宁可从别处让。 */
+.s1-header > [data-testid="counters"],
+.s1-header > [data-testid="round-timer"] {
+  flex: none;
+}
+
+.s1-header > [data-testid="counters"] .s1-counter,
+.s1-header > [data-testid="round-timer"] .s1-counter,
+.s1-ladder__step,
+.s1-roster__seat {
+  flex: none;
+}
+
+/* 让不下的长标签降级为省略号（hover 有 title），而不是压到相邻区块上。
+   `min-width: 0` 是前提：没有它，flex 子项不会缩到内容宽度以下，省略号也就不会出现。 */
+.s1-ladder,
+.s1-brand,
+.s1-header > [data-testid="roster"] {
+  min-width: 0;
+}
+
+.s1-ladder__step {
+  white-space: nowrap;
+}
+
+.s1-zone {
+  display: flex;
+  align-items: center;
+  gap: var(--kits-label-gap);
+  min-width: 0;
+}
+
+.s1-zone--divider {
+  padding-left: var(--s1-header-gap);
+  border-left: var(--kits-border-width) var(--kits-border-style)
+    var(--kits-border-hairline-color);
+}
+
+.s1-zone--grow {
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  /* `stretch` 而不是 `flex-start`：状态行的宽度必须**等于**这一格，
+     省略号才会在格内收尾。用 flex-start 时行的宽度是它自己的内容宽度，
+     于是它会盖到下一格上（实测：「回合」后面直接压着「自主度」）。 */
+  align-items: stretch;
+  gap: 0;
+}
+
+.s1-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--kits-label-gap);
+  min-width: 0;
+}
+
+.s1-brand__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--kits-space-unit) * 7);
+  height: calc(var(--kits-space-unit) * 7);
+  border: var(--kits-border-width) var(--kits-border-style) var(--brand);
+  color: var(--brand);
+  font-family: var(--kits-font-mono);
+  font-weight: var(--kits-weight-bold);
+  font-size: var(--kits-label-size);
+}
+
+.s1-brand__name {
+  margin: 0;
+  font-family: var(--kits-font-display);
+  font-size: var(--kits-title-size);
+  line-height: var(--kits-title-line);
+  letter-spacing: var(--kits-title-tracking);
+  font-weight: var(--kits-weight-semibold);
+  color: var(--foreground);
+}
+
+.s1-counter {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+}
+
+.s1-counter__value {
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-title-size);
+  font-weight: var(--kits-weight-bold);
+  font-variant-numeric: tabular-nums lining-nums slashed-zero;
+  line-height: var(--kits-title-line);
+  color: var(--foreground);
+}
+
+.s1-counter__label {
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  letter-spacing: var(--kits-label-tracking);
+  color: var(--muted-foreground);
+  white-space: nowrap;
+  /* ① 的宽度不够时（见本节顶部那段说明），长标签以省略号收尾；调用方给它挂 title，
+     所以「被省略」不是「看不见」。 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.s1-status {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+}
+
+.s1-status__line {
+  display: flex;
+  align-items: center;
+  gap: var(--kits-label-gap);
+  font-size: var(--kits-label-size);
+  color: var(--foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.s1-status__line--muted {
+  color: var(--muted-foreground);
+}
+
+/* 状态点：唯一的循环动效（呼吸点，语义 = 系统此刻在跑）。
+   它只在 `prefers-reduced-motion: no-preference` 下呼吸；降级后是一个实心点，
+   而「在跑」这个词始终以文字形式在同一行里 —— 信息不丢。 */
+.s1-dot {
+  position: relative;
+  flex: none;
+  width: calc(var(--kits-space-unit) * 2);
+  height: calc(var(--kits-space-unit) * 2);
+  background: var(--brand);
+  border-radius: var(--kits-radius-pill);
+}
+
+.s1-dot--warning {
+  background: var(--warning);
+}
+
+.s1-dot--success {
+  background: var(--success);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .s1-dot--breathing {
+    animation: s1-breathe var(--kits-ambient-cycle) var(--kits-ease-inout) infinite;
+  }
+}
+
+@keyframes s1-breathe {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.72);
+  }
+}
+
+.s1-ladder {
+  display: flex;
+  align-items: center;
+  gap: var(--kits-label-gap);
+  /* 阶梯本身不收缩：L0–L4 五个格子被压扁就等于这条读数没了。 */
+  flex: none;
+}
+
+.s1-ladder__step {
+  padding: 0 var(--kits-label-gap);
+  border: var(--kits-border-width) var(--kits-border-style) var(--kits-border-hairline-color);
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  color: var(--muted-foreground);
+}
+
+.s1-ladder__step[data-active="true"] {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.s1-roster {
+  display: flex;
+  align-items: center;
+  gap: var(--kits-label-gap);
+}
+
+.s1-roster__seat {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--kits-space-unit) * 8);
+  height: calc(var(--kits-space-unit) * 8);
+  border: var(--kits-border-width) var(--kits-border-style) var(--kits-border-hairline-color);
+  background: var(--elevated);
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  color: var(--muted-foreground);
+}
+
+/* 正在干活的员工：AI 青（= AI 正在产出）。这是派生值 —— 它跟着已揭示消息的 actor 走。 */
+.s1-roster__seat[data-active="true"] {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.s1-roster__label {
+  font-size: var(--kits-label-size);
+  color: var(--muted-foreground);
+  max-width: calc(var(--kits-space-unit) * 26);
+  line-height: 1.3;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 2 · 回放控制（真实交互：播放 / 暂停 / 跳拍 / 拖时间轴）                        */
+/* -------------------------------------------------------------------------- */
+
+/* 回放控制条：演示仪表，不是设计稿的组件。
+   高度 = pack 的控件高 + 上下各一个 label-gap（仪表自己要有呼吸，不挤读数条）。
+   ⚠ 这是一处**已记录的偏离**：设计稿的骨架里没有这一条；不加它，① 的 76px
+   装不下播放器（实测 1749px 内容对 1640px 可用宽），① 就守不住设计稿实测的取值。 */
+.s1-replaybar {
+  display: flex;
+  align-items: center;
+  flex: none;
+  height: calc(var(--kits-control-height) + var(--kits-label-gap) * 2);
+  padding: 0 var(--s1-header-pad);
+  border-bottom: var(--kits-border-width) var(--kits-border-style)
+    var(--kits-border-hairline-color);
+  background: var(--surface);
+}
+
+.s1-replay {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  gap: var(--kits-label-gap);
+}
+
+.s1-replay__button {
+  /* 控件本身由 pack 的 .kits-control 提供（38px / hover / focus-visible）。 */
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.s1-replay__range {
+  /* 拖时间是这一条上唯一的连续控件，余量全给它（拖动精度比按钮宽度重要）。 */
+  flex: 1 1 auto;
+  min-width: calc(var(--kits-space-unit) * 24);
+  max-width: calc(var(--kits-space-unit) * 80);
+  accent-color: var(--brand);
+  cursor: pointer;
+}
+
+.s1-replay__select {
+  height: var(--kits-control-height);
+  min-width: calc(var(--kits-space-unit) * 20);
+  padding: 0 var(--kits-control-padding-x);
+  border: var(--kits-border-width) var(--kits-border-style) var(--kits-border-color);
+  background: var(--elevated);
+  color: var(--foreground);
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  cursor: pointer;
+}
+
+.s1-replay__position {
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  font-variant-numeric: tabular-nums;
+  color: var(--foreground);
+  white-space: nowrap;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 3 · 三列骨架                                                                 */
+/* -------------------------------------------------------------------------- */
+
+.s1-columns {
+  display: flex;
+  flex: 1 1 auto;
+  gap: var(--s1-root-gap);
+  min-height: 0;
+}
+
+.s1-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kits-section-gap);
+  min-height: 0;
+  padding: var(--s1-col-pad);
+}
+
+.s1-column--left {
+  width: var(--s1-col-left);
+  flex: none;
+}
+
+.s1-column--middle {
+  display: flex;
+  width: var(--s1-col-middle);
+  flex: none;
+  border-left: var(--kits-border-width) var(--kits-border-style)
+    var(--kits-border-hairline-color);
+  border-right: var(--kits-border-width) var(--kits-border-style)
+    var(--kits-border-hairline-color);
+}
+
+.s1-column--right {
+  width: var(--s1-col-right);
+  flex: none;
+}
+
+/* 面板在列内的槽位。
+   列是容器，槽位负责把高度分给面板：面板自己只管长内容，分配规则写在这里一处 ——
+   下一批往列里加面板时改的是数字，不是每个面板的 props。 */
+.s1-slot {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.s1-slot > .s1-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* 中列三块的高度分配（② 计划 : ③ 研判 : ④ 控制台 = 2 : 3 : 3）。
+   控制台与研判流拿得比计划多：它们是**往下长**的，观众的眼睛在底部。 */
+.s1-slot--plan {
+  flex: 2 1 0;
+}
+
+.s1-slot--findings {
+  flex: 3 1 0;
+}
+
+.s1-slot--console {
+  flex: 3 1 0;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 4 · 面板                                                                     */
+/* -------------------------------------------------------------------------- */
+
+.s1-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: var(--kits-gutter);
+  /* 表面由 pack 的 .kits-surface 提供（含点阵格位、无圆角、无阴影）。 */
+}
+
+.s1-panel__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--kits-gutter);
+  padding-bottom: var(--kits-label-gap);
+  border-bottom: var(--kits-border-width) var(--kits-border-style)
+    var(--kits-border-hairline-color);
+}
+
+.s1-panel__title {
+  margin: 0;
+  font-family: var(--kits-font-display);
+  font-size: var(--kits-title-size);
+  line-height: var(--kits-title-line);
+  letter-spacing: var(--kits-title-tracking);
+  font-weight: var(--kits-weight-semibold);
+  color: var(--foreground);
+}
+
+.s1-panel__subtitle {
+  font-size: var(--kits-label-size);
+  color: var(--muted-foreground);
+}
+
+.s1-panel__aside {
+  display: flex;
+  align-items: center;
+  gap: var(--kits-label-gap);
+  flex: none;
+}
+
+.s1-panel__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kits-label-gap);
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-top: var(--kits-label-gap);
+  /* 细滚动条：面板内滚动是设计的一部分，但滚动条不该成为视觉主角。 */
+  scrollbar-width: thin;
+  scrollbar-color: var(--hairline) transparent;
+}
+
+/*
+ * 顶边遮罩 —— **兜底，不是主修法**。
+ *
+ * 主修法是滚动按行对齐（`hooks/use-panel-scroll.ts`）：`scrollTop` 被吸附到最近的行下沿，
+ * 于是切痕落进行与行之间的空隙、根本不存在。遮罩只处理对齐做不到的那一档 ——
+ * 行高不整除、或操作者手动把滑块拖到半行位置时，边界仍然是硬的。
+ *
+ * 只有**真的溢出**时才挂（属性由 hook 按 `scrollHeight > clientHeight` 加删），
+ * 所以内容装得下的面板不会平白多一层渐隐。
+ *
+ * 高度取一个「够盖住一行、又不会盖掉两行」的值：行的下沿最多偏出 `2 × row-height`，
+ * 所以渐隐区 = `--kits-row-height`（28px）与一个空间单位的较大者。用 `min()` 取大不取小，
+ * 保证任何 pack 取值下都不小于一行。
+ */
+.s1-panel__body[data-scroll-mask="true"] {
+  --s1-body-fade: max(var(--kits-row-height), calc(var(--kits-space-unit) * 4));
+  mask-image: linear-gradient(to bottom, transparent 0, black var(--s1-body-fade));
+}
+
+.s1-panel__body--centre {
+  justify-content: center;
+  align-items: center;
+}
+
+/* 组件级角标：这个组件的动作在本阶段是脚本化回放（不变量 (b) 那一层）。 */
+.s1-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--kits-label-gap);
+  padding: 0 var(--kits-label-gap);
+  border: var(--kits-border-width) var(--kits-border-style) var(--warning);
+  color: var(--warning);
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  letter-spacing: var(--kits-label-tracking);
+  white-space: nowrap;
+}
+
+.s1-badge--quiet {
+  border-color: var(--kits-border-hairline-color);
+  color: var(--muted-foreground);
+}
+
+/* -------------------------------------------------------------------------- */
+/* 5 · ② 计划清单                                                               */
+/* -------------------------------------------------------------------------- */
+
+.s1-plan {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.s1-plan__row {
+  display: grid;
+  grid-template-columns: calc(var(--kits-space-unit) * 5) 1fr auto;
+  align-items: center;
+  gap: var(--kits-label-gap);
+  min-height: var(--kits-row-height);
+  padding: 0 var(--kits-label-gap);
+  border-bottom: var(--kits-border-width) var(--kits-border-style) transparent;
+  font-size: var(--kits-label-size);
+  position: relative;
+}
+
+.s1-plan__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  color: var(--muted-foreground);
+}
+
+.s1-plan__label {
+  min-width: 0;
+  color: var(--foreground);
+  position: relative;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.s1-plan__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--kits-label-gap);
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+
+.s1-plan__state {
+  font-size: var(--kits-label-size);
+  white-space: nowrap;
+}
+
+/* 完成：绿勾（绿 = 已闭环）。 */
+.s1-plan__row[data-step-state="done"] .s1-plan__mark {
+  color: var(--success);
+}
+.s1-plan__row[data-step-state="done"] .s1-plan__state {
+  color: var(--success);
+}
+
+/* 进行中：AI 青 + 呼吸点（唯一允许的循环动效；降级后是实心点 + 文字）。 */
+.s1-plan__row[data-step-state="running"] .s1-plan__mark .s1-dot {
+  background: var(--brand);
+}
+.s1-plan__row[data-step-state="running"] .s1-plan__state {
+  color: var(--brand);
+}
+
+/* 受阻：琥珀（球在你那边：挂起待授权）。 */
+.s1-plan__row[data-step-state="blocked"] .s1-plan__mark {
+  color: var(--warning);
+}
+.s1-plan__row[data-step-state="blocked"] .s1-plan__state {
+  color: var(--warning);
+}
+
+/* 重规划新增：AI 青。 */
+.s1-plan__row[data-step-state="replanned"] .s1-plan__mark,
+.s1-plan__row[data-step-state="replanned"] .s1-plan__state,
+.s1-plan__row[data-step-state="replanned"] .s1-plan__label {
+  color: var(--brand);
+}
+
+/* 新落位的行：只表达「它是新来的」（pack 的 enter 角色：4px / 180ms，无回弹）。 */
+@media (prefers-reduced-motion: no-preference) {
+  .s1-plan__row[data-fresh="true"] {
+    animation: s1-row-enter var(--kits-dur-base) var(--kits-ease-out);
+  }
+}
+
+@keyframes s1-row-enter {
+  from {
+    opacity: 0;
+    transform: translateY(var(--kits-enter-distance));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 被划掉的旧计划行：划线由**状态属性**驱动，所以倒拖游标会把线收回去。 */
+.s1-plan__row[data-step-state="superseded"] .s1-plan__label {
+  color: var(--muted-foreground);
+}
+
+.s1-plan__row[data-step-state="superseded"] .s1-plan__label::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: var(--kits-border-width);
+  background: var(--muted-foreground);
+  transform: scaleX(1);
+  transform-origin: 0 50%;
+  transition: transform var(--kits-dur-slow) var(--kits-ease-out);
+}
+
+/* 还没被划掉时，这条线是「收起来的」—— 属性翻转时才画出去。
+   reduced-motion 下时长被全局规则压到 0.01ms，线**立刻**出现：信息不丢。 */
+.s1-plan__row[data-struck="false"] .s1-plan__label::after {
+  transform: scaleX(0);
+}
+
+.s1-plan__row[data-step-state="superseded"] .s1-plan__mark,
+.s1-plan__row[data-step-state="superseded"] .s1-plan__state {
+  color: var(--muted-foreground);
+}
+
+.s1-plan__note {
+  display: flex;
+  gap: var(--kits-label-gap);
+  align-items: baseline;
+  padding-top: var(--kits-label-gap);
+  font-size: var(--kits-label-size);
+  color: var(--warning);
+}
+
+/* -------------------------------------------------------------------------- */
+/* 6 · ③ 研判流                                                                 */
+/* -------------------------------------------------------------------------- */
+
+.s1-finding {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kits-label-gap);
+  padding: var(--kits-label-gap);
+  border-left: var(--kits-border-width) var(--kits-border-style) var(--kits-border-color);
+  background: var(--elevated);
+}
+
+.s1-finding__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--kits-label-gap);
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  color: var(--muted-foreground);
+}
+
+.s1-finding__conclusion {
+  margin: 0;
+  /* 结论级文本：pack 的「3 米层」（clamp 20–24px）。
+     设计稿写 28–36px，但那一层在本 pack 里是 .kits-display（34–52px，屏级主角），
+     一个 600px 列里的面板放不下它 —— 取 3 米层的上端，差值与理由见交接。 */
+  font-family: var(--kits-font-body);
+  font-size: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);
+  line-height: 1.4;
+  color: var(--foreground);
+}
+
+.s1-typing__caret {
+  color: var(--brand);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .s1-typing__caret {
+    animation: s1-caret var(--kits-dur-ambient) var(--kits-ease-linear) infinite;
+  }
+}
+
+@keyframes s1-caret {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0.15;
+  }
+}
+
+.s1-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kits-label-gap);
+}
+
+.s1-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--kits-label-gap);
+  padding: 0 var(--kits-label-gap);
+  border: var(--kits-border-width) var(--kits-border-style) var(--evidence);
+  color: var(--evidence);
+  background: transparent;
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  cursor: pointer;
+}
+
+.s1-chip--muted {
+  border-color: var(--kits-border-hairline-color);
+  color: var(--muted-foreground);
+  cursor: default;
+}
+
+.s1-evidence-detail {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0 var(--kits-label-gap);
+  padding: var(--kits-label-gap);
+  border-left: var(--kits-border-width) var(--kits-border-style) var(--evidence);
+  font-size: var(--kits-label-size);
+  color: var(--muted-foreground);
+}
+
+.s1-field__name {
+  font-family: var(--kits-font-mono);
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+
+.s1-field__value {
+  color: var(--foreground);
+  min-width: 0;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 7 · ④ 工具控制台                                                             */
+/* -------------------------------------------------------------------------- */
+
+.s1-console__session {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--kits-label-gap);
+  flex-wrap: wrap;
+}
+
+.s1-console__session code {
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  color: var(--foreground);
+}
+
+.s1-console__brief {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kits-label-gap);
+  padding: var(--kits-label-gap);
+  border-left: var(--kits-border-width) var(--kits-border-style) var(--warning);
+  background: var(--elevated);
+}
+
+.s1-console__brief-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--kits-label-gap);
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  color: var(--warning);
+}
+
+.s1-console__brief-source {
+  color: var(--muted-foreground);
+}
+
+.s1-console__brief code {
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  color: var(--foreground);
+  word-break: break-all;
+}
+
+.s1-fields {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0 var(--kits-label-gap);
+  font-size: var(--kits-label-size);
+}
+
+.s1-console__line {
+  display: flex;
+  gap: var(--kits-label-gap);
+  align-items: baseline;
+}
+
+/* 一条命令 + 它的回显 + 退出码。命令块之间留出与说明卡同级的间距。 */
+.s1-console__entry {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kits-label-gap);
+}
+
+.s1-console__output {
+  display: flex;
+  flex-direction: column;
+  padding-left: var(--kits-label-gap);
+}
+
+.s1-console__line pre {
+  margin: 0;
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  line-height: var(--kits-body-line);
+  color: var(--foreground);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.s1-console__output pre {
+  color: var(--muted-foreground);
+}
+
+.s1-console__exit {
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  color: var(--success);
+}
+
+/* -------------------------------------------------------------------------- */
+/* 8 · 底栏（⑨ + ⑭ 的位置在这里，内容不在）                                      */
+/* -------------------------------------------------------------------------- */
+
+.s1-footer {
+  display: flex;
+  gap: var(--s1-footer-gap);
+  height: var(--s1-footer-h);
+  padding: var(--s1-footer-pad);
+  border-top: var(--kits-border-width) var(--kits-border-style)
+    var(--kits-border-hairline-color);
+  background: var(--surface);
+}
+
+.s1-footer__slot {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+/* 底栏里的占位面板要撑满它那一格（130px 的格子里放一个面板，内容由面板内滚动吸收）。 */
+.s1-footer__slot > .s1-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0;
+}
+
+.s1-footer__slot--ask {
+  width: var(--s1-ask-width);
+  flex: none;
+  border-right: var(--kits-border-width) var(--kits-border-style)
+    var(--kits-border-hairline-color);
+}
+
+.s1-footer__slot--report {
+  flex: 1 1 auto;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 9 · 演示环境标识（已签署不变量 boundary.demo-is-labelled-as-demo 的 (a) 层）    */
+/* -------------------------------------------------------------------------- */
+
+.s1-demo-label {
+  display: flex;
+  align-items: center;
+  gap: var(--kits-label-gap);
+  margin: 0;
+  padding-top: var(--kits-label-gap);
+  border-top: var(--kits-border-width) var(--kits-border-style)
+    var(--kits-border-hairline-color);
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  letter-spacing: var(--kits-label-tracking);
+  color: var(--warning);
+}
+
+.s1-demo-label__dot {
+  flex: none;
+  width: calc(var(--kits-space-unit) * 2);
+  height: calc(var(--kits-space-unit) * 2);
+  background: var(--warning);
+  border-radius: var(--kits-radius-pill);
+}
+
+/* -------------------------------------------------------------------------- */
+/* 10 · ⑤ 攻击链 · 实体视图（左列画布）                                          */
+/* -------------------------------------------------------------------------- */
+
+/* 画布是一列固定的东西：图例 / 画布 / 边列表 / 攻击者画像。它自己成列、面板正文滚动。 */
+.s1-graph {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kits-label-gap);
+}
+
+/* 图例：三个记号 + 三个词。记号与外框各自带着语义槽的颜色（红 = 攻击路径那根线、
+   青 = AI 控制中的节点外框、绿 = 已闭环的节点外框），所以「哪个颜色是什么意思」
+   在这里是可核对的，而不是靠记忆；每个记号都带 data-meaning，颜色与语义一一对得上。 */
+.s1-graph__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kits-gutter);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  letter-spacing: var(--kits-label-tracking);
+  color: var(--muted-foreground);
+}
+
+.s1-graph__legend > li {
+  display: flex;
+  align-items: center;
+  gap: var(--kits-label-gap);
+}
+
+.s1-graph__legend-mark {
+  flex: none;
+  width: var(--kits-space-unit);
+  height: var(--kits-space-unit);
+  border-radius: var(--kits-radius-pill);
+}
+
+/* 图例记号用各自的语义槽 —— 「一色一义」的对照表本身必须用那五个颜色写，
+   否则它就不是对照表；每个记号都带 data-meaning，颜色与语义一一对得上。 */
+.s1-graph__legend-mark--path {
+  width: calc(var(--kits-space-unit) * 4);
+  background: var(--danger);
+}
+
+.s1-graph__legend-mark--controlled {
+  background: var(--brand);
+}
+
+.s1-graph__legend-mark--closed {
+  background: var(--success);
+}
+
+/* 坐标系盒子：节点的 left/top 百分比与 SVG 的 viewBox 落的是同一个盒子。 */
+.s1-graph__canvas {
+  position: relative;
+  width: 100%;
+  /*
+   * 正方形 —— 两个轴同一个尺度，四个构图位置因此不挤在一起
+   * （为什么从扁的换成方的：见 `view-model.ts` 的 `ATTACK_CHAIN_POSITION` 注释）。
+   */
+  aspect-ratio: 1;
+  /*
+   * 内容再多也不许把画布撑破。
+   *
+   * 2026-09-17 实测：一个节点带 19 个证据 chip 时高 696px，节点被
+   * `translate(-50%, -50%)` 摆在画布中心，整块**向上**溢出，最上面那个 chip
+   * 被面板正文的上沿切掉（overflow 12.29px）。`overflow: hidden` 把溢出收在
+   * 画布边界里 —— 节点再高也只影响它自己那一格，不会外溢到面板上沿去切一行字。
+   */
+  overflow: hidden;
+  border: var(--kits-border-width) var(--kits-border-style)
+    var(--kits-border-hairline-color);
+}
+
+/* 线层躺在节点层之下：线从节点中心出发，被节点盒子盖住一截，看起来是接上去的。
+   它是纯装饰 —— 每条边在下面的列表里另有一份文字形态。 */
+.s1-graph__edges {
+  position: absolute;
+  inset: 0;
+}
+
+.s1-graph__edges line {
+  stroke: var(--danger);
+  stroke-width: var(--kits-border-width);
+}
+
+/* 一个实体节点：相对坐标定位（数据给的是 0–1），位移的一半回拉把自己居中到那个点上。 */
+.s1-graph__node {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: var(--kits-label-gap);
+  max-width: 46%;
+  padding: var(--kits-label-gap);
+  border: var(--kits-border-width) var(--kits-border-style)
+    var(--kits-border-hairline-color);
+  background: var(--surface);
+  transform: translate(-50%, -50%);
+}
+
+.s1-graph__node:focus-visible {
+  outline: var(--kits-border-width-strong) var(--kits-border-style) var(--brand);
+  outline-offset: var(--kits-label-gap);
+}
+
+/* 状态色只由两个槽承担（AI 控制中 = 青，已清除 = 绿）；中性状态不借色，
+   区别由旁边那行状态词说。节点上的 data-meaning 与这里是一对。 */
+.s1-graph__node[data-meaning="ai"] {
+  border-color: var(--brand);
+}
+
+.s1-graph__node[data-meaning="closed"] {
+  border-color: var(--success);
+}
+
+.s1-graph__node-label {
+  font-size: var(--kits-label-size);
+  color: var(--foreground);
+}
+
+/* 状态词始终在文字里 —— 颜色只是加重，不是唯一通道（reduced-motion 下点会静止）。 */
+.s1-graph__node-state {
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  color: var(--muted-foreground);
+}
+
+.s1-graph__node[data-meaning="ai"] .s1-graph__node-state {
+  color: var(--brand);
+}
+
+.s1-graph__node[data-meaning="closed"] .s1-graph__node-state {
+  color: var(--success);
+}
+
+.s1-graph__node-detail,
+.s1-graph__profile code,
+.s1-graph__edge-labels code,
+.s1-graph__detail code {
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  color: var(--muted-foreground);
+}
+
+/* 没有可引用证据的节点：**照实标出**，而不是给它编一条引用。配色是中性的 ——
+   「缺证据」是数据状况，不是攻击，也不是失败。 */
+.s1-graph__uncited {
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  color: var(--muted-foreground);
+}
+
+.s1-graph__node[data-cited="false"] {
+  border-style: dashed;
+}
+
+/* 引用 chip：真按钮，与 ③ 研判流的 chip 同一种写法（证据蓝 = 可点开的证据）。 */
+.s1-graph__cites {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kits-label-gap);
+}
+
+.s1-graph__cite {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--kits-label-gap);
+  border: var(--kits-border-width) var(--kits-border-style) var(--evidence);
+  background: transparent;
+  color: var(--evidence);
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  cursor: pointer;
+}
+
+.s1-graph__cite:focus-visible {
+  outline: var(--kits-border-width-strong) var(--kits-border-style) var(--evidence);
+  outline-offset: var(--kits-border-width);
+}
+
+/* 展开的证据字段：四行数据（编号 / 种类 / 来源 / 指向），没有行名 —— 它们是记录内容，
+   不是界面文案，所以左边一条证据蓝的竖线就够表明「这是那条证据自己的字段」。 */
+.s1-graph__detail {
+  display: flex;
+  flex-direction: column;
+  padding-left: var(--kits-label-gap);
+  border-left: var(--kits-border-width) var(--kits-border-style) var(--evidence);
+}
+
+.s1-graph__detail > * {
+  font-size: var(--kits-label-size);
+  color: var(--muted-foreground);
+}
+
+/* 稀疏的说明：只在「有节点、却一条边都引不到证据」时出现。 */
+.s1-graph__note {
+  margin: 0;
+  font-size: var(--kits-label-size);
+  line-height: var(--kits-body-line);
+  color: var(--muted-foreground);
+}
+
+/* 边的**文字形态** —— SVG 的一根线对屏幕阅读器不存在，所以每条边在这里说全：
+   证据引用 + 两端标签 + 两端角色。 */
+.s1-graph__edge-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.s1-graph__edge {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--kits-label-gap);
+}
+
+/* 展开的证据字段占满整行（它是这条边的从属内容，不该挤在引用后面）。 */
+.s1-graph__edge > .s1-graph__detail {
+  flex-basis: 100%;
+  margin-bottom: var(--kits-label-gap);
+}
+
+.s1-graph__edge-labels {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--kits-label-gap);
+  min-width: 0;
+}
+
+.s1-graph__edge-end {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--kits-label-gap);
+}
+
+.s1-graph__role {
+  font-size: var(--kits-label-size);
+  color: var(--muted-foreground);
+}
+
+.s1-graph__arrow {
+  color: var(--muted-foreground);
+}
+
+/* 攻击者画像：指纹是记录内容（不翻译），匹配次数是界面文案（走词典）。 */
+.s1-graph__profile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kits-label-gap);
+  padding-top: var(--kits-label-gap);
+  border-top: var(--kits-border-width) var(--kits-border-style)
+    var(--kits-border-hairline-color);
+}
+
+.s1-graph__profile-title {
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  letter-spacing: var(--kits-label-tracking);
+  color: var(--muted-foreground);
+}
+
+.s1-graph__field {
+  font-size: var(--kits-label-size);
+  color: var(--foreground);
+}
+
+/* 本回合状态被改写过的节点：一次入场，表达「它刚刚变过」。
+   pack 的 enter 角色（位移 + 淡入、无回弹、不循环），且只在允许动效时存在 ——
+   reduced-motion 下这条规则不生效，内容**立刻**可见，不会停在 opacity: 0。 */
+@media (prefers-reduced-motion: no-preference) {
+  .s1-graph__node[data-state-changed="true"] {
+    animation: s1-graph-node-enter var(--kits-dur-base) var(--kits-ease-out);
+  }
+}
+
+@keyframes s1-graph-node-enter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + var(--kits-enter-distance)));
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* 10 · ⑧ 审计时间线（右列 342px 可用宽：四栏改三行）                             */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * 四栏 = 三行。342px 里并排放「时间 / 主体 / 动作 / 依据」会让动作句只剩几个字宽，
+ * 所以这一列改走行式布局：第一行 时间 + 主体，第二行 动作，第三行 依据。
+ * **DOM 顺序仍是四栏的顺序**（时间 → 主体 → 动作 → 依据），所以屏幕阅读器读到的
+ * 与测试看到的都是同一个顺序 —— 换行只是排版，不是把栏目重新排序。
+ *
+ * 行高 28px 是**下限**不是定值：动作句会折行，行自己长高。写死高度会把中文切掉半行
+ * （`--kits-row-height` 是给单行日志流用的，这里是多行记录）。
+ */
+.s1-audit__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: 0 var(--kits-label-gap);
+  width: 100%;
+  min-height: var(--kits-row-height);
+  margin: 0;
+  padding: var(--kits-label-gap) 0;
+  border: none;
+  /* 四条留痕之间用规则线分隔：它们不是一行的多个字段，是四条独立的记录。 */
+  border-bottom: var(--kits-border-width) var(--kits-border-style)
+    var(--kits-border-hairline-color);
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--kits-label-size);
+  text-align: left;
+  color: var(--foreground);
+}
+
+/*
+ * 能跳转的行是**真按钮**（唯一理由是「停在这一帧」），所以它必须有自己的
+ * hover / focus-visible —— 键盘走到它身上时要看得见。
+ *
+ * 它**不染任何色槽**：色槽是语义，不是「可点」的装饰。一色一义的纪律下，
+ * 「这一行能点」由它是个按钮、且带 hover 反馈来表达。
+ */
+.s1-audit__row:is(button) {
+  cursor: pointer;
+}
+
+.s1-audit__row:is(button):hover {
+  background: var(--elevated);
+}
+
+.s1-audit__row:is(button):focus-visible {
+  outline: var(--kits-border-width) var(--kits-border-style) var(--foreground);
+  outline-offset: var(--kits-border-width);
+}
+
+/* 时间：等宽读数，四行之间才对得齐（这是读数，不是排版偏好）。 */
+.s1-audit__clock {
+  font-family: var(--kits-font-mono);
+  font-variant-numeric: tabular-nums lining-nums slashed-zero;
+  color: var(--foreground);
+}
+
+/* 主体：不抢动作句的重量；长名字在格内收尾（`minmax(0, 1fr)` 是省略号的前提）。 */
+.s1-audit__actor {
+  color: var(--muted-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 动作句是这一行的正文，占满两栏。 */
+.s1-audit__action {
+  grid-column: 1 / -1;
+  line-height: var(--kits-body-line);
+}
+
+/* 分隔符是装饰：可见的 `·` 帮眼睛把时间与主体分开，但它不该被读出来。 */
+.s1-audit__sep {
+  color: var(--muted-foreground);
+}
+
+.s1-audit__basis {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kits-label-gap);
+}
+
+/*
+ * 依据 chip。
+ *
+ * 蓝色（`--evidence`）在这一屏只有这一个意思：**这是对一条证据的引用**。
+ * 它**不是按钮** —— 点它在这里没有动作，做成按钮就是一个假控件；所以它没有 hover、
+ * 没有 `cursor: pointer`：看得出来不可点，比看起来能点更诚实。
+ * `data-meaning="evidence"` 是这条语义的机器可读版本。
+ */
+.s1-audit__chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--kits-label-gap);
+  border: var(--kits-border-width) var(--kits-border-style) var(--evidence);
+  color: var(--evidence);
+  font-family: var(--kits-font-mono);
+}
+
+/* 「本行不引用证据」：是事实陈述，不是错误也不是警告，所以用中性墨色。 */
+.s1-audit__nobasis {
+  grid-column: 1 / -1;
+  color: var(--muted-foreground);
+}
+
+/* 面板下沿的读数：游标 + 两条诚实标注。它描述整块面板此刻停在哪一帧，不属于任何一行。 */
+.s1-audit__readout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--kits-label-gap);
+  margin: 0;
+  padding-top: var(--kits-label-gap);
+  font-size: var(--kits-label-size);
+  color: var(--muted-foreground);
+}
+
+.s1-audit__readout code {
+  font-family: var(--kits-font-mono);
+  font-variant-numeric: tabular-nums lining-nums slashed-zero;
+  color: var(--foreground);
+}
+
+.s1-audit__readout-label {
+  font-family: var(--kits-font-mono);
+  letter-spacing: var(--kits-label-tracking);
+}
+
+.s1-audit__note {
+  color: var(--muted-foreground);
+}
+
+/*
+ * 新长出来的那一行：只表达「它是新来的」，一次 4px 的浮入，不复播。
+ *
+ * 包在 `no-preference` 里，且**只动 opacity 与 transform**：内容永远不从
+ * `opacity: 0` 开始等动画（动画没跑起来时它也是完整的），也不因动效而位移。
+ * reduced-motion 下这一段整块不存在 —— 行直接就在那里。
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .s1-audit__row[data-fresh="true"] {
+    animation: s1-audit-enter var(--kits-dur-base) var(--kits-ease-out);
+  }
+}
+
+@keyframes s1-audit-enter {
+  from {
+    opacity: 0;
+    transform: translateY(var(--kits-enter-distance));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/*
+ * `data-replayed`（这一行在游标已经走过的那一段里）**没有**对应样式，这是刻意的：
+ * 剩下的色槽里，青 `--brand` 只说「AI 正在产出」，而「已经走过」是回放进度，
+ * 不是一个语义色说得清的事 —— 借它来表达会让同一个青色在一屏里说两件事。
+ * 属性留着是因为它是一个可核对的读数（测试与 QA 用它定位游标前后），
+ * 不是因为每个属性都必须画出来。
+ */
+
+/* -------------------------------------------------------------------------- */
+/* 10 · ⑥ 处置与授权卡片区                                                      */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * 一色一义的落地方式：**每个语义色只在块根声明一次**，块根带 `data-meaning`，
+ * 后代靠继承（继承不是装饰，所以后代不再各戴一次属性）。
+ *   琥珀 waiting = 球在你那边（待批卡、SLA）
+ *   青   ai      = AI 自主执行（免授权通道里真的跑过的那张卡）
+ *   绿   closed  = 已裁决 / 已执行（裁决记录、后悔药窗口）
+ * 红色在这一栏不存在：驳回是一次裁决，不是一次失败。
+ */
+
+/* 面板头角标：待授权条数。0 项时保持中性 —— 没有待批卡还亮着琥珀，
+   就是让「球在你那边」这个颜色失去意义。 */
+.s1-auth__pending {
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  letter-spacing: var(--kits-label-tracking);
+  color: var(--muted-foreground);
+}
+
+.s1-auth__pending--waiting {
+  color: var(--warning);
+}
+
+.s1-auth {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kits-label-gap);
+}
+
+/* 一张卡。左边那条规则线就是它的状态：卡面保持中性，语义只由这一条线承担。 */
+.s1-auth__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kits-label-gap);
+  padding: var(--kits-label-gap);
+  border-left: var(--kits-border-width) var(--kits-border-style) var(--kits-border-hairline-color);
+  background: var(--elevated);
+}
+
+.s1-auth__card[data-meaning="waiting"] {
+  border-left-color: var(--warning);
+}
+
+.s1-auth__card[data-meaning="ai"] {
+  border-left-color: var(--brand);
+}
+
+.s1-auth__card[data-meaning="closed"] {
+  border-left-color: var(--success);
+}
+
+/* 新出现的一张卡：一次入场（pack 的 enter 角色 —— 位移 + 淡入、不循环、无回弹）。
+   只在允许动效时存在；reduced-motion 下这条规则不生效，内容**立刻**可见，
+   不会停在 opacity: 0 上等人。 */
+@media (prefers-reduced-motion: no-preference) {
+  .s1-auth__card {
+    animation: s1-auth-card-enter var(--kits-dur-quick) var(--kits-ease-out);
+  }
+}
+
+@keyframes s1-auth-card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(var(--kits-enter-distance));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.s1-auth__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--kits-label-gap);
+}
+
+.s1-auth__channel {
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  letter-spacing: var(--kits-label-tracking);
+  color: var(--muted-foreground);
+}
+
+/* 自主度格位是**读数**，不是按钮：有边框，但没有 hover、没有指针。 */
+.s1-auth__level {
+  flex: none;
+  padding: 0 var(--kits-label-gap);
+  border: var(--kits-border-width) var(--kits-border-style) var(--kits-border-hairline-color);
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  color: var(--foreground);
+}
+
+.s1-auth__title {
+  margin: 0;
+  font-size: var(--kits-body-size);
+  line-height: var(--kits-body-line);
+  color: var(--foreground);
+}
+
+.s1-auth__state {
+  margin: 0;
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+}
+
+.s1-auth__state[data-meaning="ai"] {
+  color: var(--brand);
+}
+
+.s1-auth__state[data-meaning="waiting"] {
+  color: var(--warning);
+}
+
+/* 「级别来自数据层」这句话读起来像免责声明，所以它是安静的：小一号、次墨。 */
+.s1-auth__source {
+  margin: 0;
+  font-size: var(--kits-label-size);
+  color: var(--muted-foreground);
+}
+
+/* 五件套：与说明卡同一套两列网格（`auto 1fr`）；窄栏里的长值必须能断行，
+   否则一行长文本会把 342px 的栏撑破。 */
+.s1-auth__five {
+  padding-top: var(--kits-label-gap);
+  border-top: var(--kits-border-width) var(--kits-border-style) var(--kits-border-hairline-color);
+  row-gap: var(--kits-label-gap);
+}
+
+.s1-auth__five .s1-field__value {
+  overflow-wrap: anywhere;
+}
+
+/* 后悔药行：整行一个语义 —— 已执行动作的撤销期是绿的（动作已闭环），
+   待批卡上的窗口则是「还在等人」的一部分（琥珀）。 */
+.s1-auth__rollback {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--kits-label-gap);
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+}
+
+.s1-auth__rollback[data-meaning="closed"] {
+  color: var(--success);
+}
+
+.s1-auth__rollback[data-meaning="waiting"] {
+  color: var(--warning);
+}
+
+/* SLA 行：整行琥珀 —— 它整行都在说「球在你那边」。呼吸点复用全景唯一的那个循环动效
+   （`.s1-dot--breathing`）；reduced-motion 下它是实心点，而「倒计时」这件事始终以文字
+   留在同一行里，信息不丢。 */
+.s1-auth__sla {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--kits-label-gap);
+  padding-top: var(--kits-label-gap);
+  border-top: var(--kits-border-width) var(--kits-border-style) var(--kits-border-hairline-color);
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  color: var(--warning);
+}
+
+/* 时钟继承所在行的颜色：同一个类要同时成立在琥珀的 SLA 行与绿的窗口行里，
+   所以它只声明数字排印，不声明颜色。 */
+.s1-auth__clock {
+  font-variant-numeric: tabular-nums lining-nums slashed-zero;
+  font-weight: var(--kits-data-weight);
+}
+
+/* 超时策略是数据层的记录（种子那句「超时默认挂起不执行」），比时钟安静一档。 */
+.s1-auth__policy {
+  color: var(--muted-foreground);
+}
+
+/* 三个键：真实按钮（`kits-control` 给了 hover / focus-visible / 38px）。
+   主操作（批准）用 pack 的 `--authorize` 格位 —— 它的语义正是「待人授权」的琥珀；
+   这里**不用** `--primary`：青色是「AI 在产出」，把人的决定画成 AI 的颜色是另一回事。 */
+.s1-auth__keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kits-label-gap);
+  padding-top: var(--kits-label-gap);
+  border-top: var(--kits-border-width) var(--kits-border-style) var(--kits-border-hairline-color);
+}
+
+/* 已裁决的卡上，三个键**留在原处但按不动** —— 一个按下去没反应的控件是假控件。
+   置灰，并让 disabled 时的 hover 不再转青（否则鼠标一过它会假装还能点）。 */
+.s1-auth__keys button:disabled {
+  color: var(--muted-foreground);
+  border-color: var(--kits-border-hairline-color);
+  background: transparent;
+  cursor: not-allowed;
+}
+
+.s1-auth__keys button:disabled:hover {
+  color: var(--muted-foreground);
+  border-color: var(--kits-border-hairline-color);
+}
+
+/* 裁决记录 = 这张卡的终点（绿）。 */
+.s1-auth__decision {
+  margin: 0;
+  padding-top: var(--kits-label-gap);
+  border-top: var(--kits-border-width) var(--kits-border-style) var(--kits-border-hairline-color);
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  font-variant-numeric: tabular-nums lining-nums slashed-zero;
+  color: var(--success);
+}
+
+/* -------------------------------------------------------------------------- */
+/* 11 · ⑪ 战果与沉淀面板（右列 342px）                                          */
+/* -------------------------------------------------------------------------- */
+
+/* 条目列：面板正文自己滚动，这里只管纵向节奏与「不许横向撑破」。 */
+.s1-sed__items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kits-label-gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
+
+/* 一条沉淀：左边那道青线与其种类 chip 是同一个意思（本回合 AI 产出的沉淀），
+   所以两者都带 `data-meaning="ai"`。文字**不染青** —— 条目原文是记录内容，
+   多染一处就多一处「这个青到底指什么」的疑问。 */
+.s1-sed__item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kits-label-gap);
+  min-width: 0;
+  padding: var(--kits-label-gap);
+  border-left: var(--kits-border-width) var(--kits-border-style) var(--brand);
+  background: var(--elevated);
+}
+
+.s1-sed__kind {
+  align-self: flex-start;
+  padding: 0 var(--kits-label-gap);
+  border: var(--kits-border-width) var(--kits-border-style) var(--brand);
+  color: var(--brand);
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  letter-spacing: var(--kits-label-tracking);
+}
+
+/* 条目原文：记录内容，不翻译，也就不许裁 —— 它断行，不省略。 */
+.s1-sed__label {
+  margin: 0;
+  font-size: var(--kits-label-size);
+  line-height: var(--kits-body-line);
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+
+.s1-sed__refs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--kits-label-gap);
+  min-width: 0;
+  font-size: var(--kits-label-size);
+}
+
+/* 来源引用：证据蓝只用于引用本身（「一色一义」的引用一侧）。 */
+.s1-sed__ref {
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  color: var(--evidence);
+}
+
+/* 导出块与导入块共用一列节奏；两块之间用一条规则线分开（语义容器，不是又一个盒子）。 */
+.s1-sed__block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kits-label-gap);
+  min-width: 0;
+  padding-top: var(--kits-label-gap);
+  border-top: var(--kits-border-width) var(--kits-border-style)
+    var(--kits-border-hairline-color);
+}
+
+.s1-sed__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--kits-label-gap);
+  min-width: 0;
+}
+
+.s1-sed__block-title {
+  color: var(--muted-foreground);
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  letter-spacing: var(--kits-label-tracking);
+}
+
+/* 控件不收缩：342px 的宽度下，一个被压成两行字的按钮就不像一个按钮了。 */
+.s1-sed__action {
+  flex: none;
+  font-size: var(--kits-label-size);
+}
+
+/* 主操作（导入并核对）**不用** pack 的 `kits-control--primary`：它染的是 AI 青，而按下这个键
+   的是人 —— 借青色说「AI 在产出」会让同一个青在一屏里多出第二种解释。强调改用中性墨色
+   （`--foreground` 不是五个语义槽之一，不引入新含义），于是「一色一义」仍然成立。 */
+.s1-sed__submit {
+  border-color: var(--foreground);
+  color: var(--foreground);
+}
+
+/* 「把当前导出填进导入框」不撑满整行：它是一句可点的提示，不是一个占满宽度的动作条。 */
+.s1-sed__fill {
+  align-self: flex-start;
+}
+
+/* 复制结果：绿 = 已写出，琥珀 = 被拒绝（要人去给权限，球在人那边）。
+   两个色槽各自的语义由同一份映射给出的 `data-meaning` 说明。 */
+.s1-sed__copy-state {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--kits-label-gap);
+  margin: 0;
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+}
+
+.s1-sed__copy-state[data-copy-result="copied"] {
+  color: var(--success);
+}
+
+.s1-sed__copy-state[data-copy-result="failed"] {
+  color: var(--warning);
+}
+
+/* 浏览器给的失败原文是记录、不是界面文案：它回到中性墨色，
+   免得一行里同时出现「界面的语义色」与「系统的报错」两种身份。 */
+.s1-sed__detail {
+  color: var(--muted-foreground);
+  font-family: var(--kits-font-mono);
+  overflow-wrap: anywhere;
+}
+
+/* 披露控件是文字按钮：它 toggle 的是「这份文档读不读得到」，不是危险动作。 */
+.s1-sed__disclosure {
+  display: flex;
+  align-items: center;
+  gap: var(--kits-label-gap);
+  align-self: flex-start;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  text-align: left;
+  cursor: pointer;
+}
+
+.s1-sed__disclosure:hover {
+  color: var(--foreground);
+}
+
+.s1-sed__disclosure:focus-visible,
+.s1-sed__input:focus-visible {
+  outline: var(--kits-border-width-strong) var(--kits-border-style) var(--brand);
+  outline-offset: var(--kits-border-width);
+}
+
+/* 导出文档：**不换宽度，只在自己的盒子里滚**。
+   342px 的面板里，一份键序稳定的 JSON 若按内容宽度排版会立刻横向溢出，而横向溢出会把
+   整屏 scale-to-fit 的算术推翻。所以这里强制断行 + 自带纵向滚动，展开态也由 `max-height`
+   封顶 —— 它再长也占不满整个面板。 */
+.s1-sed__export-text {
+  margin: 0;
+  padding: var(--kits-label-gap);
+  border: var(--kits-border-width) var(--kits-border-style)
+    var(--kits-border-hairline-color);
+  background: var(--surface);
+  color: var(--muted-foreground);
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  line-height: var(--kits-body-line);
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow: auto;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* 折叠态留三行：看得见「里面确实是一份文档」，但读不完 —— 于是展开是有意义的。
+   折叠只是**裁切**，不是从 DOM 里移走：在没有剪贴板权限的机器上，这份文档是唯一能带走的
+   东西，它必须始终在文档里、始终可断言。 */
+.s1-sed__export-text[data-export-open="false"] {
+  max-height: calc(var(--kits-row-height) * 3);
+  overflow: hidden;
+}
+
+.s1-sed__export-text[data-export-open="true"] {
+  max-height: calc(var(--kits-space-unit) * 40);
+}
+
+/* 「导出物不含墙上时间」是导出可复算的理由，不是装饰，所以它离文档最近、说得最轻。 */
+.s1-sed__note {
+  margin: 0;
+  font-size: var(--kits-label-size);
+  line-height: var(--kits-body-line);
+  color: var(--muted-foreground);
+}
+
+/* 导入框：等宽字体（贴进来的是 JSON），可纵向拉伸，但不许横向撑破面板。 */
+.s1-sed__input {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  padding: var(--kits-label-gap);
+  border: var(--kits-border-width) var(--kits-border-style)
+    var(--kits-border-hairline-color);
+  background: var(--surface);
+  color: var(--foreground);
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  line-height: var(--kits-body-line);
+  resize: vertical;
+}
+
+.s1-sed__input::placeholder {
+  color: var(--muted-foreground);
+}
+
+/* 导入结果：容器只染**边线**，文字颜色落在它自己那个元素上。
+   容器若把 color 一并染上，语义色会顺着继承扩散到整棵子树，于是「哪些元素上了色」
+   就数不清了 —— 而「一色一义」要求上色的每一处都能被指名。 */
+.s1-sed__result {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kits-label-gap);
+  min-width: 0;
+  padding: var(--kits-label-gap);
+  border-left: var(--kits-border-width) var(--kits-border-style)
+    var(--kits-border-hairline-color);
+  background: var(--elevated);
+}
+
+.s1-sed__result[data-import-result="equivalent"] {
+  border-left-color: var(--success);
+}
+
+.s1-sed__result[data-import-result="mismatch"] {
+  border-left-color: var(--warning);
+}
+
+/* 这是本文件里 `--danger` 的第一次使用，理由写在这里：解析失败不是「待办」，
+   是这段文本**根本不是一份导出物** —— 核对这件事本身没能发生。它与「攻击 / 失败」
+   共用同一句话，而不是把琥珀借去说第二件事。 */
+.s1-sed__result[data-import-result="parse-failed"] {
+  border-left-color: var(--danger);
+}
+
+.s1-sed__result-text {
+  margin: 0;
+  font-size: var(--kits-label-size);
+  line-height: var(--kits-body-line);
+  overflow-wrap: anywhere;
+}
+
+.s1-sed__result[data-import-result="equivalent"] .s1-sed__result-text {
+  color: var(--success);
+}
+
+.s1-sed__result[data-import-result="mismatch"] .s1-sed__result-text {
+  color: var(--warning);
+}
+
+.s1-sed__result[data-import-result="parse-failed"] .s1-sed__result-text {
+  color: var(--danger);
+}
+
+/* 差异清单：数据层的原文（`沉淀物条目不一致` / `sediment/unknown-field @ items[0]`），
+   逐字显示在中性墨色上 —— 它是证据，不是判词，判词在上面那一行。 */
+.s1-sed__diffs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kits-label-gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
+
+.s1-sed__diffs code {
+  color: var(--foreground);
+  font-family: var(--kits-font-mono);
+  font-size: var(--kits-label-size);
+  overflow-wrap: anywhere;
+}
+
+/* 两种状态变化各一次入场：一条沉淀入账、一次核对给出结论。
+   规则写在媒体查询里，所以 reduced-motion 下它**不存在** —— 内容立刻可见，
+   没有任何一条规则会把内容留在 opacity: 0 上。 */
+@media (prefers-reduced-motion: no-preference) {
+  .s1-sed__item,
+  .s1-sed__result {
+    animation: s1-sed-enter var(--kits-dur-quick) var(--kits-ease-out);
+  }
+}
+
+@keyframes s1-sed-enter {
+  from {
+    opacity: 0;
+    transform: translateY(var(--kits-enter-distance));
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

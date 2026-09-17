@@ -119,6 +119,34 @@ export type CardRecord = {
   slaMs: number | null
   planStepId: string | null
   state: CardState
+  /**
+   * 待批卡的**五件套**（做什么 / 依据 / 影响与风险 / 回滚 / 替代方案）。
+   *
+   * 2026-09-17 加上：⑥ 处置与授权卡片区要显示这五项，而它们本来只活在消息里 ——
+   * 卡片状态被归约进 `CardRecord` 时丢掉了。丢掉之后界面只有两条路：把 `basis`
+   * 那类文字再解析一遍（脆），或者另写一句（编）。两条都不能要，所以让记录带上它。
+   *
+   * ⚠ 这是 `lib/s1/**` 的**增补，不是语义变更**：既有字段一个没改，既有消费者
+   * （`audit.ts` 的 `explainCardDecision`、`sediment.ts` 的 `card.open`）读的还是原来那些；
+   * 新增的三个字段只是不再让已经存在于消息里的事实丢失。
+   */
+  five: { what: string; basis: string; impact: string; rollback: string; alternative: string } | null
+  /** 三键（种子 `actionCards[1].actions`，逐字）。自动卡没有。 */
+  actions: readonly string[]
+  /**
+   * 这条卡是由哪条消息产生的序号。
+   *
+   * ⑥ 的 SLA 倒计时要用它：`revealTimes.get(seq)` 把「卡片刚打开的那一刻」换成
+   * 播放进度上的毫秒数，于是倒计时是游标的纯函数，没有自己的定时器。
+   * 同时它也是「这一项能被追到哪条事件」的答案。
+   */
+  seq: number
+  /**
+   * 超时策略的原文（种子 `actionCards[].sla.timeoutPolicy`：
+   * `超时默认挂起不执行`）。**必须显示**：它是"球在你那边"这句话的另一半 ——
+   * 不说清楚超时会怎样，SLA 倒计时就只是一个装饰性的数字。
+   */
+  slaTimeoutPolicy: string | null
 }
 
 export type ToolCallRecord = {
@@ -337,6 +365,10 @@ export function effectsOf(message: IncidentMessage): StateEffect[] {
           planStepId: message.planStepId ?? null,
           // 清单内 + 可回滚的卡片当场执行（种子 a1：「L3 授权策略内 · 已自动执行」）。
           state: message.cardKind === "auto" ? "executed" : "pending",
+          five: message.five === undefined ? null : { ...message.five },
+          actions: message.actions === undefined ? [] : [...message.actions],
+          seq: message.seq,
+          slaTimeoutPolicy: message.sla?.timeoutPolicy ?? null,
         },
       })
       if (message.planStep !== undefined) {

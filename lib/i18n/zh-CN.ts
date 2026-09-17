@@ -23,6 +23,13 @@
  * `pnpm factory:init` 会逐字扫描它，而且**不区分代码与注释** —— 所以哪怕是解释
  * 「这里已经不含样例身份」的说明文字，也不能把那两个名字写出来。
  */
+/**
+ * 动作码类型是**类型导入**（编译期擦除，运行时没有依赖）：
+ * 它只用来给 `workbench.toolConsole.actions` 加一条完整性约束 ——
+ * 动作目录里新增一个动作而没有中文名，typecheck 就会红。
+ */
+import type { ActionCode } from "../s1/contract"
+
 export const zhCN = {
   /* ------------------------------------------------------------------ meta */
   locale: {
@@ -88,6 +95,9 @@ export const zhCN = {
    * 首页文案。本轮的首页是**诚实的首屏**：说明这是什么产品、当前阶段的
    * 边界在哪里、下一步是什么 —— 不展示尚未实现的能力。
    * 因此下面每一段都标了「已完成 / 尚未开始」，改文案时不要把它们混起来。
+   *
+   * ⚠ 它是**阶段快照**：哪一批落盘了就得改一次，否则这一页会开始说谎。
+   * 页面自己不带日期，日期在 `README.md` 的「当前进度」一节。
    */
   landing: {
     eyebrow: "安全运营 · AI 原生工作台",
@@ -95,11 +105,17 @@ export const zhCN = {
     description:
       "给保险公司安全团队用的 SOC 控制台。产品形态是 16:9 单屏不加滚动的三列战情室：左列攻击链实体视图，中列任务计划与研判流，右列处置授权与审计，底部常驻「问 S1」与流式报告。",
 
+    /* 工作台入口。它是一个真链接，不是装饰：第一批组件就在这一页后面。 */
+    entry: {
+      label: "打开工作台",
+      note: "第一批：骨架 + 态势指挥条 + 任务计划 / 研判流 / 工具控制台；其余面板在页面上标着「本面板尚未实现」。",
+    },
+
     /* 顶栏读数条：等宽读数，不是 hero。 */
     strip: {
       stageLabel: "阶段",
-      stageValue: "初始化边界",
-      stageNote: "组件层尚未实现",
+      stageValue: "组件层 · 第一批",
+      stageNote: "骨架 + ①②③④ 已落盘",
       specLabel: "形态规格",
       specValue: "12 个组件 · 6 特征",
       specNote: "见设计稿实测与实现规格",
@@ -126,10 +142,9 @@ export const zhCN = {
       title: "尚未开始",
       caption: "以下都不是本仓现在的能力",
       items: [
-        "十二个组件一个都没有实现：态势指挥条、任务计划、研判流、工具控制台、攻击链画布、处置授权区、审计时间线、问 S1、E+N 汇流视图、战果沉淀、顶栏花名册、报告流式生成。",
-        "事件契约（8 类消息）与确定性回放器属于 S1 工单，本轮未开工。",
-        "视觉方向已经落地：Kits 风格包由适配层接入深色主题；但签名组件预算是 0，能看到的仍然只有这一页。",
-        "产品语义不变量尚未由人签署，product-contract.json 目前仍是基线那两条。",
+        "十二个组件里只有第一批落盘（骨架 + ① ② ③ ④，在「打开工作台」那一页）：攻击链画布、处置授权区、审计时间线、战果沉淀、问 S1、E+N 汇流视图、顶栏花名册、报告流式生成都还是页面上的「本面板尚未实现」占位。",
+        "数据层与确定性回放引擎已经建好，并且被第一批界面消费；但「界面上的数字显示对不对」目前只有那一批的测试覆盖，其余面板的判据要等各自的批次。",
+        "视觉方向已经落地：Kits 风格包由适配层接入深色与浅色两套主题；签名组件仍是 0。",
       ],
     },
 
@@ -291,6 +306,322 @@ export const zhCN = {
           email ? `（${email}）` : ""
         }恢复到初始状态——界面上的本地改动都会回到最初的样子。`,
       confirm: "退出登录",
+    },
+  },
+
+  /* ------------------------------------------------- S1 工作台（战情室控制台） */
+  /**
+   * 十二个组件的界面文案。**业务记录内容不在这里**：计划条目的名字、命令、
+   * 回显、审计行的动作、攻击者编号、IP、hash、时间戳、Agent 名都住在 `lib/s1/**`
+   * 的种子事实底本里，按仓规不翻译（它们是记录，不是文案）。
+   *
+   * 这里只放两类东西：
+   *   • 面板自己的标题 / 字段标签 / 状态词（「依据」「回滚」「受阻」…）；
+   *   • 由界面拼出来、必须与种子对齐的模板 —— 例如 `liveStatus(0)` 必须逐字等于
+   *     种子 `headerStats.liveStatus`（那条断言在 `tests/s1-console.spec.ts` 里）。
+   *
+   * 动作码的中文名是**词典的一份覆盖纪律**：`satisfies Record<ActionCode, string>`
+   * 让「动作目录里多了一个动作、而界面上没有它的名字」在 typecheck 阶段就红，
+   * 而不是让某个面板在演示当天显示一个英文枚举。
+   */
+  workbench: {
+    /* --------------------------------------------------- 回放控制（真实交互） */
+    replay: {
+      label: "回放控制",
+      play: "播放",
+      pause: "暂停",
+      stepBack: "上一拍",
+      stepForward: "下一拍",
+      restart: "回到开场",
+      playing: "回放中",
+      paused: "已暂停",
+      finished: "回放结束",
+      /** `T+4.60s` —— 回放位置。`T` 与 `s` 是单位记号，不是未翻译的文案。 */
+      position: (seconds: string) => `T+${seconds}s`,
+      beatNow: (step: number) => `第 ${step} 拍`,
+      beatSoFar: (step: number) => `已揭示到第 ${step} 拍`,
+      beforeOpening: "尚未开场",
+      timeline: "拖到任意时刻",
+      jump: (step: number) => `跳到第 ${step} 拍`,
+      jumpAny: "跳到某一拍",
+      /**
+       * 请求的拍没有自己的帧时的说明（第 18 拍由 ⑨ 按需追加，固定排程里没有它）。
+       * `requested` 是观众点的那一拍，`landed` 是真正的落点 —— 两个都写出来，
+       * 因为「你要的第 18 拍落在了第 17 拍」是一句可核对的话，而「回放结束」不是。
+       */
+      beatClamped: (requested: number, landed: number) =>
+        `第 ${requested} 拍由「问 S1」按需追加 · 已停在排程末尾（第 ${landed} 拍）`,
+    },
+
+    /* ----------------------------------------- 演示标识（已签署的不变量） */
+    demo: {
+      /** 组件级角标：这个组件的动作在本阶段是脚本化回放。 */
+      scripted: "脚本化回放 · 命令不落到真实主机",
+      /** 诚实标注：未建成的面板不假装。 */
+      notBuilt: "本面板尚未实现",
+      notBuiltNote: (panel: string) => `${panel} 计划在组件阶段下一批实现`,
+      shellNote: "演示环境",
+    },
+
+    /* ------------------------------------------------------------ ① 态势指挥条 */
+    commandBar: {
+      counterAutonomous: "今日 AI 自主闭环",
+      counterInterventions: "人工介入",
+      counterHandling: "平均处置",
+      /** 秒的后缀，与种子的 `avgHandlingSeconds` 拼成 `41s`。 */
+      secondUnit: "s",
+      /**
+       * 顶栏状态句。`count` 是**派生值**（待批授权卡的条数），
+       * `liveStatus(0)` 必须逐字等于种子 `headerStats.liveStatus`。
+       */
+      liveStatus: (count: number) => `AI 调查中 · 待人工授权 ${count} 项`,
+      pendingHint: "点开右列可看待批卡",
+      countersHint: "三个计数都从已发生的事件聚合重算，不做直接赋值",
+      autonomy: "自主度",
+      autonomyCurrent: (level: string) => `当前 ${level}`,
+    },
+
+    /* ------------------------------------------------------------ ② 任务计划面板 */
+    plan: {
+      title: "任务计划 · 事件",
+      subtitle: "调查 Agent 自主拆解",
+      empty: "计划尚未生成",
+      emptyNote: "第 3 拍之后这里会出现 AI 拆解出的任务清单。",
+      replanNote: (from: string, to: string) => `${from} → ${to}`,
+      replanLabel: "重规划",
+      progress: (done: number, total: number) => `完成 ${done} / ${total}`,
+      stateDone: "完成",
+      stateRunning: "进行中",
+      stateBlocked: "受阻",
+      stateReplanned: "重规划新增",
+      stateSuperseded: "已划掉",
+      statePending: "待办",
+      statePlanned: "待办",
+      strikeNote: "被第 9 拍的重规划划掉",
+    },
+
+    /* ------------------------------------------------------------ ③ 研判流 */
+    findings: {
+      title: "AI 研判流",
+      subtitle: "结论必带证据",
+      confidence: (percent: number) => `置信度 ${percent}%`,
+      nextStep: "下一步",
+      sources: "数据来源",
+      empty: "还没有形成结论",
+      emptyNote: "第 2 拍汇流之后，这里会出现第一条带证据的结论。",
+      claimShape: "结论",
+    },
+
+    /* ---------------------------------------------------------- ④ 工具控制台 */
+    toolConsole: {
+      title: "工具控制台",
+      empty: "尚未执行任何命令",
+      emptyNote: "第 10 拍之后，处置 Agent 会先在说明卡之下逐字打出命令。",
+      briefTitle: "处置说明卡",
+      briefBasis: "依据",
+      briefAction: "动作",
+      briefImpact: "影响",
+      briefRollback: "回滚",
+      briefSessionSource: "会话级说明卡 · 本会话的每条命令都在它之下执行",
+      briefOwnSource: "本条命令自己的说明卡",
+      sessionLabel: "会话",
+      outputLabel: "回显",
+      exitLabel: "退出码",
+      autoChannel: (level: string) => `自主执行 · ${level} 授权策略内`,
+      approvedChannel: "经人批准后执行 · 停在人这道门",
+      rollbackWindow: (seconds: string) => `可回滚 · 窗口 ${seconds}s`,
+      rollbackNoWindow: "可回滚 · 清单未声明窗口",
+      notReversible: "不可回滚 · 必须停在人这道门",
+      approvalRequired: "需人工授权 · 不在自主清单内",
+      noBasis: "本动作不引用证据",
+      /** 动作码 → 中文名。少一个就 typecheck 失败（见上）。 */
+      actions: {
+        "inspect-file": "只读排查",
+        "verify-file": "只读复核",
+        "block-source": "封禁攻击源",
+        "quarantine-file": "隔离可疑文件",
+        "delete-file-with-backup": "删除文件（先备份）",
+        "terminate-process": "终止进程",
+        "isolate-host": "隔离主机",
+        "revoke-session": "吊销会话",
+        "patch-config": "修改业务配置",
+        "rotate-credential": "轮换凭证",
+      } satisfies Record<ActionCode, string>,
+      /**
+       * 动作码 → **影响面图例**。
+       *
+       * 这一栏不是事件数据，是「动作目录」的中文对照：它说的是**这个动作本身的爆炸半径**
+       * （只读 / 只影响攻击源 / 改一处业务接口…），同一动作码在任何事件里都得到同一句话。
+       * 它由 `tests/s1-console.spec.ts` 断言「目录里的每个动作码都必须有图例」，
+       * 所以界面上不可能出现一个没有影响说明的动作。
+       */
+      impacts: {
+        "inspect-file": "只读排查 · 不写入、不删除",
+        "verify-file": "只读复核 · 不改动主机状态",
+        "block-source": "只影响攻击源地址 · 一键可撤销",
+        "quarantine-file": "隔离文件 · 原文件保留",
+        "delete-file-with-backup": "只删除已验证的文件 · 删除前留备份",
+        "terminate-process": "终止进程 · 服务会重启",
+        "isolate-host": "主机断网隔离 · 该主机业务中断",
+        "revoke-session": "吊销会话 · 对方需重新登录",
+        "patch-config": "改动一处业务接口 / 配置",
+        "rotate-credential": "轮换凭证 · 旧凭证立即失效",
+      } satisfies Record<ActionCode, string>,
+      /** 说明卡上的四条字段，顺序就是设计稿的顺序。 */
+      briefFieldOrder: ["basis", "action", "impact", "rollback"] as const,
+    },
+
+    /* ------------------------------------------- 面板三态与未建面板的诚实标注 */
+    panel: {
+      loading: "正在装载今日事件簿…",
+      error: "这一屏派生失败",
+      errorNote: "事件流里出现了无法解析的引用。这是坏序列，不是要展示的状态。",
+      errorRetry: "重新装载事件流",
+      emptyDefault: "本回合尚未到达这一步",
+      scrollHint: "面板内滚动",
+    },
+
+    /* ------------------------------------------------------ ⑤ 攻击链 · 实体视图 */
+    attackGraph: {
+      title: "攻击链 · 实体视图",
+      subtitle: "对象模型：人-资产-文件-进程-数据",
+      empty: "画布上还没有实体",
+      emptyNote: "第 2 拍汇流之后，画布上会逐条长出与结论相关的实体节点。",
+      /**
+       * 图例 —— **视觉语汇的对照表**，说的是这个标记在画布上是什么意思。
+       * 它由 `tests/s1-console.spec.ts` 断言「三个键都在 DOM 上出现」。
+       */
+      legend: {
+        attackPath: "攻击路径",
+        controlled: "AI 控制中",
+        closed: "已闭环",
+      },
+      /** 图上**只有**带得动证据的边；这一句解释为什么线比设计稿少。 */
+      edgesNote: "图上只画有证据支撑的边：没有证据的连接不画，而不是补一条看起来对的线。",
+      /** 某个实体在事件流里找不到可引用的证据时的诚实标注。 */
+      noCitation: "本回合事件流里没有指向它的证据",
+      attackerProfile: "攻击者画像",
+      fingerprint: "手法指纹",
+      fingerprintMatches: (count: number) => `匹配 ${count} 次`,
+      mergedFrom: "AI 自动合并",
+    },
+
+    /* ------------------------------------------------------ ⑥ 处置与授权卡片区 */
+    authority: {
+      title: "人把关键门 · L0–L4 授权阶梯",
+      empty: "本回合还没有处置动作",
+      emptyNote: "第 6 拍之后，自主执行与待授权的处置都会出现在这里。",
+      submitted: (count: number) => `AI 提交 ${count} 项待授权`,
+      autoChannel: "免授权通道",
+      autoState: (level: string, decision: string) => `${level} 授权策略内 · ${decision}`,
+      autoExecuted: "已自动执行",
+      approvalRequired: "需人工授权",
+      rollbackWindow: "回滚窗口",
+      basis: "依据",
+      impact: "影响评估",
+      rollback: "回滚",
+      five: {
+        what: "做什么",
+        basis: "证据",
+        impact: "影响与风险",
+        rollback: "回滚",
+        alternative: "替代方案",
+      },
+      sla: "SLA 倒计时",
+      slaTimeout: "超时默认挂起不执行",
+      /** `02:17` —— 剩余时间。 */
+      remaining: (clock: string) => clock,
+      approve: "批准",
+      reject: "驳回",
+      changeParams: "改参数后批准",
+      decided: (decision: string) => `人工裁决 · ${decision}`,
+      decisions: {
+        approved: "批准",
+        rejected: "驳回",
+        "param-changed": "改参数后批准",
+      } satisfies Record<"approved" | "rejected" | "param-changed", string>,
+      authoritySource: "自主度与白名单来自数据层",
+      /**
+       * 动作代号 → 界面词。
+       *
+       * 这些代号（`ACTION_CATALOG` 的键）是**数据层的机器名**，不是给人读的文案。
+       * 当日事件簿里那些闭环各自带一张处置卡，标题过去直接拿代号拼
+       * （`rotate-credential · #b0041`）—— 于是中文界面里冒出两行英文，
+       * `/workbench` 的零英文泄漏检查当场判红（2026-09-17 实测）。
+       *
+       * 代号本身是**记录内容**、不翻译；**给人看的名字**住在这里。
+       * `satisfies Record<ActionCode, string>` 让数据层新增动作而词典漏掉时
+       * 在 `pnpm typecheck` 就红 —— 而不是等到演示现场才看见一行英文。
+       */
+      actionLabels: {
+        "inspect-file": "检查文件",
+        "verify-file": "复核文件",
+        "block-source": "封禁攻击源",
+        "quarantine-file": "隔离文件",
+        "delete-file-with-backup": "删除文件（先备份）",
+        "terminate-process": "终止进程",
+        "isolate-host": "隔离主机",
+        "revoke-session": "吊销会话",
+        "patch-config": "修补配置",
+        "rotate-credential": "轮换凭据",
+      } satisfies Record<ActionCode, string>,
+    },
+
+    /* ---------------------------------------------------------- ⑧ 审计时间线 */
+    audit: {
+      title: "全流程审计 · 留痕回放",
+      empty: "还没有留痕",
+      emptyNote: "第 7 拍之后，本回合的每一步都会在这里留下主体、时间与依据。",
+      /** 角标。**不写「可 4× 回放」** —— 播放倍速没有实现，写了就是一句做不到的承诺。 */
+      badge: "逐拍可回放",
+      badgeNote: "点任一行停在那一帧上",
+      rowSeek: "停在这一帧",
+      clock: "时间",
+      actor: "主体",
+      action: "动作",
+      basis: "依据",
+      result: "结果",
+      noBasis: "本行不引用证据",
+      /** ⑧ 的重放忠实性：同一游标两次渲染逐字段相同 —— 这句话就是那条不变量的界面说法。 */
+      faithfulNote: "按游标重放：不跳拍、不补拍",
+      cursorLabel: "游标",
+      replaySpeed: "1× · 播放倍速未实现",
+    },
+
+    /* -------------------------------------------------------- ⑪ 战果与沉淀面板 */
+    sediment: {
+      title: "战果 · AI 越用越聪明",
+      subtitle: "本次事件沉淀",
+      empty: "本回合还没有沉淀",
+      emptyNote: "第 16 拍之后，本回合学到的东西会逐条入账。",
+      /**
+       * 导出/导入 —— 不变量 `sediment.survives-export` 的界面侧。
+       * 三个控件都是真的：导出写剪贴板 + 下载文件，导入把贴回来的 JSON 解析并与当前状态逐条比对。
+       */
+      exportAction: "导出沉淀",
+      exportHint: "带出去的是条目 + 计数 + 裁决记录 + 事件链",
+      copyAction: "复制",
+      downloadAction: "下载 JSON",
+      importAction: "导入并核对",
+      importPlaceholder: "把导出的 JSON 贴回这里",
+      importOk: "导入一致：条目、计数、裁决与事件链逐条等价",
+      importFailed: (count: number) => `导入不一致：${count} 处差异`,
+      importParseFailed: "导入失败：这段文本不是一份可解析的沉淀导出物",
+      roundTripHint: "导出再导入，逐条等价",
+      exportNote: "导出物不含墙上时间：游标就是它的时间戳",
+      sourceRefs: "来源",
+      kindLabels: {
+        "detection-playbook": "检测剧本章节",
+        policy: "白名单策略",
+        "attacker-profile": "攻击者画像",
+      } satisfies Record<"detection-playbook" | "policy" | "attacker-profile", string>,
+    },
+
+    /** 本批**没有**实现的三个面板（⑨⑩⑭）。名字在这里，内容不在。 */
+    pending: {
+      askS1: "⑨ 问 S1",
+      pipeline: "⑩ E+N 数据汇流",
+      report: "⑭ 报告流式生成",
     },
   },
 

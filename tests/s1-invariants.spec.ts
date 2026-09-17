@@ -52,8 +52,9 @@ import { invariant } from "./support/product-contract"
  *
  * 本包登记五条（六条已签署里能不用 DOM 验证的那些）。第六条 `boundary.demo-is-labelled-as-demo`
  * 的判红方式写的是「每个路由断言存在**可见**的演示标识（非 aria-hidden、非 display:none）」——
- * 那需要 DOM，而本包没有界面；**声明了却没有对象会让 `pnpm factory:contract` 变红**，
- * 所以它留给组件阶段：原文仍在 `lib/s1/storyboard.ts` 的 `FRAME_INVARIANTS` 里，一字未动。
+ * 那需要 DOM，而本包没有界面；**声明了却没有对象会让 `pnpm factory:contract` 变红**。
+ * 组件第一批（2026-09-17）建出了那件对象，所以它现在**已经进契约、也已经登记**
+ * （`tests/s1-console.spec.ts`）；原文仍原样留在 `lib/s1/storyboard.ts` 的 `FRAME_INVARIANTS` 里。
  *
  * 第七条 `color.every-hue-has-one-meaning` 登记在 `tests/art-direction.spec.ts`
  * （那是对真实像素的断言，取证能力在那里）。
@@ -535,11 +536,14 @@ test.describe("契约与剧本的机器化副本", () => {
     expect(ON_DEMAND_BEAT?.at).toBe("任意时刻")
   })
 
-  test("第 7 条不变量留给组件阶段：契约里没有它，但原文在数据层里读得到", () => {
+  test("第 8 条不变量已由组件阶段落盘：契约里声明了它，原文仍在数据层里读得到", () => {
     const contract = JSON.parse(readFileSync(join(ROOT, "product-contract.json"), "utf8")) as {
       invariants: Array<{ id: string }>
     }
-    expect(contract.invariants.map((entry) => entry.id)).not.toContain(DEFERRED_FRAME_INVARIANT_ID)
+    // 数据层那一包**故意**没写进契约（判红需要 DOM，声明了没测试会让 factory:contract 变红）。
+    // 组件第一批建出了 DOM 对象，于是它进了契约、并在 `tests/s1-console.spec.ts` 里登记；
+    // 数据层这一侧保留的仍是它的**原文**，所以两边能对上。
+    expect(contract.invariants.map((entry) => entry.id)).toContain(DEFERRED_FRAME_INVARIANT_ID)
     expect(FRAME_INVARIANTS.map((entry) => entry.id)).toContain(DEFERRED_FRAME_INVARIANT_ID)
     const deferred = FRAME_INVARIANTS.find((entry) => entry.id === DEFERRED_FRAME_INVARIANT_ID)
     expect(deferred?.howTested).toContain("每个路由断言存在可见")

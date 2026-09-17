@@ -13,6 +13,10 @@
 # testing
 /coverage
 
+# QA artifacts (screenshots / reports produced by .qa/*.mjs)。它们属于**本机一次运行的产物**，
+# 不是源码：docs 里写明 `.qa/out` 不共享、不进仓。
+/.qa/out/
+
 # playwright
 /test-results/
 /playwright-report/

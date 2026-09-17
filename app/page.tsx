@@ -1,16 +1,19 @@
+import Link from "next/link"
+
 import { messages } from "@/lib/i18n"
 
 /**
- * S1 工作台 · 首屏（初始化边界阶段）。
+ * S1 工作台 · 首屏（诚实的阶段页）。
  *
  * 这一页是**诚实的首屏**，不是产品能力的展示：
  *
  *   • 它说明这是什么产品（16:9 单屏不加滚动的 SOC 控制台）、现在的边界在哪里、
  *     下一步是什么；
- *   • 它**不**假装已经实现了任何组件 —— 十二个组件一个都还没做，
- *     所以这里只列「本轮已完成 / 尚未开始」，并且把「形态规格」明确标成目标而不是现状；
+ *   • 组件层第一批（骨架 + ①②③④）落盘在 `/workbench`，这一页给的是**入口 + 阶段事实**：
+ *     「本轮已完成 / 尚未开始」两列必须每次落盘一批就改一次（文案在
+ *     `lib/i18n/zh-CN.ts` 的 `landing`），否则这一页就会开始说谎；
  *   • 它是 Server Component：没有入场动画、没有环境光、没有装饰性动效。
- *     产品的动效语言是 event-driven（只为状态变化服务），而首页没有状态变化。
+ *     产品的动效语言是 event-driven（只为状态变化服务），而这一页没有状态变化。
  *
  * 视觉构成取自设计稿实测的骨架气质：顶部一条读数指挥条，主体两列靠 1px 规则线分栏，
  * 读数与命令一律等宽，信息密度高，层级靠规则线与字重——不靠卡片边框、不靠渐变、不靠辉光。
@@ -78,9 +81,21 @@ export default function HomePage() {
             <p className="font-mono text-caption text-muted-foreground">{t.done.caption}</p>
           </section>
 
+          {/* 工作台入口：真链接，通向本批真正落盘的那一屏（/workbench）。 */}
+          <section className="flex flex-col gap-3 border border-hairline p-gutter">
+            <Link
+              href="/workbench"
+              className="w-fit border border-brand px-gutter py-2 text-label text-brand"
+            >
+              {t.entry.label}
+            </Link>
+            <p className="max-w-text text-caption leading-relaxed text-muted-foreground">
+              {t.entry.note}
+            </p>
+          </section>
+
           <section className="flex flex-col gap-3">
-            <h2 className="text-heading text-foreground">{t.done.title}</h2>
-            <ul className="flex flex-col">
+            <h2 className="text-heading text-foreground">{t.done.title}</h2>            <ul className="flex flex-col">
               {t.done.items.map((item) => (
                 <li
                   key={item}

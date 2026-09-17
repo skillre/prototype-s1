@@ -264,7 +264,17 @@ export function sedimentRoundTripDiff(
   state: IncidentState,
   ledger: readonly AuditLedgerEntry[],
 ): string[] {
-  const first = exportSedimentBundle({ state, ledger })
+  return bundleRoundTripDiff(exportSedimentBundle({ state, ledger }))
+}
+
+/**
+ * 同一件事的**入口二**：手上已经有一份 bundle 时（例如 ⑪ 面板把用户贴回来的
+ * JSON 解析成了 bundle）直接用它，不必先把它折回 `IncidentState` 再导出一次。
+ *
+ * 为什么必须共用这一个实现：如果界面另写一套"贴回来的和当前的一样吗"，
+ * 差异就会变成两套实现之间的差异，而 `sediment.survives-export` 守的是**数据层**。
+ */
+export function bundleRoundTripDiff(first: SedimentBundle): string[] {
   const serialized = serializeSediment(first)
   const imported = importSediment(serialized)
   if (!imported.ok) return imported.issues.map((issue) => `${issue.code} @ ${issue.path}: ${issue.message}`)

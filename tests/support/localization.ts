@@ -35,10 +35,11 @@ export const ALLOWED_ENGLISH: RegExp[] = [
 /**
  * 需要做「零英文」检查的页面。
  *
- * 初始化边界阶段本仓只有一条路由（`/`）；404 由 spec 里单独的 describe 覆盖。
- * 页面确实只有一条，不是漏了 —— 新增路由时把 slug 加进来。
+ * `/` 是诚实的阶段页（产品身份与当前进度）；`/workbench` 是工作台本体（1680×1050 画布 +
+ * ① 顶栏 + ②③④ 中列，2026-09-17 落盘）。404 由 spec 里单独的 describe 覆盖。
+ * 新增路由时把 slug 加进来。
  */
-export const LOCALIZED_ROUTES = ["/"] as const
+export const LOCALIZED_ROUTES = ["/", "/workbench"] as const
 
 /**
  * 采集当前视口内所有可见文本节点。
