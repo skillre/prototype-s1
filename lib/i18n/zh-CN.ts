@@ -105,17 +105,17 @@ export const zhCN = {
     description:
       "给保险公司安全团队用的 SOC 控制台。产品形态是 16:9 单屏不加滚动的三列战情室：左列攻击链实体视图，中列任务计划与研判流，右列处置授权与审计，底部常驻「问 S1」与流式报告。",
 
-    /* 工作台入口。它是一个真链接，不是装饰：第一批组件就在这一页后面。 */
+    /* 工作台入口。它是一个真链接，不是装饰：十二个组件就在这一页后面。 */
     entry: {
       label: "打开工作台",
-      note: "第一批：骨架 + 态势指挥条 + 任务计划 / 研判流 / 工具控制台；其余面板在页面上标着「本面板尚未实现」。",
+      note: "十二个组件已全部落盘：点进去看到的每一格都是真的，没有一处占位。⑬ 传统引擎对照栏按已签署决定不在本仓，也不在这一页。",
     },
 
     /* 顶栏读数条：等宽读数，不是 hero。 */
     strip: {
       stageLabel: "阶段",
-      stageValue: "组件层 · 第一批",
-      stageNote: "骨架 + ①②③④ 已落盘",
+      stageValue: "组件层 · 十二格落盘",
+      stageNote: "①–⑫ 与 ⑭ 已建成 · 等人眼验收",
       specLabel: "形态规格",
       specValue: "12 个组件 · 6 特征",
       specNote: "见设计稿实测与实现规格",
@@ -129,22 +129,22 @@ export const zhCN = {
 
     done: {
       title: "本轮已完成",
-      caption: "初始化边界（baseline → product）",
+      caption: "组件批次 3：最后四个面板 + 整屏收口（2026-09-17）",
       items: [
-        "身份重写：包名、metadata、首页、404 与词典都改成 S1 自己的，初始化面上不再有基线或样例的名字。",
-        "Reference Sample 删除：CRM 路由、内置演示、样例样式层与只服务它们的测试全部移除，边界记在 init-contract.json。",
-        "工厂门禁接上：初始化边界、策略、Visual Manifest、语义契约四道自查命令，加上 lint / typecheck / test / build / qa。",
-        "端口与 QA 隔离：QA 端口 3310，自有 server 自起自停，绝不复用已经存在的进程。",
+        "十二格全部落盘：⑨ 问 S1、⑩ E+N 汇流管道、⑫ 数字员工花名册、⑭ 报告流式生成补上了最后四个占位，工作台上不再有未实现的面板。⑬ 传统引擎对照栏按已签署决定永久空缺（由演示层承担）。",
+        "⑤ 攻击链画布换成真图布局：落点不再是手写格子，而是由图的形状算出的排与列区间（分层 + 层内重心排序），画布高度随内容撑开。判据是浏览器里逐对量矩形 —— 任意两个节点不相交，并且配了一条会红的负对照。",
+        "骨架实测值钉到了 DOM：1680×1050 下用 getBoundingClientRect() 断言顶栏 76 / 底栏 130 / 三列 500·600·366 / 根内边距 20 / 列间距 14，以及窄视口下的等比缩小。「常量等于规格」与「页面等于常量」现在是两条独立的断言。",
+        "界面上的每个数字都能追到事件：顶栏三个计数、待人工授权项数、在岗人数（收尾那一帧逐字等于种子的「4 个 AI 数字员工在岗」）、管道上的两路计数与报告进度，全部由回放游标派生，没有一个是抄进代码的常量。",
       ],
     },
 
     pending: {
-      title: "尚未开始",
-      caption: "以下都不是本仓现在的能力",
+      title: "待人决定的事项",
+      caption: "以下都不是本仓现在的能力，是等人做的两件事",
       items: [
-        "十二个组件里只有第一批落盘（骨架 + ① ② ③ ④，在「打开工作台」那一页）：攻击链画布、处置授权区、审计时间线、战果沉淀、问 S1、E+N 汇流视图、顶栏花名册、报告流式生成都还是页面上的「本面板尚未实现」占位。",
-        "数据层与确定性回放引擎已经建好，并且被第一批界面消费；但「界面上的数字显示对不对」目前只有那一批的测试覆盖，其余面板的判据要等各自的批次。",
-        "视觉方向已经落地：Kits 风格包由适配层接入深色与浅色两套主题；签名组件仍是 0。",
+        "人眼验收（HVA）：双主题、1680×1050，以及 3 米投影距离下的可读性。看哪里、怎么判红写在《S1-人眼验收清单.md》里，Agent 不能代填 —— 没有 HVA 就没有发布，状态只能停在 READY FOR HUMAN VISUAL ACCEPTANCE。",
+        "发布授权：是否发布、发布哪个 SHA、要不要 Vercel 线上地址。源码发布与 Production 部署是两次独立授权，都在人手里。",
+        "⑬ 传统引擎对照栏与演示编排（左屏、双屏投屏调度、真实攻防环境）不在本仓：前者按签署交给演示层，后者属于演示侧。",
       ],
     },
 
@@ -357,9 +357,6 @@ export const zhCN = {
     demo: {
       /** 组件级角标：这个组件的动作在本阶段是脚本化回放。 */
       scripted: "脚本化回放 · 命令不落到真实主机",
-      /** 诚实标注：未建成的面板不假装。 */
-      notBuilt: "本面板尚未实现",
-      notBuiltNote: (panel: string) => `${panel} 计划在组件阶段下一批实现`,
       shellNote: "演示环境",
     },
 
@@ -407,6 +404,11 @@ export const zhCN = {
       confidence: (percent: number) => `置信度 ${percent}%`,
       nextStep: "下一步",
       sources: "数据来源",
+      /**
+       * 证据引用的类别词。chip 由 Kits 的签名组件渲染，而它**要产品把类别词传进去**
+       * （组件不自己发明文案）—— 所以这个词必须住在词典里，不能变成组件里的字面量。
+       */
+      evidenceLabel: "证据",
       empty: "还没有形成结论",
       emptyNote: "第 2 拍汇流之后，这里会出现第一条带证据的结论。",
       claimShape: "结论",
@@ -617,14 +619,122 @@ export const zhCN = {
       } satisfies Record<"detection-playbook" | "policy" | "attacker-profile", string>,
     },
 
-    /** 本批**没有**实现的三个面板（⑨⑩⑭）。名字在这里，内容不在。 */
-    pending: {
-      askS1: "⑨ 问 S1",
-      pipeline: "⑩ E+N 数据汇流",
-      report: "⑭ 报告流式生成",
+    /* ------------------------------------------------------------ ⑨ 问 S1 */
+    /**
+     * ⑨ 的判据是 `evidence.every-claim-cites-a-source` 在**对话**上的形态。
+     *
+     * 措辞里有两处是刻意的：
+     *   · `refusedUnmatched` 说出**有几个**问题答得出来 —— 「答不出」如果不说清楚
+     *     边界在哪，读起来像系统坏了，而不是像一句诚实的话；
+     *   · `cannotFabricate` 把机制说出来（回答要么带证据，要么不回答）。
+     */
+    ask: {
+      title: "问 S1",
+      subtitle: "自然语言 · 结论先行 · 证据可点开",
+      inputLabel: "向 S1 提问",
+      send: "发送",
+      quickAsk: "快捷问",
+      answerableTitle: "有证据可引的问题",
+      conclusionLabel: "结论",
+      evidenceLabel: "证据",
+      sourceTitle: "出处",
+      sourcesLabel: "数据来源",
+      confidence: (percent: number) => `置信度 ${percent}%`,
+      empty: "还没有提问",
+      emptyNote: "这一格由观众按需触发：点一个快捷问，或直接问下面列出的问题之一。",
+      refusedTitle: "这个问题答不出",
+      refusedEmpty: "输入框是空的 —— 没有问句就没有回答。",
+      refusedUnmatched: (count: number) =>
+        `本条事件流里只有 ${count} 条带证据的回答，这句话不在其中。`,
+      cannotFabricate: "S1 不会为它编一个结论：回答要么引得出证据，要么就不回答。",
+      askedAt: (beat: number) => `由第 ${beat} 拍按需追加`,
+    },
+
+    /* ------------------------------------------------- ⑩ E+N 数据汇流管道 */
+    /**
+     * ⑩ 的判据是 `evidence.counters-derive-from-events` 在管道上的形态：
+     * 图上每个数字都是数出来的。所以这里的每个模板都带一个参数 ——
+     * 没有任何一句是"先写死一个数，再由组件显示它"。
+     */
+    pipeline: {
+      title: "E+N 证据汇流 · 上下文管道",
+      subtitle: "同一事件双源绑定",
+      empty: "本回合还没有数据汇流",
+      emptyNote: "第 2 拍之后，两路数据源各自带着自己的证据进入管道。",
+      laneEvidence: (count: number) => `本回合证据 ${count} 条`,
+      laneMessages: (count: number) => `引用这一路的已揭示消息 ${count} 条`,
+      laneEmpty: "这一路还没有证据进管道",
+      mergeInto: "汇入",
+      packageTitle: "上下文包",
+      packageEmpty: "两路尚未合流",
+      packageEmptyNote: "第 2 拍的上下文包会在这里给出合流判定。",
+      mergeElapsed: (milliseconds: number) => `汇流耗时 ${milliseconds} 毫秒`,
+      consumedTitle: "AI 研判消费",
+      consumedMerged: (count: number) => `双源合流结论 ${count} 条`,
+      consumedSingle: (count: number) => `单源结论 ${count} 条`,
+      consumedNone: "还没有结论消费这两路证据",
+      disclaimerLabel: "强调",
+    },
+
+    /* ------------------------------------------------------ ⑫ 数字员工花名册 */
+    /**
+     * ⑫ 的判据是 `authority.no-unlisted-autonomous-action` 在花名册上的形态。
+     *
+     * `onDuty(count)` 必须逐字产出种子 `headerStats.rosterLabel` 的形状 ——
+     * 那句「4 个 AI 数字员工在岗」是**算出来的**：收尾那一帧上 `count` 恰好是 4，
+     * 有断言逐字比对（`tests/s1-batch3.spec.ts`）。所以模板本身不能带数字。
+     */
+    roster: {
+      title: "数字员工花名册",
+      subtitle: "在岗人数由本回合的动作算出，不是编制表上的数字",
+      open: "展开花名册",
+      close: "收起花名册",
+      onDuty: (count: number) => `${count} 个 AI 数字员工在岗`,
+      onDutyOf: (onDuty: number, total: number) => `在岗 ${onDuty} / 编制 ${total}`,
+      seatIdle: "本回合未出动",
+      lastAction: "最近动作",
+      actionCount: (count: number) => `本回合动作 ${count} 条`,
+      autonomy: "自主档",
+      inWhitelist: "在自主清单内 · 允许 L3 自动执行",
+      outsideWhitelist: "不在自主清单内 · 必须停在人这道门",
+      noAction: "本回合没有动作，因此没有白名单判决",
+      awaiting: "待人工授权",
+      awaitingNone: "没有停在他这道门的待批卡",
+      whitelistNote: "白名单判决来自数据层的动作目录，与审计扫描器同一份判据源",
+    },
+
+    /* ------------------------------------------------------- ⑭ 报告流式生成 */
+    /**
+     * ⑭ 有两条判据：`sediment.survives-export`（导出后逐条等价）与
+     * `boundary.demo-is-labelled-as-demo`（整篇一眼可辨是演示环境）。
+     *
+     * 第二条决定了 `demoBanner` 必须出现在**报告正文的第一行**，而不是落款：
+     * 报告是会被截图、被转发、被单独拿走的东西，它得自己说得清自己是什么。
+     * 导出物里同样带着这条标识（`demo.isDemo` 恒为 true）。
+     */
+    report: {
+      /** 面板头用的就是设计稿的标题（`《事件处置报告》`），"流式生成"由副题与进度承担 —— */
+      heading: "《事件处置报告》",
+      /** ……拼成「报告流式生成 · …」会读成两个标题叠在一起（2026-09-17 截图实拍）。 */
+      subtitle: "流式生成 · 逐行可导出 · 导出后逐条等价",
+      empty: "报告尚未开始生成",
+      emptyNote: "第 16 拍之后，报告会在这里逐行流式生成。",
+      generatedOf: (done: number, total: number) => `已生成 ${done} / ${total} 行`,
+      progress: (percent: number) => `已生成 ${percent}%`,
+      progressNote: "进度由游标派生：已生成字数 ÷ 总字数（设计稿静帧的 68% 是取值，不是常量）",
+      exportAction: "导出报告",
+      exportHint: "带出去的是报告正文 + 演示标识 + 导出游标",
+      copyAction: "复制",
+      downloadAction: "下载 JSON",
+      importAction: "导入并核对",
+      importPlaceholder: "把导出的 JSON 贴回这里",
+      importOk: "导入一致：报告逐行等价，演示标识也在",
+      importFailed: (count: number) => `导入不一致：${count} 处差异`,
+      importParseFailed: "导入失败：这段文本不是一份可解析的报告导出物",
+      roundTripHint: "导出再导入，逐行等价",
+      exportNote: "导出物不含墙上时间：游标就是它的时间戳",
     },
   },
-
   /* ------------------------------------------------------------------- 404 */
   notFound: {
     app: {

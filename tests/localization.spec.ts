@@ -70,8 +70,13 @@ test.describe("首屏与 404", () => {
     await expect(h1).toContainText("S1")
     // 首屏必须说清楚「这是什么产品」，而不是只有一句品牌名。
     await expect(page.getByText("AI 原生安全运营工作台").first()).toBeVisible()
-    // 而且它必须诚实地标出阶段：组件层还没实现。
-    await expect(page.getByText("尚未开始").first()).toBeVisible()
+    // 而且它必须诚实地标出阶段。**这一条跟着阶段事实走**（与 `landing` 文案同一条规矩：
+    // 哪一批落盘了就改一次，否则这一页会开始说谎）——
+    // 2026-09-17 组件批次 3 落盘之后，Agent 侧已经没有「待实现的面板」，只剩**待人决定的事项**：
+    // 人眼验收与发布授权。所以这里钉的是那两件事，而不是上一批的「尚未开始」。
+    await expect(page.getByText("待人决定的事项").first()).toBeVisible()
+    await expect(page.getByText("人眼验收").first()).toBeVisible()
+    await expect(page.getByText("发布授权").first()).toBeVisible()
     await expectFullyLocalized(page, "首屏")
   })
 

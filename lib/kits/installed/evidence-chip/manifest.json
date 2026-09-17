@@ -1,0 +1,171 @@
+{
+  "$schema": "../../registry/manifest.schema.json",
+  "id": "evidence-chip",
+  "name": "EvidenceChip",
+  "version": "0.1.0",
+  "status": "approved",
+  "type": "component",
+  "apiVersion": "1.0.0",
+
+  "summary": "一条可点开的证据引用：类别 + 引用号 + 描述 + 条数。它解决的是「结论的归属」——引用必须能被一眼认出、被键盘到达、被自动化清点；抽屉内容与点击后的路由都不归它管。",
+  "purpose": "把「证据引用」这件事变成原子件：任何『结论必须挂证据』的界面都能用它，不绑定任何产品语义，也不引入第三方运行时。",
+
+  "internalApi": {
+    "component": "EvidenceChip",
+    "props": {
+      "label": { "type": "string", "required": true, "note": "这条引用说的是什么（产品文案）" },
+      "evidenceId": { "type": "string", "note": "引用号，例如 e-41；省略 = 无编号的补充引用（如「手法指纹匹配」）" },
+      "count": { "type": "number", "note": "同类引用合并的条数；只有 > 1 才渲染 ×n（NaN / Infinity 一律不渲染）" },
+      "category": { "type": "string", "note": "类别词（例如「证据」）；省略 = 不渲染类别词" },
+      "tone": { "type": "\"neutral\" | \"brand\" | \"signal\" | \"critical\"", "default": "（不设置）", "note": "省略 = 引用号用 pack 的引用色槽位；给了才用该语义槽位覆盖" },
+      "intensity": { "type": "Intensity", "default": "medium", "note": "只调引用号下划线的厚度；`none` = 不加下划线" },
+      "expanded": { "type": "boolean", "note": "抽屉是否已打开（产品告知，chip 不自己保存状态）→ aria-expanded" },
+      "drawerId": { "type": "string", "note": "抽屉的 DOM id → aria-controls" },
+      "onActivate": { "type": "(evidenceId?: string) => void", "note": "省略时渲染 span 而不是 button（不可点开的引用不进 Tab 顺序）" },
+      "disableMotion": { "type": "boolean", "default": false },
+      "className": { "type": "string" },
+      "id": { "type": "string" }
+    },
+    "domContract": {
+      "data-kits-component": "\"evidence-chip\" —— 两种形态（button / span）都带，便于自动化清点",
+      "data-kits-evidence-id": "引用号（仅当有引用号时存在）",
+      "data-kits-evidence-count": "合并条数（仅当真的渲染了 ×n 时存在）",
+      "data-kits-evidence-expanded": "\"true\" | \"false\"（仅当产品给了 expanded 时存在；与 aria-expanded 同值）",
+      "元素类型": "有 onActivate → <button type=\"button\">；没有 → <span>。元素类型是产品语义的产物，不是可配置项"
+    },
+    "explicitlyNotExposed": [
+      "color / backgroundColor / borderColor / 任何 hex",
+      "borderWidth / radius / padding / gap / fontSize / lineHeight",
+      "duration / easing / delay / transition",
+      "underline / textDecorationThickness / letterSpacing / textTransform",
+      "icon / glyph（`#` 是引用语法的固定记号，不是可换图标）",
+      "width / maxWidth / whiteSpace（引用号自身的 nowrap 属于内容完整性，不是样式旋钮）",
+      "抽屉内容 / 打开动画 / 焦点接管（都属于产品）",
+      "路由与数据获取（chip 不找证据）",
+      "任何视觉字面量"
+    ],
+    "example": "<EvidenceChip category=\"证据\" evidenceId=\"e-41\" label=\"原始报文\" expanded={open === \"e-41\"} drawerId=\"evidence-drawer\" onActivate={setOpen} />"
+  },
+
+  "adapter": {
+    "required": true,
+    "reason": "chip / tag / badge 这一类第三方组件把「多小、多圆、什么色、什么动画」直接放在 props 上（size / variant / color / radius / transition）。产品一旦直接用它，这些取值就写死在产品层，换 pack 不会跟着变；而一条引用的**身份**其实只有四件事：类别、引用号、描述、条数。",
+    "pattern": "External Component → Adapter → 内部稳定 API → Product",
+    "currentImplementation": "first-party（零第三方依赖，只依赖 @kits/react-utils 与 React peer）",
+    "swapInThirdParty": [
+      "1. 第三方资产放入 incoming/components/ 并走完整 incoming 流程（license → dependency → compatibility）",
+      "2. 在 adapters/ 下写映射：category/evidenceId/label/count → 第三方的 text/size/variant，tone → 其 color 槽位，intensity → 其强调档位",
+      "3. 保留 DOM 契约不变（data-kits-component / data-kits-evidence-id / data-kits-evidence-count / data-kits-evidence-expanded）",
+      "4. 产品代码零改动：调用形状一字不变"
+    ]
+  },
+
+  "apiStability": {
+    "breakingChangePolicy": "破坏性变更升 major（例如改变元素类型的判定规则、去掉 DOM 契约里的属性）",
+    "additiveChangePolicy": "新增档位（category 之外的语义片段）属于 minor；新增视觉 prop 属于**违规**"
+  },
+
+  "dependencies": [],
+  "thirdPartyRuntime": "none",
+  "bundleSize": "≈0.7 KB gzip JS + ≈0.8 KB gzip CSS（esbuild --minify 实测；React 与 @kits/react-utils 外置）",
+  "performance": {
+    "classification": "A",
+    "cost": "纯静态 CSS + 一次 React 渲染；状态变化只过渡三个颜色属性，不触碰布局、不创建合成层",
+    "notes": [
+      "没有观察器、没有 rAF、没有指针监听、没有定时器 —— 组件挂载后不再产生任何持续的运行时成本（这是它属于 A 档而不是 C 档的判据，与 insight-reveal 同档）",
+      "过渡只写在 color / border-color / background-color 三个属性上：不产生合成层，也不触发重排；时长与缓动来自 pack",
+      "同屏 20 条 chip 的成本是 20 个 inline-flex 盒子，不是 20 个监听器 —— 引用列表的规模敏感点只在 DOM 节点数",
+      "引用号用等宽 + tabular-nums + slashed-zero 呈现：这是**可读性**措施（0 与 O 在 id / hash 里必须可区分），不引入字体文件（字体仍走 pack 的系统栈）",
+      "无 backdrop-filter、无 filter、无 box-shadow、无 mix-blend-mode —— 这四项是本仓库把资产降到 B 档的原因，本组件一个都不用"
+    ]
+  },
+
+  "ssrCompatible": true,
+  "ssrNotes": [
+    "组件不读取 window / document / navigator，不注册任何监听，也不做能力探测（它不是「能力型」组件：没有 hover 依赖，也没有指针跟随）",
+    "服务端 HTML 与客户端首帧逐字节一致 —— 没有 mounted 之后才出现的内容，因此不存在 hydration mismatch",
+    "引用号、类别词、描述、条数是**可见文本**：JS 未水合、脚本失败、被 read-it-later 抓取时，一条引用依然是完整可读的一句话",
+    "样式只读 var(--kits-*)，未绑定任何 pack 时回落到契约层的中立值，页面依然可用（引用色在那种状态下走 var() 兜底，见 evidence-chip.css 的注释）"
+  ],
+
+  "mobileCompatible": true,
+  "mobileFallback": {
+    "trigger": "(hover: none) or (pointer: coarse)",
+    "behavior": [
+      "hover 只做强调（边界与墨色加重），**不揭示任何信息**；粗指针下这套强调态由媒体查询常驻，因此不存在「手指看不到的状态」",
+      "粗指针下最小高度取 pack 的 --kits-control-height（契约层 2.25rem / console 2.375rem），让触控目标可命中；宽度仍由内容决定",
+      "组件不注册任何指针监听，触屏上不会出现悬停残留态或滚动中的抖动",
+      "无内容损失：类别词、引用号、描述、条数在触屏与桌面完全一致"
+    ],
+    "noContentLoss": true
+  },
+
+  "reducedMotion": {
+    "behavior": [
+      "组件没有位移、缩放、模糊与循环动画，唯一的动效是颜色过渡；reduce 下时长归零，状态切换**立即**生效",
+      "状态本身一个都不取消：hover / 已展开 / 键盘焦点 / 按下依然有可见反馈，只是不再渐变（「减少动效」不是「减少信息」）",
+      "契约层已把 --kits-dur-* 强制归零，组件 CSS 另有显式 @media (prefers-reduced-motion: reduce) 块作为第二层",
+      "产品级开关 disableMotion 走同一条路径（渲染 --still 类），组件内建，产品不需要自己写 CSS 分支"
+    ],
+    "mechanism": "两层：契约层的时长归零 + 组件 CSS 的显式媒体查询（外加 disableMotion 类）"
+  },
+
+  "a11y": {
+    "notes": [
+      "可点开的引用是**真 button**：Enter / Space 原生激活、Tab 顺序即文档顺序、不需要任何 keydown 兜底",
+      "可访问名 = 可见文本（类别 + 引用号 + 描述 + 条数）。刻意不给计数写 aria-label —— 同一条 chip 上不该有两套真相，量词也不是原子件该发明的文案",
+      "不可点开的引用渲染 span 而不是「点开不动的 button」：否则它会进入 Tab 顺序、被读成可操作，而按下去什么都不会发生",
+      "引用号显式 text-transform: none —— pack 的大写排版不得把 e-41 改写成 E-41（引用号是匹配键，不是文案）",
+      "颜色不是唯一编码：每条引用都自带引用号与描述文字，色调只做强调；tone 取 critical 时同样不替代文字",
+      "焦点环用 pack 的 --kits-focus-ring-* 三件套，随 pack 变化但始终可见（不是 outline: none）",
+      "文字对比度由 pack 的 ink / ink-muted 承担：例如 console 的最差面（ink-muted on card）实测 6.20:1，高于 AA 的 4.5:1"
+    ],
+    "keyboard": "Tab 到达 → Enter / Space 激活（原生 button 行为）；已展开状态通过 aria-expanded 暴露给辅助技术，抽屉内容由产品负责可聚焦",
+    "focusNote": "抽屉打开后是否把焦点移入抽屉，是产品的决定（chip 不接管焦点）；chip 只保证自己退出/进入抽屉时焦点仍在原处"
+  },
+
+  "usedByStylePacks": {
+    "console": "signature（等宽 + 0 圆角 + 2px 语法线的矩形格位；引用号取该 pack 的 --kits-data-series-3，即声明里的「证据引用蓝」）"
+  },
+
+  "recommendedFor": [
+    "data-heavy",
+    "high-density"
+  ],
+  "recommendedForNotes": [
+    "数据密集型界面：结论、读数、判定旁边必须挂得住「依据是哪一条」——chip 是这类界面里最小的可点开证据单元",
+    "高密度读数界面：一条引用只有四块内容（类别 / 引用号 / 描述 / 条数），一行里能排下多条，不需要为它开一块面板",
+    "需要被自动清点的界面：引用号落在 DOM 契约上（data-kits-evidence-id），审计脚本与端到端测试可以直接枚举「这条结论挂了哪几条证据」，不需要读文本",
+    "需要键盘可达的审阅流：真 button + 原生激活，审阅者可以逐条 Tab 过去，不必用鼠标找可点区域"
+  ],
+  "avoidFor": [
+    "text-heavy"
+  ],
+  "avoidForNotes": [
+    "长文阅读界面：chip 是一个控件，不是句子的一部分 —— 在连续段落里插入可点开的格位会打断阅读节奏",
+    "把 chip 当正文用（例如把「证据#e-41」写进段落里代替一句话）：引用应当**挂在**结论旁边，而不是成为结论的语法成分"
+  ],
+
+  "demo": "demo.tsx",
+  "readme": "README.md",
+  "files": {
+    "implementation": "evidence-chip.tsx",
+    "styles": "evidence-chip.css",
+    "entry": "index.ts"
+  },
+
+  "source": {
+    "kind": "first-party",
+    "origin": "prototype-kits",
+    "license": "UNLICENSED (internal)",
+    "containsThirdPartyCode": false,
+    "inspiration": [
+      "引用标记（citation marker）与脚注编号的长期共识：编号要小、要能点、要能和正文区分开",
+      "安全研判工作流里「结论必须挂证据」的作业习惯（每一条判定后面跟着报文 / 进程链 / 文件指纹）",
+      "本实现为独立编写，未复制任何第三方源码"
+    ]
+  },
+
+  "maintainer": "Prototype Factory",
+  "updatedAt": "2026-09-16"
+}

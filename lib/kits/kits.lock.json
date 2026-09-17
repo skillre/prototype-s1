@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
   "registryVersion": "0.3.0",
-  "generatedAt": "2026-09-16T15:00:57.883Z",
+  "generatedAt": "2026-09-17T06:38:01.525Z",
   "source": {
     "kind": "source-installation",
     "repo": "prototype-kits",
-    "commit": "26353fac66d00c56a5b6380b7113cf0f07e1aa53",
+    "commit": "623736d8b7bba53597216ddd907a580a724b2c92",
     "dirty": false
   },
   "layout": {
@@ -85,7 +85,7 @@
         },
         {
           "path": "lib/kits/installed/console/manifest.json",
-          "checksum": "bd23ce0b4091d78e"
+          "checksum": "f7a6add22cdf2989"
         },
         {
           "path": "lib/kits/installed/console/motion.ts",
@@ -93,7 +93,7 @@
         },
         {
           "path": "lib/kits/installed/console/README.md",
-          "checksum": "755c96c07fad7538"
+          "checksum": "6be8fa3141b60967"
         },
         {
           "path": "lib/kits/installed/console/SKILL.md",
@@ -129,12 +129,83 @@
           "checksum": "5ecf4a2bcc385cee"
         }
       ]
+    },
+    {
+      "id": "evidence-chip",
+      "type": "component",
+      "version": "0.1.0",
+      "status": "approved",
+      "apiVersion": "1.0.0",
+      "files": [
+        {
+          "path": "lib/kits/installed/evidence-chip/evidence-chip.css",
+          "checksum": "8b10d650268f1245"
+        },
+        {
+          "path": "lib/kits/installed/evidence-chip/evidence-chip.tsx",
+          "checksum": "dcdca14b94f8dd6e"
+        },
+        {
+          "path": "lib/kits/installed/evidence-chip/index.ts",
+          "checksum": "b2edabdc306b2879"
+        },
+        {
+          "path": "lib/kits/installed/evidence-chip/manifest.json",
+          "checksum": "4d2622bc80456890"
+        },
+        {
+          "path": "lib/kits/installed/evidence-chip/README.md",
+          "checksum": "c90c2fba21ae906f"
+        }
+      ]
+    },
+    {
+      "id": "react-utils",
+      "type": "package",
+      "version": "0.1.0",
+      "status": "approved",
+      "apiVersion": "1.0.0",
+      "files": [
+        {
+          "path": "lib/kits/installed/react-utils/contract.ts",
+          "checksum": "34dfad0239454221"
+        },
+        {
+          "path": "lib/kits/installed/react-utils/env.ts",
+          "checksum": "7d49664d9df7af4c"
+        },
+        {
+          "path": "lib/kits/installed/react-utils/index.ts",
+          "checksum": "ac99cba482f4e30d"
+        },
+        {
+          "path": "lib/kits/installed/react-utils/README.md",
+          "checksum": "2cf13978474aa659"
+        },
+        {
+          "path": "lib/kits/installed/react-utils/use-element-pointer.ts",
+          "checksum": "5c2b6574b45a7f2d"
+        },
+        {
+          "path": "lib/kits/installed/react-utils/use-parallax-layers.ts",
+          "checksum": "e54657eb5deab3e5"
+        },
+        {
+          "path": "lib/kits/installed/react-utils/use-reveal.ts",
+          "checksum": "217b03dfa191f58d"
+        }
+      ]
     }
   ],
   "dependencies": [
     {
       "from": "console",
       "to": "contracts",
+      "requirement": "*"
+    },
+    {
+      "from": "evidence-chip",
+      "to": "react-utils",
       "requirement": "*"
     }
   ],
@@ -201,7 +272,7 @@
     },
     {
       "path": "lib/kits/installed/console/manifest.json",
-      "checksum": "bd23ce0b4091d78e",
+      "checksum": "f7a6add22cdf2989",
       "assetId": "console"
     },
     {
@@ -211,7 +282,7 @@
     },
     {
       "path": "lib/kits/installed/console/README.md",
-      "checksum": "755c96c07fad7538",
+      "checksum": "6be8fa3141b60967",
       "assetId": "console"
     },
     {
@@ -243,26 +314,88 @@
       "path": "lib/kits/installed/contracts/tokens.css",
       "checksum": "5ecf4a2bcc385cee",
       "assetId": "contracts"
+    },
+    {
+      "path": "lib/kits/installed/evidence-chip/evidence-chip.css",
+      "checksum": "8b10d650268f1245",
+      "assetId": "evidence-chip"
+    },
+    {
+      "path": "lib/kits/installed/evidence-chip/evidence-chip.tsx",
+      "checksum": "dcdca14b94f8dd6e",
+      "assetId": "evidence-chip"
+    },
+    {
+      "path": "lib/kits/installed/evidence-chip/index.ts",
+      "checksum": "b2edabdc306b2879",
+      "assetId": "evidence-chip"
+    },
+    {
+      "path": "lib/kits/installed/evidence-chip/manifest.json",
+      "checksum": "4d2622bc80456890",
+      "assetId": "evidence-chip"
+    },
+    {
+      "path": "lib/kits/installed/evidence-chip/README.md",
+      "checksum": "c90c2fba21ae906f",
+      "assetId": "evidence-chip"
+    },
+    {
+      "path": "lib/kits/installed/react-utils/contract.ts",
+      "checksum": "34dfad0239454221",
+      "assetId": "react-utils"
+    },
+    {
+      "path": "lib/kits/installed/react-utils/env.ts",
+      "checksum": "7d49664d9df7af4c",
+      "assetId": "react-utils"
+    },
+    {
+      "path": "lib/kits/installed/react-utils/index.ts",
+      "checksum": "ac99cba482f4e30d",
+      "assetId": "react-utils"
+    },
+    {
+      "path": "lib/kits/installed/react-utils/README.md",
+      "checksum": "2cf13978474aa659",
+      "assetId": "react-utils"
+    },
+    {
+      "path": "lib/kits/installed/react-utils/use-element-pointer.ts",
+      "checksum": "5c2b6574b45a7f2d",
+      "assetId": "react-utils"
+    },
+    {
+      "path": "lib/kits/installed/react-utils/use-parallax-layers.ts",
+      "checksum": "e54657eb5deab3e5",
+      "assetId": "react-utils"
+    },
+    {
+      "path": "lib/kits/installed/react-utils/use-reveal.ts",
+      "checksum": "217b03dfa191f58d",
+      "assetId": "react-utils"
     }
   ],
   "adapters": {
     "templateVersion": "0.2.0",
     "written": [
+      "lib/kits/adapters/evidence-chip.tsx"
+    ],
+    "kept": [
       "lib/kits/adapters/style-console.css",
       "lib/kits/adapters/style-console.ts",
       "lib/kits/adapters/style-pack.ts",
       "lib/kits/adapters/README.md"
-    ],
-    "kept": []
+    ]
   },
   "seam": {
     "version": "0.2.0",
     "file": "lib/kits/adapters/seam/seam.json",
-    "written": [
+    "written": [],
+    "kept": [
       "lib/kits/adapters/seam/README.md",
       "lib/kits/adapters/seam/seam.json",
       "lib/kits/adapters/seam/_template.ts"
-    ],
-    "kept": []
+    ]
   }
 }

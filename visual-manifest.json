@@ -3,8 +3,10 @@
   "productType": "ai-native-security-console",
   "firstVisual": "第一屏是三列战情室：顶部 76px 指挥条给出三组等宽读数（今日 AI 自主闭环 128 · 人工介入 3 · 平均处置 41s）与「攻击者 #0421 第 3 回合」的进行中状态；左列 500px 是攻击链实体视图，攻击者 #0421 → DMZ 应用服务器 → webshell2.jsp 由 1px 规则线连成一条已经收敛的路径，最后一个节点旁标着「定位完成 · hash 比对中」；中列 600px 上半是任务计划，重规划新增的那一行与旧计划被划掉的那一行同时可见；右列 366px 顶部是一张待人授权的五件套卡片（做什么 / 证据 / 影响与风险 / 回滚 / 替代方案），底下压着 SLA 倒计时 02:17。",
   "stylePack": "console",
-  "signatureComponents": [],
-  "signatureComponentBudget": 0,
+  "signatureComponents": [
+    "evidence-chip"
+  ],
+  "signatureComponentBudget": 1,
   "deviations": [],
   "effects": [],
   "motionDirection": "event-driven",

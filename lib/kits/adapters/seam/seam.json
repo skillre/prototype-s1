@@ -2,7 +2,9 @@
   "seamVersion": "0.2.0",
   "generatedBy": "kits add",
   "adapterRoot": "lib/kits/adapters",
-  "bindings": {},
+  "bindings": {
+    "evidence-cite": "evidence-chip"
+  },
   "notes": [
     "bindings 的键是你选的语义角色名（pointer / structure / data / style …），值是本次安装里的 asset id。",
     "Kits 不替你决定哪个资产承担哪个角色 —— 这是产品决策，不是可以推断的事实。",

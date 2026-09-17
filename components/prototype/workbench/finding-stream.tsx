@@ -11,6 +11,20 @@ import {
   type FindingCard,
 } from "@/components/prototype/workbench/view-model"
 import { WorkbenchPanel, type PanelStatus } from "@/components/prototype/workbench/panel"
+/**
+ * 证据 chip 走 **Kits 的签名组件** —— 但产品代码 import 的是**角色文件**，不是资产名。
+ *
+ * 这一行就是决策 13（「让 S1 真的消费证据 chip 签名组件」）在产品侧的落点：
+ * `evidence-cite` 是产品选定的语义角色，角色的绑定声明在适配接缝里
+ * （`lib/kits/adapters/seam/seam.json` 的 `bindings`：角色 → 本次安装里的资产 id）。
+ *
+ * 为什么不直接 import 资产名：产品源码里**不得出现 Kits 资产 id** ——
+ * 这条不是风格偏好，`kits-seam` 门禁会拿**本次安装**里的资产逐个子串比对，
+ * 命中即红（它连注释里的代码跨度也算，因为它认为「写在反引号里的仍是代码」）。
+ * 把资产名收进角色文件之后，产品逻辑只认识「证据引用」这个语义角色，
+ * 换资产只改角色文件里的一行 re-export。详见 `adapters/evidence-cite.tsx`。
+ */
+import { EvidenceCite } from "@/lib/kits/adapters/evidence-cite"
 import type { EvidenceId } from "@/lib/s1/contract"
 
 /**
@@ -137,7 +151,18 @@ function revealedElapsed(
   return progressMs - (revealAt ?? 0)
 }
 
-/** 证据 chip：真按钮，展开/收起那条证据自己的字段。 */
+/**
+ * 证据 chip —— **由 Kits 的签名组件渲染**（决策 13：S1 真的消费 `evidence-chip`）。
+ *
+ * 这一层只做两件属于产品的事：
+ *
+ *   1. **把产品语义翻成组件的 props**。组件刻意不发明文案（不问证据、不猜类别），
+ *      所以「证据」这个类别词来自词典、引用号来自数据层、描述来自证据登记簿 ——
+ *      三样都不在组件里硬编码，这正是它作为签名组件的用法。
+ *   2. **带上 `data-evidence-ref`**。不变量 `evidence.every-claim-cites-a-source`
+ *      的扫描器按这个属性核对「每个引用都能在登记簿里定位到」；
+ *      组件不产出它（那是产品的引用语义，不是组件的渲染语义），所以挂在外面这一层。
+ */
 function EvidenceChip({
   id,
   open,
@@ -147,17 +172,18 @@ function EvidenceChip({
   open: boolean
   onToggle: () => void
 }) {
+  const t = useMessages()
   return (
-    <button
-      type="button"
-      className="s1-chip"
-      onClick={onToggle}
-      aria-expanded={open}
-      data-evidence-ref={id}
-      data-testid="evidence-chip"
-    >
-      {`证据${id} ${evidenceDetailOf(id).label}`}
-    </button>
+    <span className="s1-chip-slot" data-evidence-ref={id} data-testid="evidence-cite">
+      <EvidenceCite
+        category={t.workbench.findings.evidenceLabel}
+        // 组件负责 `#` 这个引用记号的渲染，所以传引用号本身。
+        evidenceId={id.replace(/^#/, "")}
+        label={evidenceDetailOf(id).label}
+        expanded={open}
+        onActivate={() => onToggle()}
+      />
+    </span>
   )
 }
 

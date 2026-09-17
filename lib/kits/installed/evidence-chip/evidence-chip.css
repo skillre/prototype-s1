@@ -1,0 +1,201 @@
+/* =============================================================================
+ * EvidenceChip —— 结构样式
+ *
+ * 这个文件**不认识任何风格**：它只说「一条引用由哪几块组成、它们怎么排、
+ * 状态怎么切换」，颜色 / 尺寸 / 圆角 / 边界 / 字体 / 时长全部来自 Style Pack。
+ *
+ * 从 pack 读到的输入：
+ *   --kits-font-body / --kits-font-mono / --kits-label-*   排版与字重
+ *   --kits-space-2xs / --kits-space-xs                     内边距与间距
+ *   --kits-border-width-strong / --kits-border-color       边界（线的粗细与颜色）
+ *   --kits-radius-control                                  圆角
+ *   --kits-color-surface / -raised / -sunken / -ink-muted  表面与墨色
+ *   --kits-color-rule-strong / --kits-color-focus          强调与焦点环
+ *   --kits-focus-ring-width / -offset / -style             焦点环三件套
+ *   --kits-data-series-3                                   引用色槽位
+ *   --kits-dur-quick / --kits-ease-out                     状态过渡
+ *   --kits-control-height                                  粗指针下的最小触控高度
+ *
+ * ============================================================================
+ * 三处刻意的决定（都是"组件替 pack 兜底"，不是组件替 pack 做风格）
+ * ============================================================================
+ * 1. **边界用 `--kits-border-width-strong`，不用 `--kits-border-width`。**
+ *    editorial 与 cinematic 的 `--kits-border-width` 是 0（它们的表面不画边框），
+ *    而一条没有边界的引用就只是一个词。chip 必须能被看成"一个格位"，
+ *    因此这里取强档线宽；线的颜色、粗细（四种 pack 分别是 1 / 1 / 2 / 2）与
+ *    圆角仍然完全由 pack 决定。instrument 与 console 在这个量上本来就是 2。
+ *
+ * 2. **引用号上的 `text-transform: none`。**
+ *    多个 pack 把标签排成大写（`--kits-label-transform` 是 uppercase）。
+ *    排版可以大写，**引用号不行**：`e-41` 是匹配键，不是文案，
+ *    pack 的排版偏好不得把它改写成 `E-41`。这是"内容不得被风格改写"的
+ *    最小落地，也是本组件唯一一处显式反抗 pack 排版的地方。
+ *
+ * 3. **hover 不揭示任何信息。**
+ *    悬停只让边界与墨色加重；引用号、描述、条数在静止态就完整可见。
+ *    因此触屏（没有 hover）不会丢失任何东西 —— 那条"加重"的状态在
+ *    粗指针下由媒体查询**常驻**（见文件末尾）。
+ * ========================================================================== */
+
+.kits-evidence-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--kits-space-2xs);
+  padding-block: var(--kits-space-2xs);
+  padding-inline: var(--kits-space-xs);
+  border: var(--kits-border-width-strong) var(--kits-border-style)
+    var(--kits-border-color);
+  border-radius: var(--kits-radius-control);
+  background-color: var(--kits-color-surface);
+  color: var(--kits-color-ink-muted);
+  font-family: var(--kits-font-body);
+  font-size: var(--kits-label-size);
+  font-weight: var(--kits-label-weight);
+  letter-spacing: var(--kits-label-tracking);
+  text-transform: var(--kits-label-transform);
+  line-height: var(--kits-title-line);
+  /* button 的浏览器默认外观与内边距必须先清掉，否则各浏览器各长一样 */
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  /* 状态过渡只动三个**颜色**属性：不触碰布局、不创建合成层。
+     时长与缓动来自 pack（契约层在 reduced-motion 下把它们归零）。 */
+  transition:
+    color var(--kits-dur-quick) var(--kits-ease-out),
+    border-color var(--kits-dur-quick) var(--kits-ease-out),
+    background-color var(--kits-dur-quick) var(--kits-ease-out);
+}
+
+/* 没有 onActivate 时组件渲染的是 span：它不是控件，鼠标也不该变成手 */
+.kits-evidence-chip--static {
+  cursor: default;
+}
+
+/* -----------------------------------------------------------------------------
+ * 四块内容
+ *
+ * 类别词、引用号、描述、计数各自一格 —— pack 可以给它们不同的字体与墨色，
+ * 组件只保证顺序与间距（顺序也是语义：类别 → 引用号 → 描述 → 计数）。
+ * -------------------------------------------------------------------------- */
+
+.kits-evidence-chip__category {
+  font-family: var(--kits-font-mono);
+}
+
+.kits-evidence-chip__ref {
+  /* 引用号的颜色：给了 tone 用产品的语调槽位；没给就用 pack 的引用色槽位。
+     契约层的 series-3 默认指向一个从未被声明的变量（--kits-color-muted，
+     全仓没有一处定义），此时 var() 的兜底**会被采用**（Chromium 实测：
+     已声明但内部引用缺失的变量继承下去是 guaranteed-invalid，命中兜底），
+     因此这一行的取值在"绑定了 pack"与"完全未绑定 pack"两种状态下都成立。
+     console 把它定义为「证据引用蓝」，其他 pack 是自己的第三数据序列。 */
+  color: var(
+    --kits-component-tone,
+    var(--kits-data-series-3, var(--kits-color-ink-muted))
+  );
+  font-family: var(--kits-font-mono);
+  font-variant-numeric: tabular-nums slashed-zero;
+  /* 见文件头第 2 条：引用号不得被 pack 的大写排版改写 */
+  text-transform: none;
+  /* 引用号不能被折成 `#e-` / `41` 两段 —— 断开的引用号是另一个引用号 */
+  white-space: nowrap;
+  text-decoration-line: underline;
+  text-decoration-color: var(
+    --kits-component-tone,
+    var(--kits-data-series-3, var(--kits-color-ink-muted))
+  );
+  /* 下划线厚度 = 线宽 × 强调档位：intensity="none" 时它归零（不加下划线），
+     "strong" 时更重。组件不知道任何绝对厚度。 */
+  text-decoration-thickness: calc(
+    var(--kits-border-width-strong) * var(--kits-component-intensity, 1)
+  );
+  text-underline-offset: var(--kits-space-2xs);
+}
+
+.kits-evidence-chip__count {
+  font-family: var(--kits-font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--kits-color-ink-muted);
+}
+
+/* -----------------------------------------------------------------------------
+ * 状态：悬停 / 已展开 / 按下 / 键盘聚焦
+ *
+ * hover 与「已展开」共用同一套强调 —— 它们对用户是同一件事：
+ * 「这条引用现在是当前的那一条」。区别只在触发方式。
+ * -------------------------------------------------------------------------- */
+
+@media (hover: hover) and (pointer: fine) {
+  .kits-evidence-chip:hover {
+    background-color: var(--kits-color-surface-raised);
+    border-color: var(--kits-color-rule-strong);
+    color: var(--kits-color-ink);
+  }
+}
+
+.kits-evidence-chip[data-kits-evidence-expanded="true"] {
+  background-color: var(--kits-color-surface-raised);
+  border-color: var(--kits-color-rule-strong);
+  color: var(--kits-color-ink);
+}
+
+.kits-evidence-chip:active {
+  /* 按下 = 表面下陷：这是"点击已经被收到"的即时反馈，与动效无关 */
+  background-color: var(--kits-color-surface-sunken);
+}
+
+/* 焦点环是可达性的硬要求，不是装饰：三件套全部来自 pack */
+.kits-evidence-chip:focus-visible {
+  outline: var(--kits-focus-ring-width) var(--kits-focus-ring-style)
+    var(--kits-color-focus);
+  outline-offset: var(--kits-focus-ring-offset);
+}
+
+/* 纯展示形态不可聚焦，也不该有按下态 */
+.kits-evidence-chip--static:active {
+  background-color: var(--kits-color-surface);
+}
+
+/* -----------------------------------------------------------------------------
+ * reduced-motion：颜色状态照常切换，只是**立即**切换
+ *
+ * 组件没有位移、没有缩放、没有循环动画，所以这里要做的只有一件事：
+ * 把时长归零。状态本身（hover / expanded / focus / active）一个都不取消 ——
+ * 「减少动效」不是「减少信息」。
+ *
+ * 契约层在 prefers-reduced-motion 下已把 --kits-dur-* 强制归零；这里是
+ * 第二层（不依赖 pack 是否声明过那些变量）。
+ * -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .kits-evidence-chip {
+    transition: none;
+  }
+}
+
+/* 产品级开关：用户主动关掉动画时同一条路径（组件内建，产品不需要写 CSS） */
+.kits-evidence-chip--still {
+  transition: none;
+}
+
+/* -----------------------------------------------------------------------------
+ * 粗指针（触屏）：把 hover 的强调态**常驻**，并把触控目标抬到 pack 的控件高度
+ *
+ * 触屏没有 hover，所以"悬停才看见的强调"在这里等于"看不见"。做法不是取消
+ * 强调，而是让它成为静止态 —— 触屏看到的与桌面端悬停时看到的是同一个格位。
+ * 另外把最小高度交还给 pack 的 --kits-control-height（各 pack 自己的控件高度），
+ * 手指按得中比省那几像素重要。
+ *
+ * 注意：这里**没有**任何内容变化。引用号、描述、条数在两种设备上完全一致。
+ * -------------------------------------------------------------------------- */
+
+@media (hover: none), (pointer: coarse) {
+  .kits-evidence-chip {
+    align-items: center;
+    min-block-size: var(--kits-control-height);
+    background-color: var(--kits-color-surface-raised);
+    border-color: var(--kits-color-rule-strong);
+    color: var(--kits-color-ink);
+  }
+}

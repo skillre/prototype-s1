@@ -30,6 +30,7 @@
 
 import {
   ACTION_CATALOG,
+  AGENT_ACTORS,
   AGENT_ACTOR_SET,
   AUTONOMY_LEVELS,
   type ActionCode,
@@ -56,7 +57,8 @@ import {
   type IncidentState,
   type ReplayCursor,
 } from "@/lib/s1/replay"
-import { FINDINGS, ENVIRONMENT, INCIDENT_ID, PLAN, PLAN_STEPS, TOOL_CALLS, type SeedFinding } from "@/lib/s1/seed"
+import { FINDINGS, ENVIRONMENT, HEADER_STATS_SIGNED, INCIDENT_ID, PLAN, PLAN_STEPS, REPORT, TOOL_CALLS, type SeedFinding } from "@/lib/s1/seed"
+import { ASK_S1_ANSWERS, ASK_S1_QUESTIONS, type AskS1Answer } from "@/lib/s1/timeline"
 import { BACKGROUND_ENTITY_VIEWS } from "@/lib/s1/background"
 import { ENTITY_VIEWS } from "@/lib/s1/seed"
 import { BEATS } from "@/lib/s1/storyboard"
@@ -795,67 +797,163 @@ function replayStreamQuiet(
 /* -------------------------------------------------------------------------- */
 
 /**
- * 实体在画布上的位置 —— **正方形坐标（0–1）**，画布本身是正方形，所以两个轴同一个尺度。
+ * 实体在画布上的落点 —— **由图的形状算出来的层与列**，不是手写的格子。
  *
- * ## 为什么换过一次（2026-09-17 实测缺陷）
+ * ## 为什么换掉手写格子（2026-09-17 实测缺陷，本批修的）
  *
- * 原来是 `aspect-ratio: 2` 的扁画布 + 百分比定位。看着省地方，直到节点里的**证据 chip 多起来**：
- * 画布只有 190px 高，而一个节点带 19 个 chip 时高 696px —— 节点被 `translate(-50%, -50%)`
- * 摆在画布中心，于是整块**向上溢出 309px**，最上面那个 chip 被面板正文的上沿切掉
- * （实测 overflow 12.29px）。扁画布 + 中心定位 = 溢出必然向上，正撞在面板头上。
+ * 旧实现是「正方形画布 + 百分比坐标 + `translate(-50%, -50%)` 居中」，
+ * 落点来自一张手写的 `ATTACK_CHAIN_POSITION` 表，表外的实体从若干"空格子"里领位。
+ * 它守住了「两个节点不落在同一个坐标上」，但**坐标不同不等于矩形不相交**：
+ * 画布 444×444，节点宽 202px、高 98–216px，四个格子中任意两个的间距
+ * （0.48 × 444 ≈ 213px）小于一个节点的宽或高 —— 于是**六个节点在四个格子里视觉上互相压**
+ * （截图实拍）。
  *
- * 方形画布把这条通路堵死：宽高同一个尺度，四个构图位置比原来分散。
- * 画布本身还有 `max-height` + `overflow: hidden`（见 `workbench.css`），
- * 于是**再多的 chip 也不会把画布撑破** —— 内容溢出被画布自己收住，
- * 不会外溢到面板上沿去切一行字。节点内 chip 仍是 `flex-wrap`，
- * 引用的**条数不受影响**（不变量 `evidence.every-claim-cites-a-source` 要的是
- * 「每一条引用都真实存在」，不是「只许显示三条」）。
+ * 根因不是坐标选得不好，而是**手写格子与内容尺寸之间没有任何关系**：
+ * 节点的宽高由它自己的内容（标签 + 状态词 + detail + 证据 chip）决定，
+ * 而格子是常量。只要内容变了，格子就不再成立。
  *
- * 为什么是相对坐标而不是像素：这一层不许出现视觉常量（仓规），而且画布尺寸一旦调整，
- * 像素坐标就要全改一遍。相对坐标只回答"谁在谁左边/上边"这个问题。
+ * ## 现在怎么算
  *
- * 这些取值是**构图取值**，不是从事件流派生出来的量 —— 事件流不知道节点画在哪。
- * 所以它们集中在这里、有明显出处（设计稿 §三 ⑤ 的节点清单顺序），
- * 而不是散落在 JSX 里。谁被画出来、画成什么状态，全部由游标决定。
+ * 两步，都是从图本身推出来的（层次布局 / Sugiyama 的前两步 + 重心排序）：
+ *
+ *   1. **分层**：先把边定向 —— 一律从「对象模型里更浅的一端」指向更深的一端。
+ *      对象模型的顺序就是设计稿 §三 ⑤ 的副题原文：`人-资产-文件-进程-数据`。
+ *      于是边不可能成环，可以在一个 pass 里算出最长路径层号：
+ *      `rank(v) = max(类型深度(v), max over 入边 (rank(u) + 1))`。
+ *      没有边的孤立实体因此落在它自己类型的深度上 —— 读起来就是那张对象模型。
+ *   2. **层内排序**：一次向下的重心（barycenter）扫描，让每一层的节点尽量靠近
+ *      它在上一层的邻居（有向边的两端因此不会左右交叉）。无前驱的节点保持原序，排序稳定。
+ *
+ * 层号随后**压实成连续的排号**（第 0 排、第 1 排……），所以画布上不会出现空排。
+ *
+ * ## 为什么这样就不会再压
+ *
+ * 落点现在是**格子的行列区间**，而不是一个点 + 居中位移：
+ * 同一排的节点拿到的是**互不相交的列区间**（`columnStart` / `columnSpan`），
+ * 不同排的节点在竖直方向上本来就不重叠。于是"不相交"由**区间不相交**保证，
+ * 而区间是按内容所在的排分配的 —— 内容长高了，长的是那一排的高度，不是往邻居身上压。
+ *
+ * 这条性质有两道判据：纯函数侧断言同排列区间两两不相交（`tests/s1-panels.spec.ts`），
+ * 浏览器侧直接量 `getBoundingClientRect()` 断言任意两个节点的矩形不相交。
  */
-const ATTACK_CHAIN_POSITION: Readonly<Record<string, { x: number; y: number }>> = {
-  "attacker:0421": { x: 0.26, y: 0.26 },
-  "asset:dmz-app01": { x: 0.74, y: 0.26 },
-  "file:webshell2.jsp": { x: 0.74, y: 0.74 },
-  "data:policy-db": { x: 0.26, y: 0.74 },
+const ENTITY_KIND_DEPTH: Readonly<Record<EntityView["kind"], number>> = {
+  attacker: 0,
+  asset: 1,
+  file: 2,
+  data: 3,
+}
+
+/** 一个节点在画布上的落点：第几排、排内第几个、占第几列到第几列（1 起的网格线）。 */
+export type AttackNodeSlot = {
+  rank: number
+  order: number
+  columnStart: number
+  columnSpan: number
+}
+
+/** 画布的形状 —— 排数与列数，由布局给出，组件按它铺网格。 */
+export type AttackLayout = {
+  /** 排数（层号已经压实成 0…rankCount−1）。 */
+  rankCount: number
+  /** 列数 = 最宽那一排的节点数（至少 1）。 */
+  columnCount: number
 }
 
 /**
- * 画布上**预留给已知实体**的格子。
+ * 层与列的唯一算法（纯函数，不读时钟、不随机、不依赖迭代顺序）。
  *
- * `ATTACK_CHAIN_POSITION` 用掉一格，剩下的给"位置表之外的新实体"。用格子而不是
- * `index % 2 / Math.floor(index / 2)` 那种取模公式，是因为取模**会撞上位置表**：
- * 2026-09-17 实测 `data:policy-db` 与 `file:webshell1.jsp` 拿到了同一个 (0.26, 0.74)，
- * 两个节点在画布上**逐像素重叠**（截图里那段文字互相压）。
+ * 输入只有两样：节点（id + 类型）与边（两端 id）。位置表、画布尺寸、像素都不进来 ——
+ * 它回答的是"谁在第几排、排内排第几、占哪几列"，不是"画在哪一像素"。
  */
-const ATTACK_CHAIN_SLOTS: readonly { x: number; y: number }[] = [
-  { x: 0.26, y: 0.26 },
-  { x: 0.74, y: 0.26 },
-  { x: 0.5, y: 0.5 },
-  { x: 0.74, y: 0.74 },
-  { x: 0.26, y: 0.74 },
-  { x: 0.5, y: 0.1 },
-  { x: 0.1, y: 0.5 },
-  { x: 0.9, y: 0.5 },
-  { x: 0.5, y: 0.9 },
-]
+export function attackChainLayout(
+  nodes: readonly { id: EntityId; kind: EntityView["kind"] }[],
+  edges: readonly { from: EntityId; to: EntityId }[],
+): { slots: Map<EntityId, AttackNodeSlot>; layout: AttackLayout } {
+  const kindOf = new Map(nodes.map((node) => [node.id, node.kind]))
+  const depthOf = (id: EntityId): number => ENTITY_KIND_DEPTH[kindOf.get(id) ?? "asset"]
+  const inputIndex = new Map(nodes.map((node, index) => [node.id, index]))
 
-/**
- * 位置表之外的新实体：从**空格子**里按顺序领一个，绝不与任何已知节点重合。
- *
- * 判据是坐标本身（同一个格子 = 同一个落点），不是"第几个实体"—— 后者会随
- * 实体数量变化而漂移，前者是画布上可以直接核对的事实。
- */
-function freeFallbackPositions(): { x: number; y: number }[] {
-  const taken = Object.values(ATTACK_CHAIN_POSITION)
-  return ATTACK_CHAIN_SLOTS.filter(
-    (slot) => !taken.some((used) => used.x === slot.x && used.y === slot.y),
+  /* 1 · 定向。同深度之间的边（理论上不该有）不参与分层，但也不丢 —— 它仍然是一条边。 */
+  const outgoing = new Map<EntityId, EntityId[]>()
+  const incoming = new Map<EntityId, EntityId[]>()
+  for (const edge of edges) {
+    if (!kindOf.has(edge.from) || !kindOf.has(edge.to) || edge.from === edge.to) continue
+    const forward = depthOf(edge.from) <= depthOf(edge.to)
+    const from = forward ? edge.from : edge.to
+    const to = forward ? edge.to : edge.from
+    if (depthOf(from) === depthOf(to)) continue
+    const outs = outgoing.get(from) ?? []
+    if (!outs.includes(to)) outs.push(to)
+    outgoing.set(from, outs)
+    const ins = incoming.get(to) ?? []
+    if (!ins.includes(from)) ins.push(from)
+    incoming.set(to, ins)
+  }
+
+  /* 2 · 分层：最长路径。初值取类型深度，边只能把它推得更深；按深度递增处理即拓扑序。 */
+  const rank = new Map<EntityId, number>(nodes.map((node) => [node.id, depthOf(node.id)]))
+  const byDepth = [...nodes].sort(
+    (a, b) => depthOf(a.id) - depthOf(b.id) || (inputIndex.get(a.id) ?? 0) - (inputIndex.get(b.id) ?? 0),
   )
+  for (const node of byDepth) {
+    for (const next of outgoing.get(node.id) ?? []) {
+      rank.set(next, Math.max(rank.get(next) ?? 0, (rank.get(node.id) ?? 0) + 1))
+    }
+  }
+
+  /* 3 · 层内排序：一次向下的重心扫描（稳定）。 */
+  const distinctRanks = [...new Set(rank.values())].sort((a, b) => a - b)
+  const layers = new Map<number, EntityId[]>(
+    distinctRanks.map((value) => [
+      value,
+      nodes.filter((node) => rank.get(node.id) === value).map((node) => node.id),
+    ]),
+  )
+  const position = new Map<EntityId, number>()
+  for (const value of distinctRanks) {
+    layers.get(value)?.forEach((id, index) => position.set(id, index))
+  }
+  for (const value of distinctRanks.slice(1)) {
+    const layer = layers.get(value) ?? []
+    const barycenter = new Map<EntityId, number>()
+    layer.forEach((id, index) => {
+      const predecessors = (incoming.get(id) ?? [])
+        .map((parent) => position.get(parent))
+        .filter((value): value is number => value !== undefined)
+      barycenter.set(
+        id,
+        predecessors.length === 0
+          ? index
+          : predecessors.reduce((sum, value) => sum + value, 0) / predecessors.length,
+      )
+    })
+    layer.sort(
+      (a, b) =>
+        (barycenter.get(a) ?? 0) - (barycenter.get(b) ?? 0) ||
+        (position.get(a) ?? 0) - (position.get(b) ?? 0),
+    )
+    layer.forEach((id, index) => position.set(id, index))
+  }
+
+  /* 4 · 列区间：第 r 排的 k 个节点把 columnCount 列**均分**，区间两两不相交（本题的核心保证）。 */
+  const rankCount = distinctRanks.length
+  const columnCount = Math.max(1, ...[...layers.values()].map((layer) => layer.length))
+  const slots = new Map<EntityId, AttackNodeSlot>()
+  distinctRanks.forEach((value, rankIndex) => {
+    const layer = layers.get(value) ?? []
+    layer.forEach((id, order) => {
+      const start = Math.floor((order * columnCount) / layer.length) + 1
+      const end = Math.floor(((order + 1) * columnCount) / layer.length) + 1
+      slots.set(id, {
+        rank: rankIndex,
+        order,
+        columnStart: start,
+        columnSpan: Math.max(1, end - start),
+      })
+    })
+  })
+
+  return { slots, layout: { rankCount: Math.max(1, rankCount), columnCount } }
 }
 
 /**
@@ -875,8 +973,8 @@ export type AttackNode = {
   detail: string | null
   /** 已揭示证据里指向它的那些（去重、保持登记簿顺序）。 */
   evidenceRefs: EvidenceId[]
-  x: number
-  y: number
+  /** 落点（层次布局算出来的排与列区间，见 `attackChainLayout`）。 */
+  slot: AttackNodeSlot
   /** 状态在本回合被改写过（例如 `webshell2.jsp` 从「定位完成」变成「已清除」）。 */
   stateChanged: boolean
 }
@@ -894,6 +992,8 @@ export type AttackEdge = {
 export type AttackChain = {
   nodes: AttackNode[]
   edges: AttackEdge[]
+  /** 画布形状（排数 / 列数）—— 组件按它铺网格，测试按它判「同排列区间不相交」。 */
+  layout: AttackLayout
   /** 有节点但没有一条边引用得到证据时为 `true` —— 界面用 `edgesNote` 解释这件事。 */
   edgesNoneCitable: boolean
   attacker: { id: EntityId; label: string; fingerprint: string; matches: number; evidenceRefs: EvidenceId[] } | null
@@ -977,36 +1077,17 @@ export function attackChainOf(state: IncidentState, stream?: readonly IncidentMe
   const stage = state.entities.filter((entity) => isStageEntity(entity.id))
 
   /*
-   * 位置表之外的实体从**空格子**里领位 —— 先算一次空闲格子，再按领取顺序往下发。
-   * 领完（理论上不会）就退回位置表的第一个格子：宁可能重叠，也不要 `undefined` 坐标。
+   * 边先算出来，位置后算 —— 顺序不能反：落点是**图的形状**的函数（见 `attackChainLayout`），
+   * 而图的形状就是这批边。旧实现反过来（先按 index 发格子、再连边），
+   * 于是位置与连接关系毫无关系，孤立节点和枢纽节点拿到同样的待遇。
    */
-  const freeSlots = freeFallbackPositions()
-  let freeIndex = 0
-  const nodes: AttackNode[] = stage.map((entity) => {
-    const seedState = ENTITY_VIEW_BY_ID.get(entity.id)
-    const details = ENTITY_SEED_DETAILS.get(entity.id)
-    const slot = ATTACK_CHAIN_POSITION[entity.id] ?? freeSlots[freeIndex++] ?? ATTACK_CHAIN_POSITION["attacker:0421"]!
-    const position = slot
-    return {
-      id: entity.id,
-      kind: entity.kind,
-      label: entity.label,
-      state: entity.state,
-      detail: details?.detail ?? null,
-      evidenceRefs: evidenceCiteFor(evidence, entity.id),
-      x: position.x,
-      y: position.y,
-      stateChanged: seedState !== undefined && seedState.state !== entity.state,
-    }
-  })
-
   const edges: AttackEdge[] = []
   for (const item of evidence) {
-    const ends = nodes.filter((node) => item.entityRefs.includes(node.id))
+    const ends = stage.filter((entity) => item.entityRefs.includes(entity.id))
     for (let a = 0; a < ends.length; a += 1) {
       for (let b = a + 1; b < ends.length; b += 1) {
-        const from = ends[a] as AttackNode
-        const to = ends[b] as AttackNode
+        const from = ends[a] as EntityView
+        const to = ends[b] as EntityView
         edges.push({
           from: from.id,
           to: to.id,
@@ -1018,12 +1099,34 @@ export function attackChainOf(state: IncidentState, stream?: readonly IncidentMe
     }
   }
 
+  const { slots, layout } = attackChainLayout(
+    stage.map((entity) => ({ id: entity.id, kind: entity.kind })),
+    edges,
+  )
+  const emptySlot: AttackNodeSlot = { rank: 0, order: 0, columnStart: 1, columnSpan: 1 }
+
+  const nodes: AttackNode[] = stage.map((entity) => {
+    const seedState = ENTITY_VIEW_BY_ID.get(entity.id)
+    const details = ENTITY_SEED_DETAILS.get(entity.id)
+    return {
+      id: entity.id,
+      kind: entity.kind,
+      label: entity.label,
+      state: entity.state,
+      detail: details?.detail ?? null,
+      evidenceRefs: evidenceCiteFor(evidence, entity.id),
+      slot: slots.get(entity.id) ?? emptySlot,
+      stateChanged: seedState !== undefined && seedState.state !== entity.state,
+    }
+  })
+
   const attackerEntity = nodes.find((node) => node.kind === "attacker") ?? null
   const attackerSeed = attackerEntity === null ? undefined : ENTITY_SEED_DETAILS.get(attackerEntity.id)
 
   return {
     nodes,
     edges,
+    layout,
     edgesNoneCitable: nodes.length > 0 && edges.length === 0,
     attacker:
       attackerEntity === null
@@ -1039,18 +1142,61 @@ export function attackChainOf(state: IncidentState, stream?: readonly IncidentMe
 }
 
 /**
+ * 这串证据引用里哪些**不在登记簿上**？—— 空数组 = 全部可定位。
+ *
+ * 对照物是 `knownEvidenceIds()`（登记簿），不是引用它自己的那批消息 ——
+ * 拿消息去比对消息，任何引用都会"解析得到"，探针就死了。
+ *
+ * 它是所有「引用必须可定位」判据的**唯一一份实现**：画布（`attackChainUnresolvableRefs`）
+ * 与 ⑨ 问 S1 的回答都走它，免得两处各写一遍、其中一处悄悄放宽。
+ */
+export function unresolvableEvidenceRefs(refs: readonly EvidenceId[]): EvidenceId[] {
+  const known = knownEvidenceIds()
+  return [...new Set(refs.filter((ref) => !known.has(ref)))]
+}
+
+/**
  * 画布上引用的每个证据 id 都真实存在吗？—— 不变量
  * `evidence.every-claim-cites-a-source` 在画布侧的判据。
  *
- * 返回**不存在的那些引用**（空数组 = 通过）。对照物是 `knownEvidenceIds()`（登记簿），
- * 不是节点自己 —— 拿节点去比对节点，任何引用都会"解析得到"，探针就死了。
+ * 返回**不存在的那些引用**（空数组 = 通过）。
  */
 export function attackChainUnresolvableRefs(chain: AttackChain): string[] {
-  const known = knownEvidenceIds()
-  const bad = new Set<string>()
-  for (const node of chain.nodes) for (const ref of node.evidenceRefs) if (!known.has(ref)) bad.add(ref)
-  for (const edge of chain.edges) if (!known.has(edge.evidenceRef)) bad.add(edge.evidenceRef)
-  return [...bad]
+  return unresolvableEvidenceRefs([
+    ...chain.nodes.flatMap((node) => node.evidenceRefs),
+    ...chain.edges.map((edge) => edge.evidenceRef),
+  ])
+}
+
+/**
+ * 落点重叠的实体对 —— 布局的**纯函数判据**，`[]` = 没有任何两个节点会挤在一起。
+ *
+ * 判据分两半，缺一不可：
+ *   · 同一排里，两个节点的列区间不得相交（`[start, start+span)` 区间判交）；
+ *   · 不同排的节点在竖直方向上互不重叠，所以不必比。
+ *
+ * 为什么不用「矩形相交」在这里判：这一层没有像素，也不该有 ——
+ * 矩形是**浏览器布局的产物**，那一条判据在浏览器侧量 `getBoundingClientRect()`
+ * （`tests/s1-panels.spec.ts`）。两条合起来才是完整的保证：
+ * 这里证明"格子本身不重叠"，那边证明"浏览器真的按格子摆"。
+ */
+export function attackChainOverlaps(
+  chain: AttackChain,
+): Array<{ a: EntityId; b: EntityId; rank: number }> {
+  const overlaps: Array<{ a: EntityId; b: EntityId; rank: number }> = []
+  for (let i = 0; i < chain.nodes.length; i += 1) {
+    for (let j = i + 1; j < chain.nodes.length; j += 1) {
+      const a = chain.nodes[i] as AttackNode
+      const b = chain.nodes[j] as AttackNode
+      if (a.slot.rank !== b.slot.rank) continue
+      const aEnd = a.slot.columnStart + a.slot.columnSpan
+      const bEnd = b.slot.columnStart + b.slot.columnSpan
+      if (a.slot.columnStart < bEnd && b.slot.columnStart < aEnd) {
+        overlaps.push({ a: a.id, b: b.id, rank: a.slot.rank })
+      }
+    }
+  }
+  return overlaps
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1326,7 +1472,590 @@ export function cursorKey(cursor: ReplayCursor | null): string {
 }
 
 /* -------------------------------------------------------------------------- */
-/* 14 · 常量再导出（测试与界面共用的出处）                                       */
+/* 15 · ⑨ 问 S1                                                                */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * ⑨ 的判据是 `evidence.every-claim-cites-a-source` 在**对话**上的形态：
+ * 回答里的每个结论都带证据引用，引用能在登记簿里定位，**答不出就明说答不出**。
+ *
+ * 所以这一层只做两件事：
+ *   · 把提问对到数据层**真的写过答案**的那三条上（对不上就是 null，不是"尽力猜"）；
+ *   · 把已揭示的回答投影成界面要读的形状。
+ *
+ * 它**不会**在没有答案时编一个：`askS1AnswerFor` 返回 `null`，由界面渲染
+ * 「答不出」那段话。这正是「问一个答不出证据的问题时，界面明说答不出」的实现方式。
+ */
+
+/** 有出处的三个问题（种子 `askS1` 的占位提示 + 两个快捷问）。 */
+export function askS1Questions(): readonly string[] {
+  return ASK_S1_QUESTIONS
+}
+
+/**
+ * 提问 → 数据层的答案。
+ *
+ * 匹配是**整句相等**（去掉首尾空白），不做模糊匹配：把「现在最大风险大概是啥」判给
+ * 「现在最大风险是什么？」看起来贴心，实际上是把别人的答案当成你的问题的答案 ——
+ * 那正是这条不变量禁止的那类"像真的"。
+ */
+export function askS1AnswerFor(question: string): { presetIndex: number; answer: AskS1Answer } | null {
+  const wanted = question.trim()
+  if (wanted.length === 0) return null
+  const index = ASK_S1_ANSWERS.findIndex((entry) => entry.question === wanted)
+  if (index < 0) return null
+  return { presetIndex: index, answer: ASK_S1_ANSWERS[index] as AskS1Answer }
+}
+
+/** 提问为什么答不出 —— 界面按它选措辞（两种原因不是同一件事）。 */
+export type AskS1Refusal = "empty" | "unmatched"
+
+export function askS1RefusalFor(question: string): AskS1Refusal | null {
+  if (question.trim().length === 0) return "empty"
+  return askS1AnswerFor(question) === null ? "unmatched" : null
+}
+
+/** 一条已经出现在屏幕上的回答。 */
+export type AskS1AnswerView = {
+  messageId: MessageId
+  seq: number
+  /** 这条回答对应的问题原文（由 `claim.findingId` 连回种子的答案表，连不上就是 null）。 */
+  question: string | null
+  conclusion: string
+  confidencePercent: number
+  evidenceRefs: EvidenceId[]
+  sources: DataSourceId[]
+  occurredAt: string
+}
+
+/** `claim.findingId` → 预置问题序号（`ask-0` / `ask-1` / `ask-2`，见 `timeline.askS1Message`）。 */
+function askPresetIndexOf(findingId: string): number | null {
+  const match = /^ask-(\d+)$/.exec(findingId)
+  if (match === null) return null
+  const index = Number(match[1])
+  return Number.isInteger(index) && index >= 0 && index < ASK_S1_ANSWERS.length ? index : null
+}
+
+/**
+ * ⑨ 的回答 —— 只收 `affects` 里有 `ask-s1` 的已揭示消息（第 18 拍那条按需追加的）。
+ *
+ * 它在**整条序列**上筛选而不是只挑最后一条：观众可以连问三次，三次的回答都留在屏幕上
+ * （每一次都带自己的出处），而不是后一次把前一次顶掉 —— 顶掉会让"我问过什么"这件事消失。
+ */
+export function askS1AnswersOf(revealed: readonly IncidentMessage[]): AskS1AnswerView[] {
+  const answers: AskS1AnswerView[] = []
+  for (const message of revealed) {
+    if (message.kind !== "alert") continue
+    if (!message.affects.includes("ask-s1")) continue
+    const claim = message.claim
+    if (claim === null) continue
+    const index = askPresetIndexOf(claim.findingId)
+    answers.push({
+      messageId: message.id,
+      seq: message.seq,
+      question: index === null ? null : (ASK_S1_ANSWERS[index]?.question ?? null),
+      conclusion: claim.conclusion,
+      confidencePercent: Math.round(claim.confidence * 100),
+      evidenceRefs: [...claim.evidenceRefs],
+      sources: [...claim.sources],
+      occurredAt: message.occurredAt,
+    })
+  }
+  return answers
+}
+
+/** 回答里有没有定位不到的证据引用？（空数组 = 每条引用都在登记簿上。） */
+export function askS1UnresolvableRefs(answers: readonly AskS1AnswerView[]): EvidenceId[] {
+  return unresolvableEvidenceRefs(answers.flatMap((answer) => answer.evidenceRefs))
+}
+
+/** 提问被送出之后发生了什么 —— 界面据此决定要不要渲染「答不出」。 */
+export type AskS1Submit =
+  | { kind: "answered"; presetIndex: number }
+  | { kind: "refused"; reason: AskS1Refusal; question: string }
+
+/**
+ * 提交一次提问 —— **唯一的判据入口**（纯函数，所以它能被直接断言）。
+ *
+ * 调用方（组件）拿到 `answered` 才去 append 一条消息；拿到 `refused` 就把原因显示出来。
+ * 于是"界面明说答不出"这件事不依赖组件里的某段 `if`，它在派生层就定了。
+ */
+export function askS1Submit(question: string): AskS1Submit {
+  const match = askS1AnswerFor(question)
+  if (match !== null) return { kind: "answered", presetIndex: match.presetIndex }
+  return { kind: "refused", reason: askS1RefusalFor(question) ?? "unmatched", question }
+}
+
+/* -------------------------------------------------------------------------- */
+/* 16 · ⑩ E+N 数据汇流管道                                                      */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * ⑩ 的判据是 `evidence.counters-derive-from-events` 在**管道**上的形态：
+ * 图上每个数字都是数出来的。
+ *
+ * 所以这一层里没有一个字面量计数：两路的证据条数、消息条数、汇流耗时、置信度、
+ * 消费掉的结论条数，全部从**已揭示的、本回合自己的**消息上数出来。
+ * 唯一从这里"过路"的记录内容是数据源自己的名字与说明（种子 `environment.dataSources`）。
+ *
+ * ## 为什么范围限定在本回合
+ *
+ * 与 ⑤ 画布同一条判据（`beatStep !== null`）：当日事件簿那 130 起闭环的证据若一起倒进来，
+ * 管道上会显示几百条 —— 那个数字是真的，但它不是这一帧要讲的事。
+ */
+
+export type PipelineLaneView = {
+  source: DataSourceId
+  /** 数据源自己的名字（种子记录内容，不翻译）。 */
+  label: string
+  /** 数据源自己的说明（`镜像 #p-102 · 10Gbps`）。 */
+  detail: string
+  /** 这一路自己的能力声明；种子没写就是 `null`（界面留空，不编一句）。 */
+  capability: string | null
+  /** 本回合已揭示的、来自这一路的证据（按首次出现顺序）。 */
+  evidenceRefs: EvidenceId[]
+  /** = `evidenceRefs.length`，做成字段是为了让界面读它而不必自己 `.length`。 */
+  evidenceCount: number
+  /** 提到这一路的已揭示消息条数（告警的 `source` / `alsoFrom` 或结论的 `sources`）。 */
+  messageCount: number
+}
+
+export type PipelinePackageView = {
+  messageId: MessageId
+  seq: number
+  /** 上下文包自己的标签（种子 `contextPackage.label`，例如 `{app01 · conf .93 · ev[…]}`）。 */
+  label: string
+  /** 汇流标注（种子 `contextPackage.merge`）。 */
+  mergeLabel: string
+  /** 汇流耗时（种子 `findings[1].elapsedMs = 930`）。 */
+  mergeElapsedMs: number
+  confidencePercent: number
+  evidenceRefs: EvidenceId[]
+  sources: DataSourceId[]
+  occurredAt: string
+}
+
+export type PipelineView = {
+  lanes: PipelineLaneView[]
+  /** 最后一个已揭示的上下文包；还没汇流就是 `null`。 */
+  packageView: PipelinePackageView | null
+  /** AI 研判消费：已揭示的结论里，双源合流 / 单源各多少条。 */
+  consumed: { merged: number; singleSource: number; total: number }
+}
+
+/** 一条消息"提到"了哪几路数据源（告警的两路 + 结论自己的 `sources`）。 */
+function sourcesOf(message: IncidentMessage): DataSourceId[] {
+  const found = new Set<DataSourceId>()
+  if (message.kind === "alert") {
+    found.add(message.source)
+    if (message.alsoFrom !== undefined) found.add(message.alsoFrom)
+  }
+  const claim = "claim" in message ? message.claim : null
+  if (claim !== null && claim !== undefined) for (const source of claim.sources) found.add(source)
+  return [...found]
+}
+
+export function pipelineOf(revealed: readonly IncidentMessage[]): PipelineView {
+  const scope = revealed.filter((message) => message.beatStep !== null)
+
+  const lanes: PipelineLaneView[] = ENVIRONMENT.dataSources.map((source) => {
+    const evidenceRefs: EvidenceId[] = []
+    let messageCount = 0
+    for (const message of scope) {
+      if (sourcesOf(message).includes(source.id as DataSourceId)) messageCount += 1
+      for (const ref of message.evidenceRefs) {
+        if (evidenceRefs.includes(ref)) continue
+        // 证据属于哪一路由**登记簿**说了算（`evidenceById(ref).source`），不是由引用它的消息说。
+        if (evidenceById(ref).source !== source.id) continue
+        evidenceRefs.push(ref)
+      }
+    }
+    return {
+      source: source.id as DataSourceId,
+      label: source.label,
+      detail: source.detail,
+      capability: "capability" in source && typeof source.capability === "string" ? source.capability : null,
+      evidenceRefs,
+      evidenceCount: evidenceRefs.length,
+      messageCount,
+    }
+  })
+
+  let packageView: PipelinePackageView | null = null
+  for (const message of scope) {
+    if (message.kind !== "context_package") continue
+    packageView = {
+      messageId: message.id,
+      seq: message.seq,
+      label: message.packageLabel,
+      mergeLabel: message.mergeLabel,
+      mergeElapsedMs: message.mergeElapsedMs,
+      confidencePercent: Math.round(message.claim.confidence * 100),
+      evidenceRefs: [...message.claim.evidenceRefs],
+      sources: [...message.claim.sources],
+      occurredAt: message.occurredAt,
+    }
+  }
+
+  let merged = 0
+  let singleSource = 0
+  for (const message of scope) {
+    const claim = "claim" in message ? message.claim : null
+    if (claim === null || claim === undefined) continue
+    if (claim.sources.length >= 2) merged += 1
+    else singleSource += 1
+  }
+
+  return { lanes, packageView, consumed: { merged, singleSource, total: merged + singleSource } }
+}
+
+/* -------------------------------------------------------------------------- */
+/* 17 · ⑭ 报告流式生成                                                          */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * ⑭ 的两条判据：`sediment.survives-export`（导出后逐条等价）与
+ * `boundary.demo-is-labelled-as-demo`（整篇一眼可辨是演示环境）。
+ *
+ * ## 报告的内容从哪来
+ *
+ * 三行正文逐字来自种子 `report.lines`，经第 16 拍的 `sediment` 消息带进事件流
+ * （`timeline.ts` 的 `reportLines`）。**界面不另写一份报告稿** —— 那样一来
+ * "屏幕上的报告"与"事件流里的报告"就成了两份可以互相漂移的东西。
+ *
+ * ## 进度是算出来的，不是种子里的 68
+ *
+ * 种子 `report.progressPercent = 68` 是**设计稿静帧**的取值。它的意思是"那一帧生成到 68%"，
+ * 不是一个常量。所以界面上显示的进度由游标派生：已生成字数 ÷ 总字数
+ * （第 k 行在第 k × `OUTPUT_LINE_MS` 之后开始出现，与 ④ 的回显逐行返回同一套节奏）。
+ * 种子的 68 一个字节都没丢：它作为 `designProgressPercent` 留在视图里，
+ * 面板以 `data-design-progress` 挂在 DOM 上（可断言），但不冒充活读数。
+ *
+ * ## 导出物自带演示标识
+ *
+ * 导出的是**结构化文档**（不是把屏幕上的文字拼起来）：`demo.isDemo` 恒为 `true`，
+ * 并且带上种子 `environment.isolation` 的原文。于是"这份东西是演示环境产出的"这件事
+ * 跟着文件走 —— 报告被截图、被转发、被贴进别的地方之后，它自己还说得清自己是什么。
+ * 屏幕上同理：报告正文的**第一行**就是那条标识，不等读者看到落款才知道。
+ */
+
+/** 导出文档的 schema 版本（字段集合封闭：解析器见到别的版本会拒收）。 */
+export const REPORT_DOCUMENT_SCHEMA_VERSION = 1
+
+/** 报告面板导出文档的 DOM id（披露控件的 `aria-controls` 指向它）。 */
+export const REPORT_DOCUMENT_ID = "s1-report-export"
+
+export type ReportDocument = {
+  schemaVersion: number
+  demo: { isDemo: true; isolation: string; disclosure: string }
+  incidentId: string
+  title: string
+  /** 导出时刻的游标 —— 墙上时间不进导出物，所以同一状态导出两次逐字符相同。 */
+  cursorMs: number
+  seq: number
+  lines: string[]
+  evidenceRefs: EvidenceId[]
+}
+
+export type ReportView = {
+  /** 报告这一拍到了没有（`sediment` 消息已揭示）。 */
+  available: boolean
+  title: string
+  /** 已经"生成"的行（按游标派生）。 */
+  generatedLines: string[]
+  totalLines: number
+  /** 派生进度：已生成字数 ÷ 总字数（0–100 的整数）。 */
+  progressPercent: number
+  /** 种子里的设计稿静帧值（`report.progressPercent`）—— 记录，不是活读数。 */
+  designProgressPercent: number
+  document: ReportDocument
+  text: string
+}
+
+/**
+ * 报告正文的证据清单 —— 行首写 ` #e-xx ` 的那些引用**逐个到登记簿核对**。
+ *
+ * 判据不是"行里出现了 #e 开头的东西"，而是"这一行里出现的每一个引用都真的在登记簿上"：
+ * 提取不出来的行不算有引用（不报错，因为没有引用不是缺陷）。
+ */
+export function reportEvidenceRefsOf(lines: readonly string[]): EvidenceId[] {
+  const found: EvidenceId[] = []
+  for (const line of lines) {
+    for (const match of line.matchAll(/#e-\d+/g)) {
+      if (!found.includes(match[0])) found.push(match[0])
+    }
+  }
+  return found
+}
+
+/** 报告里引用不到的证据（空数组 = 全部可定位）。 */
+export function reportUnresolvableRefs(lines: readonly string[]): EvidenceId[] {
+  return unresolvableEvidenceRefs(reportEvidenceRefsOf(lines))
+}
+
+export function reportOf(
+  revealed: readonly IncidentMessage[],
+  cursor: ReplayCursor,
+  progressMs: number,
+  revealTimes: ReadonlyMap<number, number>,
+): ReportView {
+  let source: { seq: number; lines: string[] } | null = null
+  for (const message of revealed) {
+    if (message.kind !== "sediment") continue
+    source = { seq: message.seq, lines: [...message.reportLines] }
+  }
+
+  const lines = source?.lines ?? []
+  const totalChars = lines.reduce((sum, line) => sum + line.length, 0)
+  const revealedAt = source === null ? 0 : (revealTimes.get(source.seq) ?? 0)
+  const generatedLines: string[] = []
+  for (let index = 0; index < lines.length; index += 1) {
+    if (progressMs >= revealedAt + index * OUTPUT_LINE_MS) generatedLines.push(lines[index] as string)
+  }
+  const generatedChars = generatedLines.reduce((sum, line) => sum + line.length, 0)
+  const progressPercent =
+    totalChars === 0 ? 0 : Math.round((generatedChars / totalChars) * 100)
+
+  /*
+   * 导出物里的游标必须是**有限数**。
+   *
+   * `CURSOR_END` 的 `revealedAtMs` 是 `Number.POSITIVE_INFINITY`（它是"比任何消息都靠后"
+   * 这个语义的哨兵，不是一毫秒数）。把它写进导出物有两个后果：JSON 里变成 `null`
+   * （`JSON.stringify(Infinity) === "null"`），而稳定序列化器会**响亮地拒绝**它
+   * （`stable-json.ts`：不可比较的东西不许写成字符串）—— 于是"导出报告"在回放终点上直接抛。
+   *
+   * 处置：游标落在无穷远时，用**最后一条已揭示消息的回放时刻**当导出时刻。
+   * 那是同一件事的有限写法（"生成到这里为止"），而且它仍然只由事件流决定，不看时钟。
+   */
+  const cursorMs = Number.isFinite(cursor.revealedAtMs)
+    ? cursor.revealedAtMs
+    : (revealed[revealed.length - 1]?.revealedAtMs ?? 0)
+
+  const document_: ReportDocument = {
+    schemaVersion: REPORT_DOCUMENT_SCHEMA_VERSION,
+    demo: {
+      isDemo: true,
+      isolation: ENVIRONMENT.isolation,
+      disclosure: ENVIRONMENT.disclosure,
+    },
+    incidentId: INCIDENT_ID,
+    title: REPORT.title,
+    cursorMs,
+    seq: source?.seq ?? 0,
+    lines: generatedLines,
+    evidenceRefs: reportEvidenceRefsOf(generatedLines),
+  }
+
+  return {
+    available: source !== null,
+    title: REPORT.title,
+    generatedLines,
+    totalLines: lines.length,
+    progressPercent,
+    designProgressPercent: REPORT.progressPercent,
+    document: document_,
+    text: stableStringify(document_ as unknown as JsonValue),
+  }
+}
+
+/**
+ * 报告导出物的**逐条核对** —— `sediment.survives-export` 在 ⑭ 上的判据。
+ *
+ * 与 ⑪ 的核对是同一件事的两处应用，判据也同源：能解析（字段集合封闭 + 版本一致）、
+ * 逐条等价（**逐行**比，差异要指出是第几行）、往返不漂移（再序列化一次，逐字符相同）。
+ * 差异文本里带行号，所以"逐条等价"不是一句形容词，而是一个能指出位置的事实。
+ */
+export function verifyReportImport(
+  json: string,
+  document_: ReportDocument,
+): { parseIssues: string[]; diffs: string[] } {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(json)
+  } catch (error) {
+    return { parseIssues: [`不是合法 JSON：${error instanceof Error ? error.message : String(error)}`], diffs: [] }
+  }
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    return { parseIssues: ["导出物不是一个对象"], diffs: [] }
+  }
+  const record = parsed as Record<string, unknown>
+  const issues: string[] = []
+  for (const key of Object.keys(document_)) {
+    if (!(key in record)) issues.push(`缺少字段 ${key}`)
+  }
+  for (const key of Object.keys(record)) {
+    if (!(key in document_)) issues.push(`多出字段 ${key}`)
+  }
+  if (record.schemaVersion !== REPORT_DOCUMENT_SCHEMA_VERSION) {
+    issues.push(`schemaVersion 不是 ${REPORT_DOCUMENT_SCHEMA_VERSION}`)
+  }
+  if (issues.length > 0) return { parseIssues: issues, diffs: [] }
+
+  const imported = record as unknown as ReportDocument
+  const diffs: string[] = []
+  const demo = (imported.demo ?? {}) as Partial<ReportDocument["demo"]>
+  if (demo.isDemo !== true) diffs.push("demo.isDemo 不是 true —— 这份导出物没有标明自己是演示环境")
+  if (demo.isolation !== ENVIRONMENT.isolation) diffs.push("demo.isolation 与当前环境的隔离声明不一致")
+  if (imported.incidentId !== document_.incidentId) diffs.push("incidentId 不一致")
+  if (imported.title !== document_.title) diffs.push("title 不一致")
+  if (imported.cursorMs !== document_.cursorMs) diffs.push("游标不一致 —— 这份导出物不是此刻的这一份")
+
+  const lines = Array.isArray(imported.lines) ? imported.lines : []
+  if (lines.length !== document_.lines.length) {
+    diffs.push(`行数不一致：导入 ${lines.length} 行，当前 ${document_.lines.length} 行`)
+  }
+  const shorter = Math.min(lines.length, document_.lines.length)
+  for (let index = 0; index < shorter; index += 1) {
+    if (lines[index] !== document_.lines[index]) {
+      diffs.push(`第 ${index + 1} 行不一致：导入「${String(lines[index])}」≠ 当前「${document_.lines[index]}」`)
+    }
+  }
+  if (stableStringify(imported as unknown as JsonValue) !== stableStringify(document_ as unknown as JsonValue)) {
+    diffs.push("序列化后逐字符不同（字段有漂移）")
+  }
+  return { parseIssues: [], diffs }
+}
+
+/* -------------------------------------------------------------------------- */
+/* 18 · ⑫ 数字员工花名册                                                        */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * ⑫ 的判据是 `authority.no-unlisted-autonomous-action` 在**花名册**上的形态。
+ *
+ * 顶栏那句「N 个 AI 数字员工在岗」里的 N **必须是算出来的**：旧实现逐字读种子
+ * `headerStats.rosterLabel`（"4 个…"），那是一个常量，不是一句关于此刻的话。
+ * 现在 N = 本回合**已经出动过**的员工数（`beatStep !== null` 的已揭示消息里出现过这个 actor），
+ * 于是它在回放里从 0 长到 4，收尾那一帧与种子静帧逐字相等（有断言）。
+ *
+ * 「在岗」在这里的准确含义是**本回合有动作**，不是"编制上有几个人"：编制来自
+ * `AGENT_ACTORS`（数据层的四个数字员工），席位短名来自种子 `headerStats.roster`（记录内容）。
+ *
+ * 每个席位的自主动作能追到三样东西：动作码、自主档、以及**白名单判决**
+ * （`isAutonomous` —— 与 `lib/s1/verify.ts` 的 `scanAuthority` 同一份判据源，界面不另立一张表）。
+ * 白名单外（`inWhitelist === false`）的动作只允许停在人的门上，所以席位同时给出
+ * `awaiting`：那张挂在他名下、此刻仍然是 `pending` 的待批卡。
+ */
+
+export type RosterActionView = {
+  messageId: MessageId
+  seq: number
+  /** 动作属于哪一类消息（`tool_call` 是执行，`action_card` 是提请）。 */
+  kind: "tool_call" | "action_card"
+  at: string
+  actionCode: ActionCode
+  autonomy: AutonomyLevel
+  /** `true` = 走清单内自主通道。 */
+  auto: boolean
+  /** 动作码的中文名（词典给；认不出的代号原样显示）。 */
+  label: string
+}
+export type RosterSeatView = {
+  role: AgentActor
+  /** 席位短名（种子 `headerStats.roster`，记录内容）。 */
+  short: string
+  /** 本回合出过动没有（在岗 = 这个）。 */
+  onDuty: boolean
+  /** 本回合这个员工经手的动作条数。 */
+  actionCount: number
+  /** 最近一次动作；没有就是 `null`（界面留空，不编一句）。 */
+  last: RosterActionView | null
+  /** 白名单判决：`isAutonomous(actionCode)`；没有动作就是 `null`。 */
+  inWhitelist: boolean | null
+  /** 停在他这道门上的待批卡（派生：卡片 `pending` 且拆开它的那条消息 actor 是他）。 */
+  awaiting: { cardId: string; title: string; slaMs: number | null } | null
+}
+
+export type RosterView = {
+  seats: RosterSeatView[]
+  /** 本回合在岗人数 —— 顶栏那句 N 就是它。 */
+  onDutyCount: number
+  /** 编制人数（`AGENT_ACTORS` 的长度，不是写死的 4）。 */
+  total: number
+}
+
+const ROSTER_SHORT: ReadonlyMap<string, string> = new Map(
+  HEADER_STATS_SIGNED.roster.map((seat) => [seat.role, seat.short]),
+)
+
+export function rosterOf(
+  state: IncidentState,
+  revealed: readonly IncidentMessage[],
+  actionLabels: Readonly<Partial<Record<string, string>>> = {},
+): RosterView {
+  const scope = revealed.filter((message) => message.beatStep !== null)
+
+  const pendingCards = state.disposition.cards.filter(
+    (card) => card.cardKind === "approval-required" && card.state === "pending",
+  )
+  const awaitingByActor = new Map<AgentActor, { cardId: string; title: string; slaMs: number | null }>()
+  for (const card of pendingCards) {
+    // 卡挂在谁名下：拆开它的那条 `action_card` 消息的 actor（卡片本身不带 actor）。
+    const opener = scope.find(
+      (message) => message.kind === "action_card" && message.cardId === card.cardId,
+    )
+    if (opener === undefined || opener.kind !== "action_card") continue
+    if (!awaitingByActor.has(opener.actor)) {
+      awaitingByActor.set(opener.actor, {
+        cardId: card.cardId,
+        title: card.title,
+        slaMs: card.slaMs,
+      })
+    }
+  }
+
+  const seats: RosterSeatView[] = AGENT_ACTORS.map((role) => {
+    const own = scope.filter((message) => "actor" in message && message.actor === role)
+    const actions = own.filter(
+      (message) => message.kind === "tool_call" || message.kind === "action_card",
+    )
+    const lastMessage = actions[actions.length - 1]
+    const last: RosterActionView | null =
+      lastMessage === undefined ||
+      (lastMessage.kind !== "tool_call" && lastMessage.kind !== "action_card")
+        ? null
+        : {
+            messageId: lastMessage.id,
+            seq: lastMessage.seq,
+            kind: lastMessage.kind,
+            at: lastMessage.occurredAt,
+            actionCode: lastMessage.actionCode,
+            autonomy: lastMessage.autonomy,
+            /*
+             * 「走没走自主通道」要看**消息自己怎么说**：
+             *   · `tool_call` 有 `auto` 字段（`true` = 清单内自主执行，`false` = 经人批准后执行）；
+             *   · `action_card` 没有，它的通道写在 `cardKind` 上（`auto` / `approval-required`）。
+             * 卡片一律当成自主过 —— 那正是这条判据要抓的东西：一张 `approval-required` 的卡
+             * 是"提请人裁决"，不是"已经自主执行"，把两者混起来会让白名单判决失去意义
+             * （2026-09-17 实测：`patch-config` 的待批卡被算成了自主通道）。
+             */
+            auto:
+              lastMessage.kind === "tool_call"
+                ? lastMessage.auto
+                : lastMessage.cardKind === "auto",
+            label: actionLabels[lastMessage.actionCode as string] ?? lastMessage.actionCode,
+          }
+
+    return {
+      role,
+      short: ROSTER_SHORT.get(role) ?? role.slice(0, 1),
+      onDuty: own.length > 0,
+      actionCount: actions.length,
+      last,
+      inWhitelist: last === null ? null : isAutonomous(last.actionCode),
+      awaiting: awaitingByActor.get(role) ?? null,
+    }
+  })
+
+  return {
+    seats,
+    onDutyCount: seats.filter((seat) => seat.onDuty).length,
+    total: AGENT_ACTORS.length,
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* 19 · 常量再导出（测试与界面共用的出处）                                       */
 /* -------------------------------------------------------------------------- */
 
 export { INCIDENT_ID, PLAN_STEPS }

@@ -1,11 +1,17 @@
 "use client"
 
 import { useMessages } from "@/components/i18n/locale-provider"
-import { scheduledBeats } from "@/components/prototype/workbench/view-model"
+import { scheduledBeats, type RosterView } from "@/components/prototype/workbench/view-model"
 import type { WorkbenchReplay } from "@/hooks/use-workbench-replay"
 import type { CounterSnapshot } from "@/lib/s1/counters"
 import { AUTONOMY_LEVELS, SCENE_AUTONOMY_CEILING, type AgentActor, type AutonomyLevel } from "@/lib/s1/contract"
 import { ENVIRONMENT, HEADER_STATS_SIGNED } from "@/lib/s1/seed"
+
+/**
+ * ⑫ 展开面的 DOM id。**模块级常量**：它必须跨渲染稳定，否则 `aria-controls` 会在下一次
+ * 渲染时指向一个不存在的 id（关联是"上一次那个字符串"，不是"那个面板"）。
+ */
+export const ROSTER_PANEL_ID = "s1-roster-panel"
 
 /**
  * ① 态势指挥条（76px，设计稿实测骨架）—— 含 ⑫ 数字员工花名册。
@@ -34,12 +40,20 @@ export function CommandBar({
   pendingApproval,
   activeActor,
   observedAutonomy,
+  roster,
+  rosterOpen,
+  onToggleRoster,
 }: {
   counters: CounterSnapshot
   /** 待人工授权条数（派生值，来自 `pendingApprovalCount(state)`）。 */
   pendingApproval: number
   activeActor: AgentActor | null
   observedAutonomy: readonly AutonomyLevel[]
+  /** ⑫ 花名册的派生视图（在岗人数就在它里面）。 */
+  roster: RosterView
+  /** ⑫ 展开面开着没有。 */
+  rosterOpen: boolean
+  onToggleRoster: () => void
 }) {
   const t = useMessages()
   const stats = HEADER_STATS_SIGNED
@@ -139,21 +153,47 @@ export function CommandBar({
         </span>
       </div>
 
-      <div className="s1-zone s1-zone--divider" data-testid="roster">
-        <div className="s1-roster">
-          {stats.roster.map((seat) => (
-            <span
-              key={seat.role}
-              className="s1-roster__seat"
-              data-role={seat.role}
-              data-active={seat.role === activeActor ? "true" : "false"}
-              title={seat.role}
-            >
-              {seat.short}
-            </span>
-          ))}
-        </div>
-        <span className="s1-roster__label">{stats.rosterLabel}</span>
+      <div className="s1-zone s1-zone--divider" data-testid="roster-zone">
+        {/*
+          花名册席位是**一个真控件**：它是 ⑫ 展开面的开关（`aria-expanded` + `aria-controls`）。
+          过去它们是四个纯展示的方块 —— 点了没有任何事发生的方块，就是一个看起来像按钮的装饰。
+          席位里用 `<span>` 而不是 `<div>`：`<button>` 的内容模型是短语内容，
+          塞一个块级元素进去在 HTML 上就是错的（浏览器会照渲染，校验器不会）。
+        */}
+        <button
+          type="button"
+          className="s1-roster-toggle"
+          data-testid="roster-toggle"
+          aria-expanded={rosterOpen}
+          aria-controls={ROSTER_PANEL_ID}
+          onClick={onToggleRoster}
+          title={rosterOpen ? t.workbench.roster.close : t.workbench.roster.open}
+        >
+          <span className="s1-roster">
+            {roster.seats.map((seat) => (
+              <span
+                key={seat.role}
+                className="s1-roster__seat"
+                data-role={seat.role}
+                data-active={seat.role === activeActor ? "true" : "false"}
+                data-on-duty={String(seat.onDuty)}
+                data-meaning={seat.onDuty ? "ai" : undefined}
+                title={seat.role}
+              >
+                {seat.short}
+              </span>
+            ))}
+          </span>
+          {/*
+            「N 个 AI 数字员工在岗」里的 N 是**派生值**：本回合出动过的员工数。
+            它随回放从 0 长到 4，收尾那一帧逐字等于种子 `headerStats.rosterLabel`
+            （有断言）—— 与顶栏那三个计数受同一条不变量管（`evidence.counters-derive-from-events`
+            的姊妹条：界面上的数字要么是记录，要么是算出来的，不许是抄来的）。
+          */}
+          <span className="s1-roster__label" data-testid="roster-label" data-on-duty={roster.onDutyCount}>
+            {t.workbench.roster.onDuty(roster.onDutyCount)}
+          </span>
+        </button>
       </div>
     </header>
   )

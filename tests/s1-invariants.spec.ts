@@ -671,6 +671,10 @@ test.describe("zustand 约定：selector 只取原始值", () => {
       "append",
       "cursorMs",
       "events",
+      /* 人的裁决要走「插在当前游标之后」而不是「追加到末尾」，理由见 `stores/incident-store.ts`
+         里 `insertAfter` 的注释与 `tests/s1-batch3.spec.ts` 的 ⑥ 一节 ——
+         它是动作，不是派生字段，所以这一条枚举仍然只说「store 里没有派生量」。 */
+      "insertAfter",
       "loadCanonicalStream",
       "reset",
       "seek",

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState, type RefObject } from "react"
 
 import { useMessages } from "@/components/i18n/locale-provider"
 import { WorkbenchPanel, type PanelStatus } from "@/components/prototype/workbench/panel"
@@ -50,6 +50,8 @@ export function AttackGraph({
   const copy = t.workbench.attackGraph
   /** 已展开的证据引用（局部状态）：点一下给那条证据自己的字段，再点一下收起。 */
   const [openEvidence, setOpenEvidence] = useState<string[]>([])
+  const canvasRef = useRef<HTMLDivElement | null>(null)
+  const edgeLines = useEdgeLines(canvasRef, chain)
 
   const toggleEvidence = (id: string) => {
     setOpenEvidence((open) => (open.includes(id) ? open.filter((item) => item !== id) : [...open, id]))
@@ -90,31 +92,30 @@ export function AttackGraph({
           </li>
         </ul>
 
-        {/* 节点的相对坐标（0–1）需要一个确定的盒子才落得下；这个盒子同时就是 SVG 的坐标系
-            （viewBox 0 0 100 100 + preserveAspectRatio="none"），线端与节点中心是同一组数字。 */}
-        <div className="s1-graph__canvas">
-          <svg
-            className="s1-graph__edges"
-            viewBox="0 0 100 100"
-            preserveAspectRatio="none"
-            aria-hidden="true"
-            focusable="false"
-          >
-            {chain.edges.map((edge) => {
-              const from = byId.get(edge.from)
-              const to = byId.get(edge.to)
-              if (from === undefined || to === undefined) return null
-              return (
-                <line
-                  key={edgeKey(edge)}
-                  x1={from.x * 100}
-                  y1={from.y * 100}
-                  x2={to.x * 100}
-                  y2={to.y * 100}
-                  vectorEffect="non-scaling-stroke"
-                />
-              )
-            })}
+        {/* 节点的落点由**层次布局**给出（`attackChainLayout`）：排与列区间。
+           画布是一个真正的网格 —— 同一排的节点拿到互不相交的列区间，不同排的节点在竖直
+           方向上本来就不重叠，所以「两个节点压在一起」在布局层面就不可能发生，
+           而不是靠"坐标取得够开"这种会随内容变化的假设（旧实现就是这么坏的，见
+           `view-model.ts` 里 `attackChainLayout` 的长注释）。
+           画布高度由内容撑开（`grid-auto-rows: auto`），面板正文照常内部滚动 ——
+           见 `workbench.css` 里 `.s1-graph__canvas` 关于「16:9 单屏不溢出」的说明。 */}
+        <div
+          className="s1-graph__canvas"
+          ref={canvasRef}
+          data-testid="attack-graph-canvas"
+          data-rank-count={chain.layout.rankCount}
+          data-column-count={chain.layout.columnCount}
+          /* 列数来自布局（数据），不是样式表里的一个字面量：几个实体一排，网格就有几列。
+             写成内联的 `repeat(n, minmax(0, 1fr))` 而不是 CSS 变量 —— `repeat()` 的计数
+             不接受 `var()`（浏览器在解析期就要一个整数）。 */
+          style={{ gridTemplateColumns: `repeat(${chain.layout.columnCount}, minmax(0, 1fr))` }}
+        >
+          {/* 线层：坐标是**量出来的**（节点的布局框中心），不是算出来的百分比。
+              它 `aria-hidden`，因为每条边在下面的列表里另有一份完整的文字形态。 */}
+          <svg className="s1-graph__edges" aria-hidden="true" focusable="false">
+            {edgeLines.map((line) => (
+              <line key={line.key} x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} />
+            ))}
           </svg>
 
           {chain.nodes.map((node) => (
@@ -189,11 +190,81 @@ function edgeKey(edge: AttackEdge): string {
   return `${edge.from}→${edge.to}·${edge.evidenceRef}`
 }
 
+/** 一条边在画布上的两个端点（布局框坐标，单位 px）。 */
+type EdgeLine = { key: string; x1: number; y1: number; x2: number; y2: number }
+
+/**
+ * 量出每条边的两个端点 —— **坐标来自 DOM，不是来自算出来的百分比**。
+ *
+ * ## 为什么必须量
+ *
+ * 节点的宽高由它自己的内容决定（标签多长、状态词几个字、挂了几条证据 chip），
+ * 而内容随游标变化。任何"先把坐标算好再让节点去对"的做法都要先知道宽高 ——
+ * 那正是旧实现压在一起的原因（手写格子的间距与内容尺寸无关）。
+ *
+ * 所以顺序反过来：**浏览器先按网格把节点摆好**（网格保证同一排的列区间不相交），
+ * 这里再读回每个节点的布局框，取中心画线。读的是 `offsetLeft/offsetTop`
+ * 而不是 `getBoundingClientRect()`：画布整体被 scale-to-fit 缩过，
+ * 后者给的是屏幕坐标，与 SVG 的用户单位（= CSS px）不在一个尺度上。
+ *
+ * ## 为什么不会抖动
+ *
+ * 每一次 `setEdgeLines` 之前先比字符串：布局没变就一个字节都不写回 state，
+ * 于是 `ResizeObserver` 的回调不会自己把自己再触发一次。
+ * 观测对象是画布**加**每一个节点 —— 画布高度会随行数变化，节点宽度会随列区间变化，
+ * 两者都要覆盖到，否则线会停在上一次布局的位置上。
+ */
+function useEdgeLines(ref: RefObject<HTMLDivElement | null>, chain: AttackChain): EdgeLine[] {
+  const [lines, setLines] = useState<EdgeLine[]>([])
+  const lastSerialized = useRef("")
+
+  useEffect(() => {
+    const canvas = ref.current
+    if (canvas === null) return
+
+    const measure = () => {
+      const nodes = Array.from(
+        canvas.querySelectorAll<HTMLElement>('[data-testid="graph-node"]'),
+      )
+      const byId = new Map(nodes.map((node) => [node.getAttribute("data-node-id") ?? "", node]))
+      const next: EdgeLine[] = []
+      for (const edge of chain.edges) {
+        const from = byId.get(edge.from)
+        const to = byId.get(edge.to)
+        if (from === undefined || to === undefined) continue
+        next.push({
+          key: edgeKey(edge),
+          x1: from.offsetLeft + from.offsetWidth / 2,
+          y1: from.offsetTop + from.offsetHeight / 2,
+          x2: to.offsetLeft + to.offsetWidth / 2,
+          y2: to.offsetTop + to.offsetHeight / 2,
+        })
+      }
+      const serialized = JSON.stringify(next)
+      if (serialized === lastSerialized.current) return
+      lastSerialized.current = serialized
+      setLines(next)
+    }
+
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(canvas)
+    for (const node of canvas.querySelectorAll('[data-testid="graph-node"]')) observer.observe(node)
+    return () => observer.disconnect()
+  }, [ref, chain])
+
+  return lines
+}
+
 /**
  * 一个实体节点。
  *
  * 它**不是按钮**：点它没有动作可做，所以它只是一个可聚焦的组（`tabindex="0"`，键盘按 DOM
  * 顺序走过每一个节点 —— 「把画布读一遍」不依赖眼睛），名字就是里面那行可见文字。
+ *
+ * 落点写在 `grid-row` / `grid-column` 上（由 `attackChainLayout` 给出），
+ * 而不是 `left/top` 百分比 + `translate(-50%, -50%)` —— 后者的居中位移会让
+ * "落点不同"与"盒子不重叠"变成两件事。
  *
  * `data-meaning` 只落两个槽：`--brand` 只说「AI 正在控制它」，`--success` 只说「已经处理掉了」；
  * 其余状态词（已识别 / 未触及 / 0 异常 / 封禁中 / 定位完成）不借任何色槽 —— 给中性状态染色
@@ -218,7 +289,10 @@ function GraphNode({
   return (
     <div
       className="s1-graph__node"
-      style={{ left: `${node.x * 100}%`, top: `${node.y * 100}%` }}
+      style={{
+        gridRow: node.slot.rank + 1,
+        gridColumn: `${node.slot.columnStart} / span ${node.slot.columnSpan}`,
+      }}
       tabIndex={0}
       data-testid="graph-node"
       data-node-id={node.id}
@@ -227,6 +301,10 @@ function GraphNode({
       data-cited={cited ? "true" : "false"}
       data-state-changed={node.stateChanged ? "true" : "false"}
       data-meaning={meaning}
+      data-rank={node.slot.rank}
+      data-order={node.slot.order}
+      data-column-start={node.slot.columnStart}
+      data-column-span={node.slot.columnSpan}
     >
       {/*
        * 节点名是**记录内容**，不是界面文案：`webshell2.jsp` 是那个文件的真名，

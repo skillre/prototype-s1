@@ -133,39 +133,3 @@ export function WorkbenchPanel({
     </section>
   )
 }
-
-/**
- * 未建成的面板 —— **诚实标注，不编内容**。
- *
- * 本批只建了骨架 + ① + ②③④（外加 ⑫ 花名册，它长在①里）。
- * 其余七个面板（⑤⑥⑧⑨⑩⑪⑭）连位置都按设计稿的骨架留着，
- * 但里面只有一句「本面板尚未实现」和它计划在哪一批落地。
- * 演示当天领导看到的那一版必须是全部建成的；中间态必须看得见是中间态。
- */
-export function PendingPanel({
-  id,
-  title,
-  className,
-  bodyClassName,
-}: {
-  id: string
-  title: string
-  className?: string
-  bodyClassName?: string
-}) {
-  const t = useMessages()
-
-  return (
-    <WorkbenchPanel
-      id={id}
-      title={title}
-      status="ready"
-      className={className}
-      bodyClassName={cn("s1-panel__body--centre", bodyClassName)}
-    >
-      <div data-testid="pending-panel" data-pending="true" className="w-full">
-        <EmptyState title={t.workbench.demo.notBuilt} description={t.workbench.demo.notBuiltNote(title)} className="py-5" />
-      </div>
-    </WorkbenchPanel>
-  )
-}

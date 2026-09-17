@@ -279,7 +279,8 @@ instrument 把它整个拿掉。在运营控制台上，呼吸点是有语义的
 | 材质语言 | `rule` / `ambient: none` / `glow: forbidden` |
 | 可核对项 | CSS 里不得出现 `.kits-ambient`；`--kits-color-glow` 必须是 `transparent` |
 | `effects[]` | **空** —— 本 pack 不登记任何 effect |
-| `signatureComponents` | **空** —— 组件角色留给 K2 |
+| `signatureComponents` | `["evidence-chip"]` —— K2 落地的组件；理由见 §14 |
+| `optionalComponents` / `discouragedComponents` | **空** —— 其余组件与本 pack 无关，不勉强挂 |
 
 **为什么 `effects[]` 是空的：** 本 pack 的材质声明是「没有环境光、禁止发光」，
 因此它**不允许**登记任何 `material.kind = light` 的 effect（audit 会交叉核对，
@@ -371,8 +372,12 @@ DOM 节点数比样式更可能成为瓶颈。如果需要上百个格子，用*
 
 ## 14. 相关资产
 
-- 组件：**无**（`signatureComponents: []`）—— 组件角色留给 K2 工单；
-  届时按「长列表 / 日志流 / 命令条」的方向分配，而不是把已有的五个组件硬挂上来
+- 组件：[`evidence-chip`](../../components/evidence-chip/README.md)（K2 落地）。
+  它是本 pack 唯一的 `signature`，理由不是"顺手挂一个"：
+  §4 的「一色一义」把 `--kits-data-series-3` 指定为**证据引用蓝**，
+  而这个组件正是读那个槽位来画引用号的 —— 两边是同一条语义，不是巧合。
+  其余组件与本 pack 的关系仍然是不登记 / `discouraged`：
+  高密度列不需要指针光斑、环境网格与滚动揭示
 - 效果：**无**（`effects: []`）—— 理由见 §9
 - 参考板：**尚未建立**（`references/console/` 不存在）。本 pack 的设计参考是
   S1 设计稿本身与「终端 / 运营控制台」的既有共识，不是某个第三方页面；

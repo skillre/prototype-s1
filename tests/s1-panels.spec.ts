@@ -5,6 +5,7 @@ import { expect, test, type Page } from "@playwright/test"
 
 import {
   attackChainOf,
+  attackChainOverlaps,
   attackChainUnresolvableRefs,
   auditRowsOf,
   authorityCardsOf,
@@ -396,6 +397,58 @@ test.describe("A2 · 面板正文顶边按行对齐（没有一行文字被切�
       `半行偏移之后仍然找不到被切的行 —— 这条探针没有在量它以为在量的东西。${broken?.reason ?? "（连可滚动的面板都没找到）"}`,
     ).not.toBeNull()
   })
+
+  /**
+   * ## 为什么必须有这一条（2026-09-17 实测缺陷：对齐不幂等 → 棘轮）
+   *
+   * 上面那两条正例**曾经全绿**，而面板是坏的 —— 因为坏的方式恰好满足它们的假设：
+   *
+   *   · 上一条正例**排除了已经滚到底的面板**（滚到底时顶行必然半在口外，那是"到头了"、
+   *     不是排版缺陷），于是它看不见面板**为什么**总是滚到底；
+   *   · 它同时还断言「至少有一个面板滚到底」，于是那个被排除的状态反而被当成了预期。
+   *
+   * 真相是 `alignScrollTop` 不幂等：对齐之后那一行的下沿恰好落在上沿，旧判据
+   * （`bottom - contentTop > 2`）就不再选中它，下一次调用找到**下一行**再推一整行；
+   * 而 `scroll` 事件每次都调用它 —— 于是每滚一次就往下走一行，直到 `maxScroll`。
+   * 实测：把任一溢出面板的 `scrollTop` 置 0，1.2 秒后它自己回到 `maxScroll`
+   * （九个可滚动面板无一例外）。**用户滚不上去**，任何手动上滚都被立刻推回底部。
+   *
+   * 所以这一条量的是一件单独立得住的事：**把 `scrollTop` 放到某处，它应该待在那里。**
+   * 它与「顶边有没有切字」无关，也与「该不该跟随到底」无关 —— 它只问对齐会不会
+   * 跟用户抢滚动条。判据是复算的：位移超过一行高就说明有人在推它。
+   */
+  test("对齐是幂等的：把面板放到某处，它不会自己走到底（用户滚得上去）", async ({ page }) => {
+    await openAt(page, 17)
+
+    const walked = await page.evaluate(async () => {
+      const bodies = Array.from(document.querySelectorAll<HTMLElement>("[data-panel] .s1-panel__body")).filter(
+        (body) => body.scrollHeight - body.clientHeight > 20,
+      )
+      const before = bodies.map((body) => body.scrollTop)
+      for (const body of bodies) body.scrollTop = 0
+      await new Promise((resolve) => setTimeout(resolve, 1200))
+      return bodies.map((body, index) => ({
+        panel: (body.closest("[data-panel]") as HTMLElement).dataset.panel ?? "?",
+        wasAt: before[index] ?? 0,
+        nowAt: body.scrollTop,
+        max: body.scrollHeight - body.clientHeight,
+      }))
+    })
+
+    expect(walked.length, "至少要有一个真的可滚动的面板，否则这条探针没有对象").toBeGreaterThan(0)
+
+    /*
+     * 允许对齐把 0 吸附到**最近的行缝**（那正是它的工作），所以不能断言「必须还是 0」——
+     * 那会把一条正确的行为判红。要判的是**它没有一路走到底**：位移必须远小于可滚动高度。
+     * 用 `max / 2` 作界：吸附最多移动一行，而一行远小于半个可滚动区。
+     */
+    for (const row of walked) {
+      expect(
+        row.nowAt,
+        `${row.panel}：置 0 之后自己走到了 ${row.nowAt}（max=${row.max}）—— 对齐在跟用户抢滚动条`,
+      ).toBeLessThan(row.max / 2)
+    }
+  })
 })
 
 /* ========================================================================== */
@@ -472,31 +525,62 @@ test.describe("evidence.every-claim-cites-a-source · 画布引用可定位", ()
       expect(attackChainUnresolvableRefs(badEdge)).toContain("#e-nope")
     })
 
-    test("正例：画布上的节点两两不重合（每个实体领到不同的格子）", () => {
+    test("正例：画布上的节点两两不重合（同排的列区间互不相交）", () => {
       /**
-       * 2026-09-17 实测缺陷：位置表只列了 4 个实体，而画布上是 6 个 ——
+       * 2026-09-17 实测缺陷（第一次）：位置表只列了 4 个实体，而画布上是 6 个 ——
        * 另外两个走"按序号排开"的取模公式，**撞上了位置表里的格子**，
        * 于是 `data:policy-db` 与 `file:webshell1.jsp` 拿到同一个 (0.26, 0.74)，
        * 在画布上逐像素重叠、文字互相压（截图实拍）。
        *
-       * 判据就是坐标本身：两两不同。它不依赖行高、不依赖渲染，纯派生量。
+       * 2026-09-17 实测缺陷（第二次，本批修的）：坐标不再相同了，**矩形仍然相交** ——
+       * 画布 444×444、节点宽 202 / 高 98–216，而手写格子的间距（0.48 × 444 ≈ 213）
+       * 小于节点自己的宽或高。"两个点不同"从来就不等于"两个盒子不压"。
+       *
+       * 所以判据换成**落点本身的结构**：同一排里，任意两个节点的列区间
+       * `[columnStart, columnStart + columnSpan)` 不得相交（不同排竖直方向本来就不重叠）。
+       * 这是纯函数侧的那一半；浏览器侧的矩形判据（`getBoundingClientRect()` 逐对判交）
+       * 在同一节里 —— 两条合起来才说明"格子不重叠"与"浏览器真的按格子摆"。
        */
       let checked = 0
+      let ranksSeen = 0
       for (const frame of SCHEDULE) {
         const chain = attackChainOf(replayStream(STREAM, frame.cursor), STREAM)
-        const seen = new Map<string, string>()
+        expect(
+          attackChainOverlaps(chain),
+          `第 ${frame.beatStep} 拍上有节点的列区间相交 —— 它们会压在一起`,
+        ).toEqual([])
+        // 顺带钉住布局自述的形状：排数 / 列数与落点必须对得上（否则上面那条在空集上成立）。
         for (const node of chain.nodes) {
-          const key = `${node.x},${node.y}`
-          const other = seen.get(key)
-          expect(
-            other,
-            `第 ${frame.beatStep} 拍上 ${node.id} 与 ${other ?? "?"} 占同一个格子 (${key}) —— 两个节点会重叠`,
-          ).toBeUndefined()
-          seen.set(key, node.id)
-          checked += 1
+          expect(node.slot.rank, `${node.id} 的排号越界`).toBeLessThan(chain.layout.rankCount)
+          expect(node.slot.columnStart).toBeGreaterThanOrEqual(1)
+          expect(node.slot.columnStart + node.slot.columnSpan).toBeLessThanOrEqual(
+            chain.layout.columnCount + 1,
+          )
+          ranksSeen = Math.max(ranksSeen, node.slot.rank + 1)
         }
+        checked += chain.nodes.length
       }
       expect(checked, "整条回放里必须有节点被扫到（否则这条断言在空集上成立）").toBeGreaterThan(0)
+      expect(ranksSeen, "布局必须真的分过层（只有一排 = 没分层）").toBeGreaterThan(1)
+    })
+
+    test("负对照：把两个节点放进同一排的同一列区间，同一条判据必须红", () => {
+      const chain = attackChainOf(replayStream(STREAM, CURSOR_END), STREAM)
+      expect(chain.nodes.length).toBeGreaterThan(1)
+      expect(attackChainOverlaps(chain)).toEqual([])
+
+      const first = chain.nodes[0]
+      const second = chain.nodes[1]
+      expect(first).toBeDefined()
+      expect(second).toBeDefined()
+      const corrupted = {
+        ...chain,
+        nodes: [first!, { ...second!, slot: { ...first!.slot } }],
+      }
+      expect(
+        attackChainOverlaps(corrupted),
+        "两个节点拿到同一个排 + 同一个列区间时必须被判红 —— 否则这条判据只是在说「是」",
+      ).toHaveLength(1)
     })
   },
 )

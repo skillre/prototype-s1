@@ -38,7 +38,7 @@ S1 · AI 原生安全运营工作台，面向保险公司安全团队的 SOC 控
   - 允许：宿主内拆分/并行只读或彼此独立的任务；宿主的 Subagent 调用不属于产品代码。
   - 禁止：产品应用代码及其运行时依赖（app/components/lib/hooks/stores/scripts）里出现 agent framework / orchestrator runtime / 多 agent 调度依赖。
   - 判据：`app` `components` `lib` `hooks` `stores` `scripts` 不得 import 编排 SDK；`package.json` 的运行时依赖不得出现编排框架。宿主侧的 Subagent 调用不是产品代码，不受此限。
-- **模型路由**：provider `opencode-go-dsv41` / model `deepseek-flash` / reasoning effort `max`（2026-09-15 与 DSH 模型目录核对）。Subagent 默认走这条路由；改路由先改 `factory-policy.json`。
+- **模型路由**：provider `commandcode` / model `deepseek/deepseek-v4.1-flash` / reasoning effort `max`（2026-09-17 与 DSH 模型目录核对）。Subagent 默认走这条路由；改路由先改 `factory-policy.json`。
 - **单 worktree 单写者**（`single-writer`）：同一棵工作副本同一时间只有一个写者；要并行写就各自独立 worktree。两个写者共享一棵树，冲突不是概率问题，是时间问题。
 - **共享路径单 owner**（`single-owner`）：`AGENTS.md`、`package.json`、`factory-policy.json`、`factory.lock.json`、契约 schema 与门禁脚本这类共享面，同一时间只有一个 owner，其余 agent 只读。
 - **test / qa 串行**（`serial`）：`pnpm test` 与 `pnpm qa` **永不并发**（Next 16 dev server 按项目加锁，并行只会在错误的 server 上出结果）。CI 里同样不得拆成两个并行 job。

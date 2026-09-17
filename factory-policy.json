@@ -17,10 +17,10 @@
     "forbiddenScope": "产品应用代码及其运行时依赖（app/components/lib/hooks/stores/scripts）里出现 agent framework / orchestrator runtime / 多 agent 调度依赖。"
   },
   "modelRouting": {
-    "provider": "opencode-go-dsv41",
-    "model": "deepseek-flash",
+    "provider": "commandcode",
+    "model": "deepseek/deepseek-v4.1-flash",
     "reasoningEffort": "max",
-    "verifiedOn": "2026-09-15"
+    "verifiedOn": "2026-09-17"
   },
   "concurrency": {
     "worktree": "single-writer",

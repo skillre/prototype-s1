@@ -34,10 +34,13 @@ import { useCallback, useEffect, useRef } from "react"
  * 这不是启发式 —— 它就是"顶边该落在哪"的定义。
  */
 
-/** 行下沿与滚动口上沿之间的余量（px）：吸附后顶行完整可见，且留出行的分隔感。 */
-const ROW_GAP_ALLOWANCE_PX = 2
-
-/** 距底部不超过这个距离就算「在底部」—— 小于一行高，所以不会把"差一行"误判成到底。 */
+/**
+ * 距底部不超过这个距离就算「在底部」—— 小于一行高，所以不会把"差一行"误判成到底。
+ *
+ * （原先还有一个 `ROW_GAP_ALLOWANCE_PX = 2`，是给「顶边之下第一行」那个判据用的余量。
+ * 那个判据本身是错的 —— 见 `alignScrollTop` 里的棘轮说明 —— 余量随它一起去掉了：
+ * 「一行有没有被切」是个几何事实，不需要容差。）
+ */
 const FOLLOW_THRESHOLD_PX = 24
 
 /**
@@ -108,21 +111,44 @@ export function alignScrollTop(node: HTMLElement): number {
     rect.top + (Number.parseFloat(style.paddingTop) || 0) + (Number.parseFloat(style.borderTopWidth) || 0)
   const maxScroll = Math.max(0, node.scrollHeight - node.clientHeight)
 
-  // 顶边之下第一行 —— 它要么整体在内容盒之上（已滚过去），要么正被切。
-  const host = rows.find((row) => row.getBoundingClientRect().bottom - contentTop > ROW_GAP_ALLOWANCE_PX)
-  if (host === undefined) return node.scrollTop
+  /*
+   * ## 只在一行**真的被切**的时候才动（2026-09-17 实测缺陷：不幂等 → 棘轮）
+   *
+   * 这里原先是「顶边之下第一行」：`rows.find((r) => r.bottom - contentTop > 2)`，
+   * 然后把它下沿对齐到上沿。**那是一个棘轮**：对齐之后这一行的下沿恰好落在上沿上，
+   * 于是 `bottom - contentTop === 0`，不再满足 `> 2` —— 下一次调用就找到**下一行**，
+   * 再往前推一整行。而 `scroll` 事件每次都会调用它，所以每滚一次就往下走一行。
+   *
+   * 实测代价（2026-09-17）：把任一溢出面板的 `scrollTop` 置 0，1.2 秒后它自己回到
+   * `maxScroll` —— `plan-panel` 0 → 235（=max）、`report-stream` 0 → 272（=max），
+   * **九个可滚动面板无一例外**。含义是**人根本滚不上去**：任何手动上滚都会被立刻推回底部。
+   * 原来的 A2 缺陷（顶行被切）因此并没有被修好，只是被「面板永远停在底部」这个状态
+   * 加上顶边渐隐遮住了 —— 而 A2 的测试恰好**排除了已经滚到底的面板**，于是看不见它。
+   *
+   * 判据改成定义本身：**一行被切 ⟺ 它的上沿在内容盒上沿之上、下沿在其之下**。
+   * 已经对齐时没有任何行满足它 → 原样返回（幂等，不再棘轮）。
+   */
+  const CUT_EPSILON_PX = 0.5
+  const cut = rows.find((row) => {
+    const box = row.getBoundingClientRect()
+    return box.top < contentTop - CUT_EPSILON_PX && box.bottom > contentTop + CUT_EPSILON_PX
+  })
+  if (cut === undefined) return node.scrollTop
 
-  const hostRect = host.getBoundingClientRect()
-  // 它的下沿对齐到内容盒上沿 = 切痕落在这一行**上面的空隙**里。
-  //
-  // 够不着就算了（`wanted` 超出可滚动范围时**不写** `scrollTop`）。
-  //
-  // 这里曾经写成「退回到上一个行缝（`hostRect.top`）」，那是错的：退回值在滚动到底的
-  // 面板上永远比当前值小一点点，而 `scroll` 事件会再触发一次对齐 —— 于是每次滚动都
-  // 微调一次，元素**永远不稳定**。实测代价：Playwright 点不到任何一行留痕
-  // （`element is not stable`，30s 超时），因为那一行在不停地抖。
-  // 对齐是「把切痕移进行缝」，不是「必须动一下」；动不了就不动。
-  const wanted = node.scrollTop + (hostRect.bottom - contentTop)
+  const cutRect = cut.getBoundingClientRect()
+  /*
+   * 吸附到**更近的那一侧行缝**（两个方向都能让切痕落进行与行之间的空隙）：
+   *   · `down`：把这一行整个滚出去（它的下沿对齐到上沿）；
+   *   · `up`：把这一行整个留在视野里（它的上沿对齐到上沿）。
+   * 取更近的那个 = 位移最小、最不打断正在读的人。
+   *
+   * 为什么不能只取 `down`：那会让「上滚一点点」变成「被推下去一行」，读的人永远
+   * 停在最新那一行 —— 那正是上面那个棘轮的用户可见形态。
+   * 为什么不能只取 `up`：下滚时同样会一直把内容往上顶，跟随到底的手感会变成抖动。
+   */
+  const down = node.scrollTop + (cutRect.bottom - contentTop)
+  const up = node.scrollTop + (cutRect.top - contentTop)
+  const wanted = down - node.scrollTop <= node.scrollTop - up ? down : up
   const next = Math.max(0, Math.min(wanted, maxScroll))
   if (Math.abs(next - node.scrollTop) > 0.5) node.scrollTop = next
   return node.scrollTop

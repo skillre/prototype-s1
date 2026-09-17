@@ -73,14 +73,14 @@
       "required": ["provider", "model", "reasoningEffort", "verifiedOn"],
       "description": "Subagent 与协作任务的默认路由。三个值不是抄来的约定，是 2026-09-15 用 DSH 模型目录核出来的：provider `opencode-go-dsv41` 广告 model `deepseek-flash`，该 model 的 reasoning efforts 为 low/medium/high/max。",
       "properties": {
-        "provider": { "const": "opencode-go-dsv41" },
-        "model": { "const": "deepseek-flash" },
+        "provider": { "const": "commandcode" },
+        "model": { "const": "deepseek/deepseek-v4.1-flash" },
         "reasoningEffort": {
           "const": "max",
           "description": "该 provider 广告 low/medium/high/max；策略钉住 max。"
         },
         "verifiedOn": {
-          "const": "2026-09-15",
+          "const": "2026-09-17",
           "description": "路由值与 DSH 模型目录比对的日期。路由变了要重新核，而不是让这里慢慢过期。"
         }
       }

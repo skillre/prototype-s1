@@ -47,7 +47,9 @@
     "glow": "forbidden",
     "notes": "用 1px 规则线分格建立结构层级：线只出现在「语法位置」（面板边界、列分隔），行与行之间不画线，那里由行高与三级明度承担。没有环境光（CSS 里不存在 .kits-ambient），也禁止发光（--kits-color-glow: transparent）—— 控制台的光只应来自真实状态：青=AI 在跑、琥珀=等你授权。注意 roles 里的 ambient 与之不冲突：它授予的是**元素级**的「运行中」呼吸点，不是容器级的环境光层。"
   },
-  "signatureComponents": [],
+  "signatureComponents": [
+    "evidence-chip"
+  ],
   "optionalComponents": [],
   "discouragedComponents": [],
   "effects": [],
