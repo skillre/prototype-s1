@@ -22,7 +22,7 @@ import {
  *
  * 「AI 说的话，做过没有？」所以这里的每一条命令都**先在处置说明卡之下**出现
  * （依据 / 动作 / 影响 / 回滚四栏都来自数据：说明卡原文来自种子，动作与影响面
- * 来自 `lib/s1/contract.ts` 的动作目录），命令**逐字打出**，回显**逐行返回**。
+ * 来自 `lib/sth/contract.ts` 的动作目录），命令**逐字打出**，回显**逐行返回**。
  *
  * ## 打字机与逐行回显都不是定时器
  *
@@ -82,7 +82,7 @@ export function ToolConsole({
         <>
           <ScriptedReplayBadge />
           {commandCount === 0 ? null : (
-            <span className="s1-panel__subtitle" data-testid="console-command-count">
+            <span className="sth-panel__subtitle" data-testid="console-command-count">
               {String(commandCount)}
             </span>
           )}
@@ -96,10 +96,10 @@ export function ToolConsole({
       /* 控制台是往下长的，观众的眼睛在底部：条数一变就跟随到底。 */
       followKey={entries.length}
     >
-      <div className="s1-console__session" data-testid="console-session">
+      <div className="sth-console__session" data-testid="console-session">
         <code>{session}</code>
         {disclosure === null ? null : (
-          <span className="s1-console__brief-source">{disclosure}</span>
+          <span className="sth-console__brief-source">{disclosure}</span>
         )}
       </div>
 
@@ -112,7 +112,7 @@ export function ToolConsole({
       )}
 
       {/* 末行常驻提示符：下一条命令落在哪里。它是结构，不是信息，所以不进无障碍树。 */}
-      <span className="s1-console__line" data-testid="console-prompt" aria-hidden="true">
+      <span className="sth-console__line" data-testid="console-prompt" aria-hidden="true">
         <pre>$</pre>
       </span>
     </WorkbenchPanel>
@@ -140,7 +140,7 @@ function BriefCard({ entry, copy }: { entry: BriefEntry; copy: ConsoleCopy }) {
 
   return (
     <div
-      className="s1-console__brief"
+      className="sth-console__brief"
       data-testid="brief-card"
       data-entry-kind="brief"
       data-seq={entry.seq}
@@ -149,7 +149,7 @@ function BriefCard({ entry, copy }: { entry: BriefEntry; copy: ConsoleCopy }) {
       data-auto={String(entry.auto)}
       data-autonomy={entry.autonomy}
     >
-      <div className="s1-console__brief-head">
+      <div className="sth-console__brief-head">
         <span>{copy.briefTitle}</span>
         <span data-testid="brief-channel">
           {entry.auto
@@ -160,11 +160,11 @@ function BriefCard({ entry, copy }: { entry: BriefEntry; copy: ConsoleCopy }) {
         </span>
       </div>
 
-      <dl className="s1-fields">
+      <dl className="sth-fields">
         {copy.briefFieldOrder.map((field) => (
           <Fragment key={field}>
-            <dt className="s1-field__name">{labelOf(copy, field)}</dt>
-            <dd className="s1-field__value" data-brief-field={field}>
+            <dt className="sth-field__name">{labelOf(copy, field)}</dt>
+            <dd className="sth-field__value" data-brief-field={field}>
               {values[field]}
             </dd>
           </Fragment>
@@ -177,7 +177,7 @@ function BriefCard({ entry, copy }: { entry: BriefEntry; copy: ConsoleCopy }) {
         </div>
       )}
 
-      <span className="s1-console__brief-source">
+      <span className="sth-console__brief-source">
         {entry.source === "own" ? copy.briefOwnSource : copy.briefSessionSource}
       </span>
     </div>
@@ -208,7 +208,7 @@ function labelOf(copy: ConsoleCopy, field: (typeof copy.briefFieldOrder)[number]
  * 一条命令：逐字打出 → 回显逐行返回 → 退出码。
  *
  * 三个 `data-*` 属性是**可测量的界面**：`data-typed-chars` / `data-echo-lines` 让
- * 「逐字」「逐行」可以被断言，而不是被形容词描述（见 `tests/s1-console.spec.ts`）。
+ * 「逐字」「逐行」可以被断言，而不是被形容词描述（见 `tests/sth-console.spec.ts`）。
  */
 function CommandBlock({
   entry,
@@ -230,7 +230,7 @@ function CommandBlock({
 
   return (
     <div
-      className="s1-console__entry"
+      className="sth-console__entry"
       data-testid="console-command"
       data-entry-kind="command"
       data-seq={entry.seq}
@@ -241,12 +241,12 @@ function CommandBlock({
       data-echo-total={outputLines.length}
       data-echo-complete={String(echoFinished)}
     >
-      <div className="s1-console__line">
+      <div className="sth-console__line">
         <pre>{typed}</pre>
       </div>
 
       {visible.length === 0 ? null : (
-        <div className="s1-console__output" data-testid="console-output">
+        <div className="sth-console__output" data-testid="console-output">
           {visible.map((line, index) => (
             <pre key={`${entry.key}-line-${index}`} data-output-line={index}>
               {line}
@@ -256,7 +256,7 @@ function CommandBlock({
       )}
 
       {showExit ? (
-        <span className="s1-console__exit" data-testid="console-exit" data-exit-code={entry.exitCode}>
+        <span className="sth-console__exit" data-testid="console-exit" data-exit-code={entry.exitCode}>
           {`${copy.exitLabel} ${entry.exitCode}`}
         </span>
       ) : null}

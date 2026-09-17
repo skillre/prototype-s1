@@ -14,7 +14,7 @@ import { evidenceDetailOf, type PipelineView } from "@/components/prototype/work
  * 遍历**已揭示的、本回合自己的**消息并把它们分类计数。这一层里没有任何一个写死的计数，
  * 所以「同一游标两次渲染逐字段相同」是一条平凡的性质，而不是靠纪律维持的巧合。
  *
- * 判据有三条，都能判红（`tests/s1-batch3.spec.ts`）：
+ * 判据有三条，都能判红（`tests/sth-batch3.spec.ts`）：
  *   1. 纯函数：同一游标两次调用深比较相等；
  *   2. 纯函数：每个数字等于**重新数一遍**的结果（拿界面显示的数去比对界面自己的算法没有意义，
  *      所以对照物是「从事件流另算一遍」，不是「再调用一次同一个函数」）；
@@ -22,7 +22,7 @@ import { evidenceDetailOf, type PipelineView } from "@/components/prototype/work
  *
  * ## 常驻免责
  *
- * 「探针只监听不阻断；拦截由 S1 编排防火墙/EDR 执行」是种子 `environment.dataSources`
+ * 「探针只监听不阻断；拦截由 STH 编排防火墙/EDR 执行」是种子 `environment.dataSources`
  * 里 probe 的 `capability` 原文 —— 记录内容，逐字显示，不翻译。它在这一格的位置是刻意的：
  * 管道画的是"数据怎么进来"，而这句话说的是"数据进来之后谁动手"，两件事必须挨着。
  */
@@ -54,10 +54,10 @@ export function PipelinePanel({
       emptyNote={copy.emptyNote}
       /* 紧凑头部：标题与副题同一行。中列四块里它的格子最小，而它是一张流程图 ——
          省下的十几像素直接换成正文里多一行可读内容。 */
-      className="s1-panel--dense"
+      className="sth-panel--dense"
       aside={
         <span
-          className="s1-panel__subtitle"
+          className="sth-panel__subtitle"
           data-testid="pipeline-evidence-total"
           data-total={view.lanes.reduce((sum, lane) => sum + lane.evidenceCount, 0)}
         >
@@ -65,35 +65,35 @@ export function PipelinePanel({
         </span>
       }
     >
-      <div className="s1-pipe" data-testid="en-pipeline">
-        <ul className="s1-pipe__lanes" data-testid="pipeline-lanes">
+      <div className="sth-pipe" data-testid="en-pipeline">
+        <ul className="sth-pipe__lanes" data-testid="pipeline-lanes">
           {view.lanes.map((lane) => (
             <li
               key={lane.source}
-              className="s1-pipe__lane"
+              className="sth-pipe__lane"
               data-lane={lane.source}
               data-evidence-count={lane.evidenceCount}
               data-message-count={lane.messageCount}
               /* 两路进料都是「数据自己进来了」——用青说"系统在产出"会与 AI 的自主动作混起来，
                  所以这里**不借任何语义色**：它们是数据源，不是判断。 */
             >
-              <span className="s1-pipe__lane-label">{lane.label}</span>
-              <code className="s1-pipe__lane-detail">{lane.detail}</code>
-              <span className="s1-pipe__count" data-testid="pipeline-lane-evidence">
+              <span className="sth-pipe__lane-label">{lane.label}</span>
+              <code className="sth-pipe__lane-detail">{lane.detail}</code>
+              <span className="sth-pipe__count" data-testid="pipeline-lane-evidence">
                 {copy.laneEvidence(lane.evidenceCount)}
               </span>
-              <span className="s1-pipe__count" data-testid="pipeline-lane-messages">
+              <span className="sth-pipe__count" data-testid="pipeline-lane-messages">
                 {copy.laneMessages(lane.messageCount)}
               </span>
               {lane.evidenceRefs.length === 0 ? (
-                <span className="s1-pipe__empty">{copy.laneEmpty}</span>
+                <span className="sth-pipe__empty">{copy.laneEmpty}</span>
               ) : (
-                <span className="s1-pipe__refs">
+                <span className="sth-pipe__refs">
                   {lane.evidenceRefs.map((ref) => (
                     <button
                       key={ref}
                       type="button"
-                      className="s1-chip"
+                      className="sth-chip"
                       /* 点开就是那条证据自己的字段（登记簿）——管道上的引用与 ③⑤⑨ 是同一个东西。 */
                       data-evidence-ref={ref}
                       data-testid="pipeline-evidence-chip"
@@ -109,34 +109,34 @@ export function PipelinePanel({
           ))}
         </ul>
 
-        <div className="s1-pipe__merge" aria-hidden="true">
-          <span className="s1-pipe__arrow">↓</span>
-          <span className="s1-pipe__merge-label">{copy.mergeInto}</span>
+        <div className="sth-pipe__merge" aria-hidden="true">
+          <span className="sth-pipe__arrow">↓</span>
+          <span className="sth-pipe__merge-label">{copy.mergeInto}</span>
         </div>
 
         {view.packageView === null ? (
-          <div className="s1-pipe__package" data-testid="pipeline-package" data-merged="false">
-            <span className="s1-pipe__package-title">{copy.packageTitle}</span>
-            <span className="s1-pipe__empty">{copy.packageEmpty}</span>
-            <span className="s1-pipe__empty">{copy.packageEmptyNote}</span>
+          <div className="sth-pipe__package" data-testid="pipeline-package" data-merged="false">
+            <span className="sth-pipe__package-title">{copy.packageTitle}</span>
+            <span className="sth-pipe__empty">{copy.packageEmpty}</span>
+            <span className="sth-pipe__empty">{copy.packageEmptyNote}</span>
           </div>
         ) : (
-          <div className="s1-pipe__package" data-testid="pipeline-package" data-merged="true">
-            <span className="s1-pipe__package-title">{copy.packageTitle}</span>
+          <div className="sth-pipe__package" data-testid="pipeline-package" data-merged="true">
+            <span className="sth-pipe__package-title">{copy.packageTitle}</span>
             {/* 上下文包自己的标签与汇流标注：种子原文，逐字。 */}
-            <code className="s1-pipe__package-label" data-testid="pipeline-package-label">
+            <code className="sth-pipe__package-label" data-testid="pipeline-package-label">
               {view.packageView.label}
             </code>
-            <span className="s1-pipe__merge-note">{view.packageView.mergeLabel}</span>
-            <span className="s1-pipe__count" data-testid="pipeline-merge-elapsed">
+            <span className="sth-pipe__merge-note">{view.packageView.mergeLabel}</span>
+            <span className="sth-pipe__count" data-testid="pipeline-merge-elapsed">
               {copy.mergeElapsed(view.packageView.mergeElapsedMs)}
             </span>
-            <span className="s1-pipe__count" data-testid="pipeline-package-confidence">
+            <span className="sth-pipe__count" data-testid="pipeline-package-confidence">
               {t.workbench.ask.confidence(view.packageView.confidencePercent)}
             </span>
-            <span className="s1-pipe__refs">
+            <span className="sth-pipe__refs">
               {view.packageView.evidenceRefs.map((ref) => (
-                <code key={ref} className="s1-pipe__ref" data-meaning="evidence" data-evidence-ref={ref}>
+                <code key={ref} className="sth-pipe__ref" data-meaning="evidence" data-evidence-ref={ref}>
                   {ref}
                 </code>
               ))}
@@ -144,16 +144,16 @@ export function PipelinePanel({
           </div>
         )}
 
-        <div className="s1-pipe__consumed" data-testid="pipeline-consumed">
-          <span className="s1-pipe__package-title">{copy.consumedTitle}</span>
+        <div className="sth-pipe__consumed" data-testid="pipeline-consumed">
+          <span className="sth-pipe__package-title">{copy.consumedTitle}</span>
           {view.consumed.total === 0 ? (
-            <span className="s1-pipe__empty">{copy.consumedNone}</span>
+            <span className="sth-pipe__empty">{copy.consumedNone}</span>
           ) : (
             <>
-              <span className="s1-pipe__count" data-testid="pipeline-consumed-merged">
+              <span className="sth-pipe__count" data-testid="pipeline-consumed-merged">
                 {copy.consumedMerged(view.consumed.merged)}
               </span>
-              <span className="s1-pipe__count" data-testid="pipeline-consumed-single">
+              <span className="sth-pipe__count" data-testid="pipeline-consumed-single">
                 {copy.consumedSingle(view.consumed.singleSource)}
               </span>
             </>
@@ -162,8 +162,8 @@ export function PipelinePanel({
 
         {/* 常驻免责：种子 `environment.dataSources` 的 probe.capability 原文（记录内容）。 */}
         {disclaimer === null ? null : (
-          <p className="s1-pipe__disclaimer" data-testid="pipeline-disclaimer">
-            <span className="s1-field__name">{`${copy.disclaimerLabel}：`}</span>
+          <p className="sth-pipe__disclaimer" data-testid="pipeline-disclaimer">
+            <span className="sth-field__name">{`${copy.disclaimerLabel}：`}</span>
             <code>{disclaimer}</code>
           </p>
         )}

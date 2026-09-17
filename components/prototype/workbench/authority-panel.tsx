@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils"
  * ## 自主度是数据层的事实，不是界面的意见
  *
  * 「L3 授权策略内」里的级别不是这里判断的：`autonomousAllowed` 由数据层的
- * `isAutonomous(actionCode)` 给出（与 `lib/s1/verify.ts` 的 `scanAuthority` 共用 `ACTION_CATALOG`
+ * `isAutonomous(actionCode)` 给出（与 `lib/sth/verify.ts` 的 `scanAuthority` 共用 `ACTION_CATALOG`
  * 这一份判据源），`executedAutomatically` 由**真实执行记录**给出。卡上那对
  * `data-autonomous-allowed` / `data-auto-executed` 就是这两个事实的机器可读形式 —— 断言读它，
  * 而不是读 JSX 里有没有「已自动执行」四个字。所以状态词是推出来的：只有真的执行过才说「已自动
@@ -44,7 +44,7 @@ import { cn } from "@/lib/utils"
  *
  * ## 不编一个字的界面
  *
- * 卡标题、五件套正文、依据 / 影响 / 回滚、动作码中文名、时间戳都逐字来自 `lib/s1/**`；界面词
+ * 卡标题、五件套正文、依据 / 影响 / 回滚、动作码中文名、时间戳都逐字来自 `lib/sth/**`；界面词
  * （通道名、字段名、三个键、SLA 标签）走词典。「证据」那句 `#e-79 …` 是种子原文，不是界面抠出来
  * 的引用（`evidenceRefs` 本批为空，抠字符串会造出一条未经核对的引用）。
  */
@@ -91,7 +91,7 @@ export function AuthorityPanel({
       /* 0 项时它保持中性：没有待批卡还亮着琥珀，就是让「球在你那边」这个颜色失效。 */
       aside={
         <span
-          className={cn("s1-auth__pending", pendingCount > 0 && "s1-auth__pending--waiting")}
+          className={cn("sth-auth__pending", pendingCount > 0 && "sth-auth__pending--waiting")}
           data-testid="authority-pending"
           data-pending-approvals={pendingCount} data-meaning={pendingCount > 0 ? "waiting" : undefined}
         >
@@ -104,7 +104,7 @@ export function AuthorityPanel({
       emptyTitle={copy.empty}
       emptyNote={copy.emptyNote}
     >
-      <div className="s1-auth" data-testid="authority-list">
+      <div className="sth-auth" data-testid="authority-list">
         {cards.map((card) => (
           <AuthorityCard key={card.cardId} card={card} {...cardProps} />
         ))}
@@ -136,25 +136,25 @@ function AuthorityCard({ card, copy, progressMs, revealTimes, onDecide }: Author
 
   return (
     <article
-      className="s1-auth__card"
+      className="sth-auth__card"
       data-testid={auto ? "authority-auto-card" : "authority-approval-card"}
       data-card-id={card.cardId} data-card-kind={card.cardKind} data-card-state={card.state}
       data-action-code={card.actionCode}
       data-autonomous-allowed={String(card.autonomousAllowed)} data-auto-executed={String(card.executedAutomatically)}
       data-meaning={meaning}
     >
-      <header className="s1-auth__head">
-        <span className="s1-auth__channel">{auto ? copy.autoChannel : copy.approvalRequired}</span>
-        <span className="s1-auth__level" data-testid="authority-level" data-autonomy={card.autonomy}>
+      <header className="sth-auth__head">
+        <span className="sth-auth__channel">{auto ? copy.autoChannel : copy.approvalRequired}</span>
+        <span className="sth-auth__level" data-testid="authority-level" data-autonomy={card.autonomy}>
           {card.autonomy}
         </span>
       </header>
 
-      <p className="s1-auth__title">{card.title}</p>
+      <p className="sth-auth__title">{card.title}</p>
 
       {/* 状态词由 `executedAutomatically` 推出，不由卡片的声明给出。 */}
       {auto ? (
-        <p className="s1-auth__state" data-testid="authority-auto-state" data-meaning={meaning}>
+        <p className="sth-auth__state" data-testid="authority-auto-state" data-meaning={meaning}>
           {copy.autoState(
             card.autonomy,
             card.executedAutomatically ? copy.autoExecuted : copy.approvalRequired,
@@ -162,18 +162,18 @@ function AuthorityCard({ card, copy, progressMs, revealTimes, onDecide }: Author
         </p>
       ) : null}
 
-      <p className="s1-auth__source" data-testid="authority-source" title={copy.authoritySource}>
+      <p className="sth-auth__source" data-testid="authority-source" title={copy.authoritySource}>
         {copy.authoritySource}
       </p>
 
-      <dl className="s1-fields s1-auth__five">
+      <dl className="sth-fields sth-auth__five">
         {FIVE_ORDER.map((key) => {
           const value = fiveValueOf(card, key)
           if (value === null) return null
           return (
             <Fragment key={key}>
-              <dt className="s1-field__name">{copy.five[key]}</dt>
-              <dd className="s1-field__value" data-five-key={key}>
+              <dt className="sth-field__name">{copy.five[key]}</dt>
+              <dd className="sth-field__value" data-five-key={key}>
                 {value}
               </dd>
             </Fragment>
@@ -186,32 +186,32 @@ function AuthorityCard({ card, copy, progressMs, revealTimes, onDecide }: Author
           不是更忠实，是把一条记录读成两条。 */}
       {card.rollbackWindowMs === null ? null : (
         <div
-          className="s1-auth__rollback"
+          className="sth-auth__rollback"
           data-testid="authority-rollback-window"
           data-rollback-window-ms={card.rollbackWindowMs} data-meaning={card.state === "pending" ? "waiting" : "closed"}
         >
           <span>{copy.rollbackWindow}</span>
-          <span className="s1-auth__clock">{clockOfMs(card.rollbackWindowMs)}</span>
+          <span className="sth-auth__clock">{clockOfMs(card.rollbackWindowMs)}</span>
         </div>
       )}
 
       {remainingMs === null ? null : (
         <div
-          className="s1-auth__sla"
+          className="sth-auth__sla"
           data-testid="authority-sla" data-sla-remaining-ms={remainingMs} data-meaning="waiting"
         >
-          <span className="s1-dot s1-dot--warning s1-dot--breathing" data-meaning="waiting" aria-hidden="true" />
+          <span className="sth-dot sth-dot--warning sth-dot--breathing" data-meaning="waiting" aria-hidden="true" />
           <span>{copy.sla}</span>
-          <span className="s1-auth__clock" data-testid="authority-sla-clock">
+          <span className="sth-auth__clock" data-testid="authority-sla-clock">
             {copy.remaining(clockOfMs(remainingMs))}
           </span>
           {/* 超时策略是数据层的记录；数据层没给才退回词典那句。 */}
-          <span className="s1-auth__policy">{card.slaTimeoutPolicy ?? copy.slaTimeout}</span>
+          <span className="sth-auth__policy">{card.slaTimeoutPolicy ?? copy.slaTimeout}</span>
         </div>
       )}
 
       {card.actions.length === 0 ? null : (
-        <div className="s1-auth__keys">
+        <div className="sth-auth__keys">
           {card.actions.map((label, index) => {
             const decision = decisionOf(copy, label)
             /* 认不出来的键**按不动**：种子里出现了一个词典里没有的决定，界面不该替它选一个。 */
@@ -239,7 +239,7 @@ function AuthorityCard({ card, copy, progressMs, revealTimes, onDecide }: Author
       {/* 裁决记录是这张卡的终点：按钮留在原处但按不动，决定以文字说出来。 */}
       {card.state !== "pending" && card.decision !== null && decisionText !== null ? (
         <p
-          className="s1-auth__decision" data-testid="authority-decision"
+          className="sth-auth__decision" data-testid="authority-decision"
           data-decided={card.decision} data-meaning="closed"
         >
           {copy.decided(decisionText)}

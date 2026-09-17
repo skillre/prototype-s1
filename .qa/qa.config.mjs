@@ -19,13 +19,13 @@
  * 3000 is Next's default, which means every prototype on this machine, plus any
  * stray `next dev`, races for it. Ports already claimed by siblings when this
  * prototype was derived (2026-09-16): 3100 (hub) · 3200 (starter) · 3210
- * (finance) · 3230 (research) · 3300 (kits). S1 takes 3310.
+ * (finance) · 3230 (research) · 3300 (kits). STH takes 3310.
  *
  * The port is *pinned* rather than left to Next's auto-increment, because
  * auto-increment is how a test run silently ends up talking to a different
  * server than the one it started.
  *
- * 端口值本身是人签署的决定（见根目录 `S1-原型建设方案.md` 决定 3）。
+ * 端口值本身是人签署的决定（见根目录 `STH-原型建设方案.md` 决定 3）。
  */
 export const QA_PORT = 3310
 
@@ -63,9 +63,9 @@ export const excludeRoutes = []
  *
  * **The mobile viewport is deliberately absent.** The reason, verbatim, as
  * signed by the human owner of this product
- * （`S1-原型建设方案.md` 已签署的决定 4，签署日 2026-09-16）:
+ * （`STH-原型建设方案.md` 已签署的决定 4，签署日 2026-09-16）:
  *
- *   「S1 是 16:9 单屏不加滚动的控制台，产品形态不提供移动端；投屏环境为固定 16:9。因此 QA 扫 desktop 双主题，不做移动视口扫描。这不是放弃适配，是产品形态的声明。」
+ *   「STH 是 16:9 单屏不加滚动的控制台，产品形态不提供移动端；投屏环境为固定 16:9。因此 QA 扫 desktop 双主题，不做移动视口扫描。这不是放弃适配，是产品形态的声明。」
  *
  * Two consequences that are accepted here rather than overlooked:
  *   - the sweep's coarse-pointer comparison needs one fine and one touch

@@ -13,7 +13,7 @@ import type { SedimentItemView } from "@/components/prototype/workbench/view-mod
  * 产品承诺是「一次事件 = 全网免疫」。承诺在界面上无法被证伪：三条卡片永远都在，看起来永远
  * 成立。所以这里把它做成一次**可执行的核对** —— 导出物装着条目、计数、裁决记录与事件链；
  * 把它贴回来，`onVerify` 拿它与**此刻的状态**逐条比对，并当场说出差异有几处。判据在数据层
- * （`lib/s1/sediment.ts` 的往返检查），界面只负责把它摆上台面：界面若另写一套「贴回来的和
+ * （`lib/sth/sediment.ts` 的往返检查），界面只负责把它摆上台面：界面若另写一套「贴回来的和
  * 当前一样吗」，差异就变成两套实现之间的差异，而 `sediment.survives-export` 守的是数据层。
  *
  * ## 往返控件是共享实现
@@ -37,11 +37,11 @@ import type { SedimentItemView } from "@/components/prototype/workbench/view-mod
  */
 
 /** 导入框与导出文档的 DOM id。**模块级常量**：它们必须跨渲染稳定（随机 id 会让关联断掉）。 */
-const IMPORT_TEXTAREA_ID = "s1-sediment-import"
-const EXPORT_DOCUMENT_ID = "s1-sediment-export"
+const IMPORT_TEXTAREA_ID = "sth-sediment-import"
+const EXPORT_DOCUMENT_ID = "sth-sediment-export"
 
 /** 文件名兜底：解析不出游标时才用它（正常路径永远带游标）。 */
-const EXPORT_FILE_BASE = "s1-sediment"
+const EXPORT_FILE_BASE = "sth-sediment"
 
 export function SedimentPanel({
   status,
@@ -73,21 +73,21 @@ export function SedimentPanel({
       onRetry={onRetry}
       emptyTitle={copy.empty}
       emptyNote={copy.emptyNote}
-      aside={<span className="s1-panel__subtitle" data-testid="sediment-count" data-count={items.length}>{String(items.length)}</span>}
+      aside={<span className="sth-panel__subtitle" data-testid="sediment-count" data-count={items.length}>{String(items.length)}</span>}
     >
-      <ul className="s1-sed__items" data-testid="sediment-items">
+      <ul className="sth-sed__items" data-testid="sediment-items">
         {items.map((item) => (
           // 左边那道青线与种类 chip 是同一个意思（本回合 AI 产出的沉淀），所以两者都带
           // `data-meaning="ai"`；条目原文是记录内容，不翻译、不裁剪，也不染色。
-          <li key={item.id} className="s1-sed__item" data-sediment-id={item.id} data-kind={item.kind} data-meaning="ai">
-            <span className="s1-sed__kind" data-meaning="ai">
+          <li key={item.id} className="sth-sed__item" data-sediment-id={item.id} data-kind={item.kind} data-meaning="ai">
+            <span className="sth-sed__kind" data-meaning="ai">
               {copy.kindLabels[item.kind]}
             </span>
-            <p className="s1-sed__label">{item.label}</p>
-            <div className="s1-sed__refs">
-              <span className="s1-field__name">{`${copy.sourceRefs}：`}</span>
+            <p className="sth-sed__label">{item.label}</p>
+            <div className="sth-sed__refs">
+              <span className="sth-field__name">{`${copy.sourceRefs}：`}</span>
               {item.sourceRefs.map((ref, index) => (
-                <code key={`${ref}#${index}`} className="s1-sed__ref" data-meaning="evidence" data-source-ref={ref}>
+                <code key={`${ref}#${index}`} className="sth-sed__ref" data-meaning="evidence" data-source-ref={ref}>
                   {ref}
                 </code>
               ))}

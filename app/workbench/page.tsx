@@ -1,7 +1,7 @@
 import { WorkbenchView } from "@/components/prototype/workbench/workbench-view"
 
 /**
- * `/workbench` —— S1 工作台本体（1680×1050 的固定画布 + scale-to-fit）。
+ * `/workbench` —— STH 工作台本体（1680×1050 的固定画布 + scale-to-fit）。
  *
  * 路由 slug 保持英文，界面文案一律经 `useMessages()`（见 `docs`／AGENTS.md 的本地化规则）。
  *

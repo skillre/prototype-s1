@@ -8,10 +8,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-# S1 工作台 — Agent Instructions
+# STH 工作台 — Agent Instructions
 
 这是一个**由 Prototype Factory 生产的产品仓**（`init-contract.json` 的 `stage: "product"`）：
-S1 · AI 原生安全运营工作台，面向保险公司安全团队的 SOC 控制台。只做「Frontend + local state
+STH · AI 原生安全运营工作台，面向保险公司安全团队的 SOC 控制台。只做「Frontend + local state
 + 真实感种子数据」，没有后端、没有数据库、没有鉴权。
 
 **本仓现在只有初始化边界**：身份、契约、门禁、端口与样式包接入都已完成，组件层还没开始。
@@ -54,16 +54,16 @@ S1 · AI 原生安全运营工作台，面向保险公司安全团队的 SOC 控
 2. **优先复用现有组件**：`components/ui/`（shadcn primitives）、`components/prototype/`（StatsCard、DataTable、FilterBar、DetailDrawer、CommandPalette、EmptyState、LoadingState、ErrorState、OnboardingWizard、ChartCard）、`components/motion/`（FadeIn、SlideIn、ScaleIn、PageTransition、StaggerContainer、AnimatedNumber）、`components/layout/`（Sidebar、TopNav、MobileNav、PageContainer）。
 3. **禁止无意义重复组件**。相似 UI 先考虑扩展现有组件，而不是复制新文件。
 4. **所有可见交互必须真实可用**。每个按钮/开关/菜单都连到 state、store 或真实行为；**不允许 fake buttons**、不允许仅视觉装饰。
-5. **不制作静态 mockup**。页面必须由真实组件 + 局部状态驱动，数据来自**本产品自己的种子数据模块**（S1 的数据层已建：`lib/s1/**` —— 见下方「数据层」一节；**不要**恢复 Reference Sample 的 `lib/mock-data.ts`）。（realistic mock data，禁止 lorem ipsum）。
+5. **不制作静态 mockup**。页面必须由真实组件 + 局部状态驱动，数据来自**本产品自己的种子数据模块**（STH 的数据层已建：`lib/sth/**` —— 见下方「数据层」一节；**不要**恢复 Reference Sample 的 `lib/mock-data.ts`）。（realistic mock data，禁止 lorem ipsum）。
 6. **shadcn/ui 优先作为 UI primitive**。注意 base-nova 风格 API 与旧版不同：用 `render` prop 而不是 `asChild`；Drawer 用 `swipeDirection`；`Select.Value` 的 children 可以是 `(value) => ReactNode`。
 7. **Motion 优先负责交互动画**。时长与缓动只从 `lib/motion-presets.ts` / CSS token 取，禁止硬编码 duration/ease。
 8. **使用 realistic mock data**：公司、金额、时间戳都要像真实 SaaS 数据。
 9. **重要功能必须浏览器验证**：`pnpm dev` 后走一遍流程，或用 Playwright（`pnpm test`）覆盖（详见下方 Browser QA 规则）。
-10. **修改时尽量保持现有 architecture**：页面在 `app/`，可复用业务组件按职责放入 `components/*`，状态在 `stores/`，种子数据在 `lib/`（S1 的数据层在 `lib/s1/**`，见「数据层」一节）。
-11. **必须适配任意视口，但只做一种排版**（**施工约束：本阶段尚未实现** —— 首屏 `/` 目前是普通响应式单栏，1680×1050 的固定画布属于 S1 工作台本身，随十二个组件一起建）：内部按固定 **1680×1050** 布局，外层用
+10. **修改时尽量保持现有 architecture**：页面在 `app/`，可复用业务组件按职责放入 `components/*`，状态在 `stores/`，种子数据在 `lib/`（STH 的数据层在 `lib/sth/**`，见「数据层」一节）。
+11. **必须适配任意视口，但只做一种排版**（**施工约束：本阶段尚未实现** —— 首屏 `/` 目前是普通响应式单栏，1680×1050 的固定画布属于 STH 工作台本身，随十二个组件一起建）：内部按固定 **1680×1050** 布局，外层用
     `SCALE = Math.min(1, innerWidth / 1680, innerHeight / 1050)` 等比缩放（上限 1，不放大）。
     **不做移动端重排** —— 这是产品形态声明，不是遗漏（理由与 `.qa/qa.config.mjs` 里那段签署理由
-    说的是同一件事：S1 是 16:9 单屏不加滚动的控制台，投屏环境固定 16:9）。
+    说的是同一件事：STH 是 16:9 单屏不加滚动的控制台，投屏环境固定 16:9）。
 12. **必须实现 loading / empty / error states**，并用全局（LoadingState / ErrorState / EmptyState）组件表达。
 13. **完工前执行 `pnpm lint`**。
 14. **完工前执行 `pnpm typecheck`**。
@@ -114,7 +114,7 @@ pnpm qa --routes=/
 默认矩阵：**desktop 1440×900** · dark / light。
 
 **移动视口被有意排除**（人签署的决定，逐字理由写在 `.qa/qa.config.mjs` 里）：
-「S1 是 16:9 单屏不加滚动的控制台，产品形态不提供移动端；投屏环境为固定 16:9。
+「STH 是 16:9 单屏不加滚动的控制台，产品形态不提供移动端；投屏环境为固定 16:9。
 因此 QA 扫 desktop 双主题，不做移动视口扫描。这不是放弃适配，是产品形态的声明。」
 因此上面三条移动判据在当前矩阵下不会触发（它们写得对，只是没有对象）；
 `coarse-pointer` 一类检查会走探针自己的「跳过并说明」分支 —— **不要为了让它们跑而加回移动视口**。
@@ -292,7 +292,7 @@ Factory 不 vendor 任何 Kits 内容，只集成**调用机制**。安装后：
 
 ## Initialization Boundary（初始化边界）
 
-**`prototype-starter` 里住着三种东西，处置方式完全不同。本仓（`prototype-s1`）的处置如下：**
+**`prototype-starter` 里住着三种东西，处置方式完全不同。本仓（`prototype-sth`）的处置如下：**
 
 | 层 | 路径 | 本仓的处置 |
 |---|---|---|
@@ -584,25 +584,25 @@ source data == visualization（图上数值 == 源数据）· insights refer to 
 - 允许保留原文的只有：品牌名、URL、Email、技术栈名称、代码、键盘快捷键。这份白名单集中在 `tests/support/localization.ts`；`LOCALIZED_ROUTES` 目前只有 `/`（本阶段真实存在的页面就这么多），新增路由时把 slug 加进去。
 - 代码里的命令 / ID / hash 放进 `<code>` / `<pre>`：本地化探针会跳过它们，**这是设计**（那些不是界面文案）。
 
-## 数据层（已建：`lib/s1/**` + `stores/incident-store.ts`）
+## 数据层（已建：`lib/sth/**` + `stores/incident-store.ts`）
 
-**S1 的数据层与确定性回放引擎已经建好**（2026-09-17 那一包）：`lib/s1/contract.ts`（八类消息契约）、
+**STH 的数据层与确定性回放引擎已经建好**（2026-09-17 那一包）：`lib/sth/contract.ts`（八类消息契约）、
 `seed.ts` + `storyboard.ts`（种子与 18 节拍的结构化视图，事实底本逐字复制进来）、
 `background.ts`（当日事件簿底座：130 起闭环，可复现，聚合出顶栏 128 / 3 / 41s）、
 `timeline.ts`（确定性时间轴 + 因果 ID）、`counters.ts`（纯函数计数）、`replay.ts`（状态机与效果）、
 `audit.ts`（账本与审计重放）、`sediment.ts`（导出/导入）、`verify.ts`（扫描器）。
-界面尚未消费它 —— 组件阶段从 `lib/s1/replay.ts` 的 `replayStream` 与
+界面尚未消费它 —— 组件阶段从 `lib/sth/replay.ts` 的 `replayStream` 与
 `stores/incident-store.ts` 的 selector 约定读起。
 
 本轮的初始化把 Reference Sample 的业务数据一起删掉了
 （`lib/{crm-data,mock-data,insights,ai-summary,activity-groups}.ts` 与 `stores/{crm,dashboard}-store.ts`），
-因为它们是上一个产品的数据，不是 S1 的。
+因为它们是上一个产品的数据，不是 STH 的。
 
-后续 S1 工单要建**自己的**种子数据模块，来源是工作区根目录的两份已签署材料：
+后续 STH 工单要建**自己的**种子数据模块，来源是工作区根目录的两份已签署材料：
 
-- `S1-回合3种子事件流.json` —— 从设计稿反推的事实底本（实体 / 证据 / 计划 / 研判 / 工具调用 /
+- `STH-回合3种子事件流.json` —— 从设计稿反推的事实底本（实体 / 证据 / 计划 / 研判 / 工具调用 /
   授权卡 / 审计 / 沉淀 / 顶栏计数）。**界面上的每个数字都必须能在它里面找到出处。**
-- `S1-产品层组件清单与实现约束.md` —— 十二个组件的归属与硬约束（事件契约八类消息、scale-to-fit、色义纪律）。
+- `STH-产品层组件清单与实现约束.md` —— 十二个组件的归属与硬约束（事件契约八类消息、scale-to-fit、色义纪律）。
 
 **不要**恢复 starter 的 `lib/mock-data.ts` / `lib/crm-data.ts`：那是 Reference Sample 的数据。
 
@@ -611,8 +611,8 @@ source data == visualization（图上数值 == 源数据）· insights refer to 
 - selector 只取**原始值**（例如事件数组本身），派生（filter/sort/计数）在组件内用 `useMemo`。**禁止在 selector 里返回新数组/新对象**（zustand v5 会无限渲染）。
 - **参考实现在 `stores/incident-store.ts`**（2026-09-17 建）：store 里只有 `events`（原始事件序列）与
   `cursorMs`（回放游标）两样原始值 + 三个动作；`selectEvents` / `selectCursorMs` 只返回原始引用
-  （有测试钉住引用稳定性）。派生一律走纯函数模块：`replayStream(events, cursor)`（`lib/s1/replay.ts`）、
-  `countersFromEvents(events, cursor)`（`lib/s1/counters.ts`），由组件在 `useMemo` 里算。
+  （有测试钉住引用稳定性）。派生一律走纯函数模块：`replayStream(events, cursor)`（`lib/sth/replay.ts`）、
+  `countersFromEvents(events, cursor)`（`lib/sth/counters.ts`），由组件在 `useMemo` 里算。
   文件头写了正面与反面两种写法，照抄正面那种。
 
 ## 常用命令

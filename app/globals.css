@@ -6,10 +6,10 @@
  * Kits Style Pack 接入点（Source Installation）。
  *
  * 只有这一行：产品代码永远不 import `lib/kits/installed/**`，只走适配层。
- * 具体桥接规则在 lib/kits/adapters/s1-tokens.css —— 它把 pack 的 `--kits-*`
+ * 具体桥接规则在 lib/kits/adapters/sth-tokens.css —— 它把 pack 的 `--kits-*`
  * 映射成下面这套语义令牌，所以 JSX 一行都不用改。换 pack 时改的是适配层那一行。
  */
-@import "../lib/kits/adapters/s1-tokens.css";
+@import "../lib/kits/adapters/sth-tokens.css";
 
 @custom-variant dark (&:is(.dark *));
 

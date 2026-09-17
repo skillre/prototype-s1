@@ -587,7 +587,7 @@ test.describe("the Art Direction Gate in the workflow", () => {
  */
 test.describe("the declared Style Pack reaches real pixels", () => {
   /**
-   * 签署取值表 —— 逐条抄自工作区根目录 `S1-浅色主题取值与决策.md` §二。
+   * 签署取值表 —— 逐条抄自工作区根目录 `STH-浅色主题取值与决策.md` §二。
    *
    * 这一节是**签署文件的机器化副本**：颜色一旦改动，这里与适配层必须同时改，
    * 否则测试会红 —— 这正是"两份人手抄的数字会漂移"要防的事。
@@ -837,7 +837,7 @@ test.describe("the declared Style Pack reaches real pixels", () => {
 
   const cssChain = () => ({
     globals: read("app/globals.css"),
-    bridge: read("lib/kits/adapters/s1-tokens.css"),
+    bridge: read("lib/kits/adapters/sth-tokens.css"),
     pack: JSON.parse(read("visual-manifest.json")).stylePack as string,
   })
 
@@ -845,7 +845,7 @@ test.describe("the declared Style Pack reaches real pixels", () => {
     const { globals, bridge, pack } = cssChain()
 
     // One entry point, and it is the product-owned adapter seam.
-    expect(globals).toContain('@import "../lib/kits/adapters/s1-tokens.css"')
+    expect(globals).toContain('@import "../lib/kits/adapters/sth-tokens.css"')
     expect(globals, "产品样式表不得直接 import 托管区").not.toContain("@import \"../lib/kits/installed")
 
     // The bridge points at the pack the manifest declares. Change one without
@@ -1073,7 +1073,7 @@ test.describe("the declared Style Pack reaches real pixels", () => {
        * 是**这套风格的身份**（已 approved、checksum 受保护），要求它为某一个产品的
        * 某个承载面达标既做不到也不该做。而「一色一义」这条纪律要守的，是
        * **页面实际使用的那个颜色** —— 也就是产品层映射出来的 `--danger`。
-       * S1 在这两个槽位之间做的正是"语义住在色相里、明度按实测重算"：
+       * STH 在这两个槽位之间做的正是"语义住在色相里、明度按实测重算"：
        * 深色 `#FF5A70`（四面 6.20/5.75/5.27/4.68）、浅色 `#C81E33`。
        *
        * 判据一个字未改（≥4.5，三位小数，逐面断言）：改的是**被测对象**，

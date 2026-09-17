@@ -1,12 +1,12 @@
 /**
- * S1 回合 3 回放剧本 —— 18 节拍的结构化数据。
+ * STH 回合 3 回放剧本 —— 18 节拍的结构化数据。
  *
- * `storyboard.round3.json` 是从工作区根目录 `S1-回合3回放剧本.json` **逐字复制**进来的
+ * `storyboard.round3.json` 是从工作区根目录 `STH-回合3回放剧本.json` **逐字复制**进来的
  * （复制后 `diff` 为空，2026-09-17），理由与 `seed.ts` 相同：产品必须独立可构建。
  *
  * 这一层只做两件事：把剧本读成有类型的只读视图；把 `T+0.9s` 这类写法解析成毫秒。
  * **不解释剧本、不改剧本**：`emits` / `evidenceRefs` / `affects` 的合法性由
- * `tests/s1-invariants.spec.ts` 对剧本原文断言（剧本自己的 `contract.rule`）。
+ * `tests/sth-invariants.spec.ts` 对剧本原文断言（剧本自己的 `contract.rule`）。
  */
 
 import storyboardDocument from "./storyboard.round3.json"
@@ -21,7 +21,7 @@ import {
 export const STORYBOARD = storyboardDocument
 
 export const STORYBOARD_PROVENANCE = {
-  sourceOfTruthFile: "S1-回合3回放剧本.json",
+  sourceOfTruthFile: "STH-回合3回放剧本.json",
   sourceId: storyboardDocument.id,
   sourceTitle: storyboardDocument.title,
   copiedAt: "2026-09-17",
@@ -99,7 +99,7 @@ export const TIMED_BEATS = BEATS.filter((beat) => beat.offsetMs !== null)
  * 第 18 拍「任意时刻 · 被盘问」。
  *
  * 它**不在**确定性时间轴上：`at` 是「任意时刻」，含义是「观众点预置问题时才发生」。
- * 所以它不产生一条排好序的流消息，而是由 `timeline.ts` 的 `askS1Message()` 在被问到时
+ * 所以它不产生一条排好序的流消息，而是由 `timeline.ts` 的 `askSthMessage()` 在被问到时
  * 生成一条消息 —— 那条消息同样带因果 ID 与证据引用，所以「不许出现无引用回答」这条
  * 在这一拍上依然成立（不变量 `evidence.every-claim-cites-a-source`）。
  */

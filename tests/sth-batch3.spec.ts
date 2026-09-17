@@ -4,10 +4,10 @@ import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 
 import {
-  askS1AnswerFor,
-  askS1AnswersOf,
-  askS1RefusalFor,
-  askS1UnresolvableRefs,
+  askSthAnswerFor,
+  askSthAnswersOf,
+  askSthRefusalFor,
+  askSthUnresolvableRefs,
   attackChainOf,
   buildPlaybackSchedule,
   pipelineOf,
@@ -20,7 +20,7 @@ import {
   type AttackChain,
 } from "../components/prototype/workbench/view-model"
 import { CONSOLE_GEOMETRY, scaleForViewport } from "../components/prototype/workbench/geometry"
-import type { IncidentMessage } from "../lib/s1/contract"
+import type { IncidentMessage } from "../lib/sth/contract"
 import {
   CURSOR_END,
   CURSOR_OPENING,
@@ -28,14 +28,14 @@ import {
   knownEvidenceIds,
   replayStream,
   type ReplayCursor,
-} from "../lib/s1/replay"
-import { HEADER_STATS_SIGNED } from "../lib/s1/seed"
-import { ASK_S1_ANSWERS, askS1Message, buildIncidentStream } from "../lib/s1/timeline"
+} from "../lib/sth/replay"
+import { HEADER_STATS_SIGNED } from "../lib/sth/seed"
+import { ASK_STH_ANSWERS, askSthMessage, buildIncidentStream } from "../lib/sth/timeline"
 import { zhCN } from "../lib/i18n/zh-CN"
 import { stripComments } from "./support/source-scan"
 
 /**
- * S1 工作台 · 组件批次 3 的验收：四个新面板（⑨ ⑩ ⑭ ⑫）+ ⑤ 画布的布局修复
+ * STH 工作台 · 组件批次 3 的验收：四个新面板（⑨ ⑩ ⑭ ⑫）+ ⑤ 画布的布局修复
  * + 整屏收口（十二格无占位、骨架值钉到 DOM）。
  *
  * ## 与前一节同一条规矩：每件事都算两遍
@@ -80,13 +80,13 @@ const NARROW: { width: number; height: number } = { width: 1440, height: 900 }
  * 每个面板都停在 loading）。两处都会被读成"产品缺陷"，其实是**探针量早了**。
  *
  * 所以这里加两件独立的事：
- *   · `transform` 不是 `none` —— 画布的 `transform: scale(var(--s1-scale))` 是
+ *   · `transform` 不是 `none` —— 画布的 `transform: scale(var(--sth-scale))` 是
  *     **本路由的样式表**给的，它出现了才说明样式真的到了浏览器（同 `qa` 的 style-presence 关切）；
  *   · 没有面板停在 `data-panel-status="loading"` —— 回放装载完之前量到的都是空壳。
  */
 async function settled(page: Page, viewport: { width: number; height: number } = CANVAS) {
   await expect
-    .poll(async () => Number(await page.locator(".s1-canvas").getAttribute("data-scale")), {
+    .poll(async () => Number(await page.locator(".sth-canvas").getAttribute("data-scale")), {
       message: "scale-to-fit 必须落到签过字的那个值上",
     })
     .toBeCloseTo(scaleForViewport(viewport.width, viewport.height), 3)
@@ -94,7 +94,7 @@ async function settled(page: Page, viewport: { width: number; height: number } =
     .poll(
       async () =>
         page.evaluate(() => {
-          const canvas = document.querySelector(".s1-canvas")
+          const canvas = document.querySelector(".sth-canvas")
           return canvas === null ? "none" : getComputedStyle(canvas).transform
         }),
       { message: "样式表必须真的到了浏览器（transform 不是 none）" },
@@ -252,15 +252,15 @@ test.describe("B · ⑤ 画布：任意两个节点的矩形不相交", () => {
 })
 
 /* ========================================================================== */
-/* 1 · ⑨ 问 S1：回答必须有出处，答不出必须明说                                    */
+/* 1 · ⑨ 问 STH：回答必须有出处，答不出必须明说                                    */
 /* ========================================================================== */
 
-test.describe("evidence.every-claim-cites-a-source · ⑨ 问 S1", () => {
+test.describe("evidence.every-claim-cites-a-source · ⑨ 问 STH", () => {
   test("正例：数据层的每条回答都引用了登记簿里真实存在的证据", () => {
     const known = knownEvidenceIds()
     expect(known.size, "证据登记簿必须真的被读到").toBeGreaterThan(0)
-    expect(ASK_S1_ANSWERS.length).toBeGreaterThan(0)
-    for (const answer of ASK_S1_ANSWERS) {
+    expect(ASK_STH_ANSWERS.length).toBeGreaterThan(0)
+    for (const answer of ASK_STH_ANSWERS) {
       expect(answer.evidenceRefs.length, `「${answer.question}」的回答没有引用任何证据`).toBeGreaterThan(0)
       for (const ref of answer.evidenceRefs) {
         expect(known.has(ref), `${ref} 不在登记簿里`).toBe(true)
@@ -269,27 +269,27 @@ test.describe("evidence.every-claim-cites-a-source · ⑨ 问 S1", () => {
   })
 
   test("正例：提问→回答的匹配是整句相等，且答不出的问题返回 null（不猜）", () => {
-    const first = ASK_S1_ANSWERS[0]
+    const first = ASK_STH_ANSWERS[0]
     expect(first).toBeDefined()
-    const matched = askS1AnswerFor(first!.question)
+    const matched = askSthAnswerFor(first!.question)
     expect(matched?.answer.conclusion).toBe(first!.conclusion)
     // 模糊匹配会把别人的答案当成你的答案 —— 这条判据钉住"不许那样做"。
-    expect(askS1AnswerFor(`${first!.question} `)).not.toBeNull()
-    expect(askS1AnswerFor("这台机器昨天重启过几次？")).toBeNull()
-    expect(askS1AnswerFor("")).toBeNull()
+    expect(askSthAnswerFor(`${first!.question} `)).not.toBeNull()
+    expect(askSthAnswerFor("这台机器昨天重启过几次？")).toBeNull()
+    expect(askSthAnswerFor("")).toBeNull()
   })
 
   test("正例：回答的引用可定位；负对照：挂一条不存在的引用必须被抓住", () => {
     // 第 18 拍那条由测试自己按数据层的工厂生成（界面上由观众点击触发）——不用手搓一条消息，
     // 那样测的就是测试自己的形状，不是产品的形状。
-    const answers = askS1AnswersOf([...revealedMessages(STREAM, CURSOR_END), askS1Message(STREAM, 0)])
+    const answers = askSthAnswersOf([...revealedMessages(STREAM, CURSOR_END), askSthMessage(STREAM, 0)])
     expect(answers.length).toBeGreaterThan(0)
-    expect(askS1UnresolvableRefs(answers), "真实回答的引用必须全部可定位").toEqual([])
-    expect(answers[0]?.question, "回答要能连回它回答的那个问题").toBe(ASK_S1_ANSWERS[0]?.question)
+    expect(askSthUnresolvableRefs(answers), "真实回答的引用必须全部可定位").toEqual([])
+    expect(answers[0]?.question, "回答要能连回它回答的那个问题").toBe(ASK_STH_ANSWERS[0]?.question)
 
     const first = answers[0]!
     const corrupted = [{ ...first, evidenceRefs: [...first.evidenceRefs, "#e-not-real"] }]
-    expect(askS1UnresolvableRefs(corrupted)).toEqual(["#e-not-real"])
+    expect(askSthUnresolvableRefs(corrupted)).toEqual(["#e-not-real"])
   })
 
   test("浏览器：点一个快捷问 → 回答出现、带可点开的证据 chip、且不出现拒绝态", async ({ page }) => {
@@ -329,7 +329,7 @@ test.describe("evidence.every-claim-cites-a-source · ⑨ 问 S1", () => {
     await expect(refusal).toBeVisible()
     await expect(refusal).toHaveAttribute("data-refusal", "unmatched")
     // 它必须说清楚**边界**（几个问题答得出来）与**机制**（不编结论），而不是只说一句"不知道"。
-    await expect(refusal).toContainText(String(ASK_S1_ANSWERS.length))
+    await expect(refusal).toContainText(String(ASK_STH_ANSWERS.length))
     await expect(refusal).toContainText("编")
     // 拒绝不能悄悄造一条回答出来。
     await expect(page.locator('[data-testid="ask-answers"] li')).toHaveCount(0)
@@ -804,8 +804,8 @@ test.describe("C1 · 十二格无占位（⑬ 按签署决定永久空缺）", (
    * 十二个组件在 DOM 上的落点。① 是**顶栏本身**（一个 `<header>`，不是面板外壳），
    * 其余十个各有一块 `data-panel`；⑫ 是顶栏右侧的展开面，同样带 `data-panel`。
    *
-   * ⑬ **不在这张表里，而且不能在这里**：人已签署它交给演示层，S1 工作台的组件清单是十二个
-   * （`lib/s1/contract.ts` 的 `COMPONENT_IDS` 里没有它，有测试双向钉住）。
+   * ⑬ **不在这张表里，而且不能在这里**：人已签署它交给演示层，STH 工作台的组件清单是十二个
+   * （`lib/sth/contract.ts` 的 `COMPONENT_IDS` 里没有它，有测试双向钉住）。
    */
   const PRESENT: ReadonlyArray<{ label: string; selector: string }> = [
     { label: "① 态势指挥条", selector: '[data-testid="command-bar"]' },
@@ -815,7 +815,7 @@ test.describe("C1 · 十二格无占位（⑬ 按签署决定永久空缺）", (
     { label: "⑤ 攻击链", selector: '[data-panel="attack-graph"]' },
     { label: "⑥ 处置与授权", selector: '[data-panel="authority"]' },
     { label: "⑧ 审计时间线", selector: '[data-panel="audit-timeline"]' },
-    { label: "⑨ 问 S1", selector: '[data-panel="ask-s1"]' },
+    { label: "⑨ 问 STH", selector: '[data-panel="ask-sth"]' },
     { label: "⑩ 汇流管道", selector: '[data-panel="en-pipeline"]' },
     { label: "⑪ 战果与沉淀", selector: '[data-panel="sediment"]' },
     { label: "⑫ 花名册展开面", selector: '[data-panel="roster"]' },
@@ -873,14 +873,14 @@ test.describe("C2 · 1680×1050 下用 getBoundingClientRect 断言骨架", () =
         }
       }
       return {
-        canvas: pick(".s1-canvas"),
-        header: pick(".s1-header"),
-        replaybar: pick(".s1-replaybar"),
-        columns: pick(".s1-columns"),
-        footer: pick(".s1-footer"),
-        left: pick(".s1-column--left"),
-        middle: pick(".s1-column--middle"),
-        right: pick(".s1-column--right"),
+        canvas: pick(".sth-canvas"),
+        header: pick(".sth-header"),
+        replaybar: pick(".sth-replaybar"),
+        columns: pick(".sth-columns"),
+        footer: pick(".sth-footer"),
+        left: pick(".sth-column--left"),
+        middle: pick(".sth-column--middle"),
+        right: pick(".sth-column--right"),
       }
     })
 
@@ -916,7 +916,7 @@ test.describe("C2 · 1680×1050 下用 getBoundingClientRect 断言骨架", () =
     /*
      * 右侧留白 = padding 20 **加上** 146 的余量。
      *
-     * 146 不是"随便剩的"：`S1-设计稿实测与实现规格.md` §二 写明了
+     * 146 不是"随便剩的"：`STH-设计稿实测与实现规格.md` §二 写明了
      * 「三列合计 500 + 600 + 366 + 2×14 = 1494，加根左右 padding 40 = 1534 ≤ 1680 ✓
      * （余量 146 留给面板内边距与滚动条）」。这里把它连同 padding 一起算成一个可判红的等式 ——
      * 于是"三列到底占多宽"与"还剩多少"两件事都被钉住，而不是只钉住前者。
@@ -960,11 +960,11 @@ test.describe("C2 · 1680×1050 下用 getBoundingClientRect 断言骨架", () =
   test("正例：底栏 ⑨ 的宽度也是实测值（640），且两格之间只隔一个 gap", async ({ page }) => {
     await openAt(page, 17, { viewport: CANVAS })
     const measured = await page.evaluate(() => {
-      const ask = document.querySelector<HTMLElement>('[data-panel="ask-s1"]')?.closest(".s1-footer__slot")
+      const ask = document.querySelector<HTMLElement>('[data-panel="ask-sth"]')?.closest(".sth-footer__slot")
       const report = document
         .querySelector<HTMLElement>('[data-panel="report-stream"]')
-        ?.closest(".s1-footer__slot")
-      const footer = document.querySelector<HTMLElement>(".s1-footer")
+        ?.closest(".sth-footer__slot")
+      const footer = document.querySelector<HTMLElement>(".sth-footer")
       if (ask === null || ask === undefined || report === null || report === undefined || footer === null) {
         throw new Error("底栏两格找不到")
       }
@@ -975,7 +975,7 @@ test.describe("C2 · 1680×1050 下用 getBoundingClientRect 断言骨架", () =
         footerWidth: footer.getBoundingClientRect().width,
       }
     })
-    expect(measured.askWidth).toBeCloseTo(CONSOLE_GEOMETRY.askS1Width, 1)
+    expect(measured.askWidth).toBeCloseTo(CONSOLE_GEOMETRY.askSthWidth, 1)
     expect(measured.gap).toBeCloseTo(CONSOLE_GEOMETRY.footerGap, 1)
     expect(measured.askWidth + measured.gap + measured.reportWidth).toBeCloseTo(
       measured.footerWidth - CONSOLE_GEOMETRY.footerPadding * 2,
@@ -986,7 +986,7 @@ test.describe("C2 · 1680×1050 下用 getBoundingClientRect 断言骨架", () =
   test("正例：scale-to-fit 在窄视口下等比缩小 —— 画布仍按 1680 排版，屏幕上占满 1440", async ({ page }) => {
     await openAt(page, 17, { viewport: NARROW })
     const measured = await page.evaluate(() => {
-      const canvas = document.querySelector<HTMLElement>(".s1-canvas")
+      const canvas = document.querySelector<HTMLElement>(".sth-canvas")
       if (canvas === null) throw new Error("找不到画布")
       const box = canvas.getBoundingClientRect()
       return {
@@ -1015,16 +1015,16 @@ test.describe("C2 · 1680×1050 下用 getBoundingClientRect 断言骨架", () =
   test("负对照：把根 padding 改掉，同一条判据必须红", async ({ page }) => {
     await openAt(page, 17, { viewport: CANVAS })
     const before = await page.evaluate(
-      () => document.querySelector(".s1-header")!.getBoundingClientRect().top,
+      () => document.querySelector(".sth-header")!.getBoundingClientRect().top,
     )
     expect(before).toBeCloseTo(CONSOLE_GEOMETRY.rootPadding, 1)
 
     await page.addStyleTag({
-      content: `.s1-canvas{padding-top:${CONSOLE_GEOMETRY.rootPadding + 7}px !important}`,
+      content: `.sth-canvas{padding-top:${CONSOLE_GEOMETRY.rootPadding + 7}px !important}`,
     })
     await page.waitForTimeout(60)
     const after = await page.evaluate(
-      () => document.querySelector(".s1-header")!.getBoundingClientRect().top,
+      () => document.querySelector(".sth-header")!.getBoundingClientRect().top,
     )
     expect(after, "改了根 padding 而判据没反应 —— 它量错了对象").not.toBeCloseTo(
       CONSOLE_GEOMETRY.rootPadding,
@@ -1160,11 +1160,11 @@ test("逐拍扫描：⑨⑩⑭ 在整条排程的每一帧上都有定义，且�
       `第 ${frame.beatStep} 拍：报告引用了不存在的证据`,
     ).toEqual([])
 
-    /* ── ⑨ 问 S1 ────────────────────────────────────────────────── */
-    const answers = askS1AnswersOf(revealed)
+    /* ── ⑨ 问 STH ────────────────────────────────────────────────── */
+    const answers = askSthAnswersOf(revealed)
     answersSeen += answers.length
     expect(
-      askS1UnresolvableRefs(answers),
+      askSthUnresolvableRefs(answers),
       `第 ${frame.beatStep} 拍：回答引用了不存在的证据`,
     ).toEqual([])
     for (const answer of answers) {
@@ -1179,7 +1179,7 @@ test("逐拍扫描：⑨⑩⑭ 在整条排程的每一帧上都有定义，且�
 
   /*
    * ⑨ 的**定义域**与另外两格不同，而且这一点值得写下来：
-   * 回答不是回放长出来的，是**问出来的**（`askS1Message` 按需追加）。
+   * 回答不是回放长出来的，是**问出来的**（`askSthMessage` 按需追加）。
    * 所以纯回放里一条回答都不该有 —— 我第一版在这里写「整条回放必须扫到回答」，
    * 当场红了，而**红得对**：它证明的是「不问就不答」，不是缺陷。
    * 反过来，若哪天纯回放里凭空出现了回答，那才是缺陷（编了一条没人问过的结论）。
@@ -1201,15 +1201,15 @@ test("逐拍扫描：⑨⑩⑭ 在整条排程的每一帧上都有定义，且�
  */
 test("逐条扫描：⑨ 的每个预置问题都答得出且引用可定位；问不出的必须答不出", () => {
   const known = knownEvidenceIds()
-  expect(ASK_S1_ANSWERS.length, "预置答案表不能是空的，否则这条断言没有对象").toBeGreaterThan(0)
+  expect(ASK_STH_ANSWERS.length, "预置答案表不能是空的，否则这条断言没有对象").toBeGreaterThan(0)
 
-  for (const preset of ASK_S1_ANSWERS) {
-    const found = askS1AnswerFor(preset.question)
+  for (const preset of ASK_STH_ANSWERS) {
+    const found = askSthAnswerFor(preset.question)
     expect(found, `「${preset.question}」应该答得出来`).not.toBeNull()
     expect(found!.presetIndex).toBeGreaterThanOrEqual(0)
     expect(found!.answer.conclusion.trim().length, `「${preset.question}」的结论是空的`).toBeGreaterThan(0)
     expect(
-      askS1RefusalFor(preset.question),
+      askSthRefusalFor(preset.question),
       `「${preset.question}」答得出来，就不该同时被判为拒绝`,
     ).toBeNull()
     for (const ref of found!.answer.evidenceRefs) {
@@ -1219,7 +1219,7 @@ test("逐条扫描：⑨ 的每个预置问题都答得出且引用可定位；�
 
   // 负对照：没有出处的问题必须答不出（编一句像样的话才是缺陷）。
   const unmatched = "今天午饭吃什么"
-  expect(askS1AnswerFor(unmatched), "数据层没有的问题不该有答案").toBeNull()
-  expect(askS1RefusalFor(unmatched), "问不出的问题必须被判为拒绝").toBe("unmatched")
-  expect(askS1RefusalFor("   "), "空输入是另一种拒绝，不该与『问不出』混为一谈").toBe("empty")
+  expect(askSthAnswerFor(unmatched), "数据层没有的问题不该有答案").toBeNull()
+  expect(askSthRefusalFor(unmatched), "问不出的问题必须被判为拒绝").toBe("unmatched")
+  expect(askSthRefusalFor("   "), "空输入是另一种拒绝，不该与『问不出』混为一谈").toBe("empty")
 })

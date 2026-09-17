@@ -89,7 +89,7 @@ function readCode(path: string): string {
  * `lib/insights.ts` · `lib/ai-summary.ts` · `lib/activity-groups.ts` 与两个 store）。
  * 那几个具名条目因此从「现在存在的东西」变成「不许再通过共享组件回来的东西」——
  * 规则不变，只是取证方向反了。真正仍然直接生效的是前两条（`@/stores/` 与 `@/app/`）：
- * S1 自己的数据层会落在那里。
+ * STH 自己的数据层会落在那里。
  */
 const FORBIDDEN_FOR_SHARED = [
   "@/stores/",
@@ -113,9 +113,9 @@ const SHARED_DIRS = ["components/layout", "components/prototype", "components/mo
  *
  * Factory Core 在这三个目录里交付的是**平铺的文件**（`stats-card.tsx`、
  * `empty-state.tsx`……）。产品后来会在同一个父目录下开**自己的子目录**放产品组件 ——
- * S1 的 `components/prototype/workbench/` 就是这样的位置，而它**本来就该**读自己的
+ * STH 的 `components/prototype/workbench/` 就是这样的位置，而它**本来就该**读自己的
  * store：本仓 `AGENTS.md` 的 Zustand 约定一节明写「参考实现在
- * `stores/incident-store.ts`」，组件阶段「从 `lib/s1/replay.ts` 的 `replayStream`
+ * `stores/incident-store.ts`」，组件阶段「从 `lib/sth/replay.ts` 的 `replayStream`
  * 与 `stores/incident-store.ts` 的 selector 约定读起」。
  *
  * 原来的扫描把 `components/prototype/**` 整个当成共享层，于是产品自己的组件一出现，

@@ -145,7 +145,7 @@ export const consoleMotion: StylePackMotion = {
      * 读成「页面在晃」，而不是「一个条目落位」。 */
     distanceScale: 0.5,
     /* ambient: false —— 移动端关闭呼吸点动画。省电是次要理由，主要理由是
-     * 移动端根本不会是 S1 的使用场景（avoidFor 里有 mobile / touch）：
+     * 移动端根本不会是 STH 的使用场景（avoidFor 里有 mobile / touch）：
      * 这块屏是 16:9 大屏，手机上一屏放不下三列，呼吸点在那里没有意义。 */
     ambient: false,
   },

@@ -1,7 +1,7 @@
 "use client"
 
 import { useMessages } from "@/components/i18n/locale-provider"
-import { ENVIRONMENT } from "@/lib/s1/seed"
+import { ENVIRONMENT } from "@/lib/sth/seed"
 import { cn } from "@/lib/utils"
 
 /**
@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils"
  *
  * ## 它为什么长这样
  *
- * 不变量原文（`lib/s1/storyboard.ts` 的 `FRAME_INVARIANTS`，逐字）：
+ * 不变量原文（`lib/sth/storyboard.ts` 的 `FRAME_INVARIANTS`，逐字）：
  *
  * > shell 常驻一处可见的演示环境标识（不是只在首屏出现、也不是可关闭的 toast）。
  * > 标识分两层：(a) 全场级：这是演示环境、数据与客户真实系统隔离；
@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils"
  */
 export function DemoEnvironmentLabel({ className }: { className?: string }) {
   return (
-    <p className={cn("s1-demo-label", className)} data-testid="demo-environment-label">
+    <p className={cn("sth-demo-label", className)} data-testid="demo-environment-label">
       {/*
        * 只有那个**圆点**是装饰，所以只有它 `aria-hidden` —— 文案本身必须可被读出。
        *
@@ -36,7 +36,7 @@ export function DemoEnvironmentLabel({ className }: { className?: string }) {
        * 水合不匹配不是样式问题 —— 它意味着这一小段 DOM 被整体重新挂载，
        * 而这个组件正好是「不得用 aria-hidden 冒充可见」那条不变量的载体。
        */}
-      <span aria-hidden="true" className="s1-demo-label__dot" />
+      <span aria-hidden="true" className="sth-demo-label__dot" />
       <span>{ENVIRONMENT.isolation}</span>
     </p>
   )
@@ -51,7 +51,7 @@ export function DemoEnvironmentLabel({ className }: { className?: string }) {
 export function ScriptedReplayBadge({ className }: { className?: string }) {
   const t = useMessages()
   return (
-    <span className={cn("s1-badge", className)} data-testid="scripted-replay-badge">
+    <span className={cn("sth-badge", className)} data-testid="scripted-replay-badge">
       {t.workbench.demo.scripted}
     </span>
   )

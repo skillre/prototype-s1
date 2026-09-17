@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
   "registryVersion": "0.3.0",
-  "generatedAt": "2026-09-17T06:38:01.525Z",
+  "generatedAt": "2026-09-17T10:19:47.888Z",
   "source": {
     "kind": "source-installation",
     "repo": "prototype-kits",
-    "commit": "623736d8b7bba53597216ddd907a580a724b2c92",
+    "commit": "cf6502ae23b10b124fde4b9e44b064228e5d71c0",
     "dirty": false
   },
   "layout": {
@@ -85,15 +85,15 @@
         },
         {
           "path": "lib/kits/installed/console/manifest.json",
-          "checksum": "f7a6add22cdf2989"
+          "checksum": "b1f42a8a25af2244"
         },
         {
           "path": "lib/kits/installed/console/motion.ts",
-          "checksum": "21b48e4e4af9bb0a"
+          "checksum": "43208a214aac3ae7"
         },
         {
           "path": "lib/kits/installed/console/README.md",
-          "checksum": "6be8fa3141b60967"
+          "checksum": "67748bcfa1d9a718"
         },
         {
           "path": "lib/kits/installed/console/SKILL.md",
@@ -101,7 +101,7 @@
         },
         {
           "path": "lib/kits/installed/console/tokens.css",
-          "checksum": "230082aa64176efd"
+          "checksum": "7a4421beb65374b9"
         }
       ]
     },
@@ -114,7 +114,7 @@
       "files": [
         {
           "path": "lib/kits/installed/contracts/contract.ts",
-          "checksum": "4ee71a2acb5e01b1"
+          "checksum": "fa6e436be4ef041b"
         },
         {
           "path": "lib/kits/installed/contracts/index.ts",
@@ -155,7 +155,7 @@
         },
         {
           "path": "lib/kits/installed/evidence-chip/README.md",
-          "checksum": "c90c2fba21ae906f"
+          "checksum": "dae4b170e9aff59a"
         }
       ]
     },
@@ -272,17 +272,17 @@
     },
     {
       "path": "lib/kits/installed/console/manifest.json",
-      "checksum": "f7a6add22cdf2989",
+      "checksum": "b1f42a8a25af2244",
       "assetId": "console"
     },
     {
       "path": "lib/kits/installed/console/motion.ts",
-      "checksum": "21b48e4e4af9bb0a",
+      "checksum": "43208a214aac3ae7",
       "assetId": "console"
     },
     {
       "path": "lib/kits/installed/console/README.md",
-      "checksum": "6be8fa3141b60967",
+      "checksum": "67748bcfa1d9a718",
       "assetId": "console"
     },
     {
@@ -292,12 +292,12 @@
     },
     {
       "path": "lib/kits/installed/console/tokens.css",
-      "checksum": "230082aa64176efd",
+      "checksum": "7a4421beb65374b9",
       "assetId": "console"
     },
     {
       "path": "lib/kits/installed/contracts/contract.ts",
-      "checksum": "4ee71a2acb5e01b1",
+      "checksum": "fa6e436be4ef041b",
       "assetId": "contracts"
     },
     {
@@ -337,7 +337,7 @@
     },
     {
       "path": "lib/kits/installed/evidence-chip/README.md",
-      "checksum": "c90c2fba21ae906f",
+      "checksum": "dae4b170e9aff59a",
       "assetId": "evidence-chip"
     },
     {
@@ -378,13 +378,12 @@
   ],
   "adapters": {
     "templateVersion": "0.2.0",
-    "written": [
-      "lib/kits/adapters/evidence-chip.tsx"
-    ],
+    "written": [],
     "kept": [
       "lib/kits/adapters/style-console.css",
       "lib/kits/adapters/style-console.ts",
       "lib/kits/adapters/style-pack.ts",
+      "lib/kits/adapters/evidence-chip.tsx",
       "lib/kits/adapters/README.md"
     ]
   },

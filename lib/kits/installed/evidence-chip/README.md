@@ -230,7 +230,7 @@ Tab 顺序里，而"点开不动的 button"比一个静态标记更糟。
   正是为这类引用留的槽位，因此它是本组件唯一担任 `signature` 的 pack；
 - 效果：**无**（组件自带的结构线不依赖任何 Effect Pack）；
 - 参考板：**尚未建立**（`references/evidence-chip/` 不存在）。本组件的设计参考是
-  S1 设计稿里的真实形态（`证据#e-41 原始报文` / `#e-77 进程链 tomcat→cmd` /
+  STH 设计稿里的真实形态（`证据#e-41 原始报文` / `#e-77 进程链 tomcat→cmd` /
   `#e-79 文件 hash` / 无编号的 `手法指纹匹配×2`）与"引用标记"的既有共识，
   不是某个第三方页面；需要参考板时再按
   [`references/README.md`](../../references/README.md) 的规则补；

@@ -1,11 +1,11 @@
 /**
- * S1 事件契约 · 八类消息 + 各值域（纯类型与常量）
+ * STH 事件契约 · 八类消息 + 各值域（纯类型与常量）
  *
  * 上游权威：
- *   · `S1-产品层组件清单与实现约束.md` §三 —— 八类消息与「实体 ID / 证据引用 / 置信度 / 自主度等级」
+ *   · `STH-产品层组件清单与实现约束.md` §三 —— 八类消息与「实体 ID / 证据引用 / 置信度 / 自主度等级」
  *     四项字段要求；
- *   · `S1-回合3回放剧本.json` 的 `contract.messageTypes` / `components` —— 八类消息与十二个组件的
- *     合法取值（本文件是它们的机器化副本，副本与原件的偏差由 `tests/s1-invariants.spec.ts` 断言）。
+ *   · `STH-回合3回放剧本.json` 的 `contract.messageTypes` / `components` —— 八类消息与十二个组件的
+ *     合法取值（本文件是它们的机器化副本，副本与原件的偏差由 `tests/sth-invariants.spec.ts` 断言）。
  *
  * 这一层是**数据与逻辑**，没有 JSX、没有任何界面文案、也没有视觉常量（颜色 / 字号 / 时长 / 缓动）。
  * 业务记录内容（IP、hash、时间戳、Agent 名、命令回显、卡片的业务句）按仓规**不翻译**，住在数据层；
@@ -45,7 +45,7 @@ export const COMPONENT_IDS = [
   "attack-graph", // ⑤ 攻击链实体画布
   "authority", // ⑥ 处置与授权卡片区
   "audit-timeline", // ⑧ 审计时间线
-  "ask-s1", // ⑨ 问 S1
+  "ask-sth", // ⑨ 问 STH
   "en-pipeline", // ⑩ E+N 数据汇流视图
   "sediment", // ⑪ 战果与沉淀面板
   "roster", // ⑫ AI 数字员工花名册

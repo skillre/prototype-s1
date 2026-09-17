@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 
 import { useMessages } from "@/components/i18n/locale-provider"
-import { AskS1 } from "@/components/prototype/workbench/ask-s1"
+import { AskSth } from "@/components/prototype/workbench/ask-sth"
 import { AttackGraph } from "@/components/prototype/workbench/attack-graph"
 import { AuditTimeline } from "@/components/prototype/workbench/audit-timeline"
 import { AuthorityPanel } from "@/components/prototype/workbench/authority-panel"
@@ -20,7 +20,7 @@ import { SedimentPanel } from "@/components/prototype/workbench/sediment-panel"
 import { ToolConsole } from "@/components/prototype/workbench/tool-console"
 import {
   activeActorOf,
-  askS1AnswersOf,
+  askSthAnswersOf,
   attackChainOf,
   auditRowsOf,
   authorityCardsOf,
@@ -43,16 +43,16 @@ import {
 } from "@/components/prototype/workbench/view-model"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { useWorkbenchReplay } from "@/hooks/use-workbench-replay"
-import { HUMAN_ACTOR, type ApprovalMessage } from "@/lib/s1/contract"
-import type { ReplayCursor } from "@/lib/s1/replay"
-import { askS1Message } from "@/lib/s1/timeline"
-import { ON_DEMAND_BEAT } from "@/lib/s1/storyboard"
+import { HUMAN_ACTOR, type ApprovalMessage } from "@/lib/sth/contract"
+import type { ReplayCursor } from "@/lib/sth/replay"
+import { askSthMessage } from "@/lib/sth/timeline"
+import { ON_DEMAND_BEAT } from "@/lib/sth/storyboard"
 import { useIncidentStore } from "@/stores/incident-store"
 
 import "./workbench.css"
 
 /**
- * S1 工作台 · 战情室骨架（本批的「骨架」就是这一屏）。
+ * STH 工作台 · 战情室骨架（本批的「骨架」就是这一屏）。
  *
  * ## 这一层只做三件事
  *
@@ -113,7 +113,7 @@ export function WorkbenchView() {
   )
   /* ⑩ 管道、⑨ 回答、⑫ 花名册 —— 三块都只吃「已揭示的消息」与状态，全部由游标派生。 */
   const pipeline = useMemo(() => pipelineOf(revealed), [revealed])
-  const answers = useMemo(() => askS1AnswersOf(revealed), [revealed])
+  const answers = useMemo(() => askSthAnswersOf(revealed), [revealed])
   const roster = useMemo(
     () => rosterOf(replay.state, revealed, t.workbench.toolConsole.actions),
     [replay.state, revealed, t.workbench.toolConsole.actions],
@@ -156,10 +156,10 @@ export function WorkbenchView() {
    *
    * 半格序号把这条夹缝留出来：`cursor.seq < 人的裁决 < 下一条`。
    * 于是已揭示的前缀正好是「已经发生的一切 + 刚刚发生的这一件」，
-   * 剧本里同一时刻的其余消息与后面的拍都还在后面等着（`tests/s1-batch3.spec.ts` 有断言）。
+   * 剧本里同一时刻的其余消息与后面的拍都还在后面等着（`tests/sth-batch3.spec.ts` 有断言）。
    * 序号因此不再保证是整数 —— 这是**有意**的：`seq` 在这个模型里是"全序里的一个位置"，
-   * 不是"第几条"（`lib/s1/timeline.ts` 生成的剧本序号仍然是 1..412 的稠密整数，
-   * 那条不变量没有变，见 `tests/s1-invariants.spec.ts`）。
+   * 不是"第几条"（`lib/sth/timeline.ts` 生成的剧本序号仍然是 1..412 的稠密整数，
+   * 那条不变量没有变，见 `tests/sth-invariants.spec.ts`）。
    *
    * 插完还要把游标推到那一条上 —— 排程要等这一帧被算出来才认识它（见下面的 effect）。
    * 事实时间沿用卡片的锚点时间，不读墙上时钟。
@@ -237,7 +237,7 @@ export function WorkbenchView() {
   const pendingAsk = useRef(false)
   const ask = useCallback((presetIndex: number) => {
     const events = useIncidentStore.getState().events
-    useIncidentStore.getState().append(askS1Message(events, presetIndex))
+    useIncidentStore.getState().append(askSthMessage(events, presetIndex))
     pendingAsk.current = true
   }, [])
   const { seekBeat } = replay
@@ -271,8 +271,8 @@ export function WorkbenchView() {
   }
 
   return (
-    <div className="s1-viewport" data-testid="workbench" style={canvasVars(scale)}>
-      <div className="s1-canvas" data-scale={scale.toFixed(4)}>
+    <div className="sth-viewport" data-testid="workbench" style={canvasVars(scale)}>
+      <div className="sth-canvas" data-scale={scale.toFixed(4)}>
         <CommandBar
           counters={replay.counters}
           pendingApproval={pendingApprovals}
@@ -285,13 +285,13 @@ export function WorkbenchView() {
 
         {/* 回放控制条：仪表归仪表。① 是设计稿实测的 76px 读数条，里面没有播放器；
             把播放器塞进它会撑破 1680（实测 1749 对 1640），所以它单独占一条。 */}
-        <div className="s1-replaybar">
+        <div className="sth-replaybar">
           <ReplayControl replay={replay} />
         </div>
 
-        <div className="s1-columns">
-          <div className="s1-column s1-column--left">
-            <div className="s1-slot">
+        <div className="sth-columns">
+          <div className="sth-column sth-column--left">
+            <div className="sth-slot">
               <AttackGraph
                 status={statusWith(chain.nodes.length > 0)}
                 chain={chain}
@@ -300,8 +300,8 @@ export function WorkbenchView() {
             </div>
           </div>
 
-          <div className="s1-column s1-column--middle">
-            <div className="s1-slot s1-slot--plan">
+          <div className="sth-column sth-column--middle">
+            <div className="sth-slot sth-slot--plan">
               <PlanPanel
                 status={statusWith(rows.length > 0)}
                 rows={rows}
@@ -313,7 +313,7 @@ export function WorkbenchView() {
               />
             </div>
 
-            <div className="s1-slot s1-slot--findings">
+            <div className="sth-slot sth-slot--findings">
               <FindingStream
                 status={statusWith(cards.length > 0)}
                 cards={cards}
@@ -324,7 +324,7 @@ export function WorkbenchView() {
               />
             </div>
 
-            <div className="s1-slot s1-slot--console">
+            <div className="sth-slot sth-slot--console">
               <ToolConsole
                 status={statusWith(transcript.length > 0)}
                 entries={transcript}
@@ -337,7 +337,7 @@ export function WorkbenchView() {
 
             {/* ⑩ 在 ④ 之下（设计稿 §二 的中列清单里它是第四块）。
                 「这一格到了没有」的判据是**汇流开始没有**：两条进料都还没进管道 = 还没到这一拍。 */}
-            <div className="s1-slot s1-slot--pipeline">
+            <div className="sth-slot sth-slot--pipeline">
               <PipelinePanel
                 status={statusWith(
                   pipeline.lanes.some((lane) => lane.messageCount > 0) || pipeline.packageView !== null,
@@ -348,8 +348,8 @@ export function WorkbenchView() {
             </div>
           </div>
 
-          <div className="s1-column s1-column--right">
-            <div className="s1-slot">
+          <div className="sth-column sth-column--right">
+            <div className="sth-slot">
               <AuthorityPanel
                 status={statusWith(approvals.length > 0)}
                 cards={approvals}
@@ -359,7 +359,7 @@ export function WorkbenchView() {
                 {...panelError}
               />
             </div>
-            <div className="s1-slot">
+            <div className="sth-slot">
               <AuditTimeline
                 status={statusWith(auditRows.length > 0)}
                 rows={auditRows}
@@ -368,7 +368,7 @@ export function WorkbenchView() {
                 {...panelError}
               />
             </div>
-            <div className="s1-slot">
+            <div className="sth-slot">
               <SedimentPanel
                 status={statusWith(sediment.length > 0)}
                 items={sediment}
@@ -380,16 +380,16 @@ export function WorkbenchView() {
           </div>
         </div>
 
-        <footer className="s1-footer">
-          <div className="s1-footer__slot s1-footer__slot--ask">
+        <footer className="sth-footer">
+          <div className="sth-footer__slot sth-footer__slot--ask">
             {/*
               ⑨ 永远是 ready：这一格里**问句输入框本身就是内容**，把它放进 empty 态会让
               「还没问过」变成一个不能提问的界面 —— 那正是最坏的一种空态。
-              「还没问过」由面板内部的空态说明表达（`AskS1` 的 `empty` / `emptyNote`）。
+              「还没问过」由面板内部的空态说明表达（`AskSth` 的 `empty` / `emptyNote`）。
             */}
-            <AskS1 status={statusWith(true)} answers={answers} onAsk={ask} {...panelError} />
+            <AskSth status={statusWith(true)} answers={answers} onAsk={ask} {...panelError} />
           </div>
-          <div className="s1-footer__slot s1-footer__slot--report">
+          <div className="sth-footer__slot sth-footer__slot--report">
             {/* ⑭ 的「到了没有」按**报告那一拍到了没有**判：报告已经存在但一行都还没生成时，
                 它是 ready + 进度 0，不是 empty —— 「还没到」与「到了但刚开始」是两件事。 */}
             <ReportStream
@@ -424,22 +424,22 @@ export function WorkbenchView() {
 function canvasVars(scale: number): CSSProperties {
   const geometry = CONSOLE_GEOMETRY
   return {
-    "--s1-canvas-w": `${geometry.canvasWidth}px`,
-    "--s1-canvas-h": `${geometry.canvasHeight}px`,
-    "--s1-root-pad": `${geometry.rootPadding}px`,
-    "--s1-root-gap": `${geometry.rootGap}px`,
-    "--s1-header-h": `${geometry.headerHeight}px`,
-    "--s1-header-pad": `${geometry.headerPadding}px`,
-    "--s1-header-gap": `${geometry.headerGap}px`,
-    "--s1-col-left": `${geometry.columnWidths.left}px`,
-    "--s1-col-middle": `${geometry.columnWidths.middle}px`,
-    "--s1-col-right": `${geometry.columnWidths.right}px`,
-    "--s1-col-pad": `${geometry.columnPadding}px`,
-    "--s1-footer-h": `${geometry.footerHeight}px`,
-    "--s1-footer-pad": `${geometry.footerPadding}px`,
-    "--s1-footer-gap": `${geometry.footerGap}px`,
-    "--s1-ask-width": `${geometry.askS1Width}px`,
-    "--s1-scale": String(scale),
+    "--sth-canvas-w": `${geometry.canvasWidth}px`,
+    "--sth-canvas-h": `${geometry.canvasHeight}px`,
+    "--sth-root-pad": `${geometry.rootPadding}px`,
+    "--sth-root-gap": `${geometry.rootGap}px`,
+    "--sth-header-h": `${geometry.headerHeight}px`,
+    "--sth-header-pad": `${geometry.headerPadding}px`,
+    "--sth-header-gap": `${geometry.headerGap}px`,
+    "--sth-col-left": `${geometry.columnWidths.left}px`,
+    "--sth-col-middle": `${geometry.columnWidths.middle}px`,
+    "--sth-col-right": `${geometry.columnWidths.right}px`,
+    "--sth-col-pad": `${geometry.columnPadding}px`,
+    "--sth-footer-h": `${geometry.footerHeight}px`,
+    "--sth-footer-pad": `${geometry.footerPadding}px`,
+    "--sth-footer-gap": `${geometry.footerGap}px`,
+    "--sth-ask-width": `${geometry.askSthWidth}px`,
+    "--sth-scale": String(scale),
   } as CSSProperties
 }
 

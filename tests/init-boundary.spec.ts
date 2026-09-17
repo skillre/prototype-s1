@@ -352,19 +352,19 @@ test.describe("F5 · F6 · F7", () => {
     //
     // 样例删除之后，这份清单从 4 条变成 28 条：CRM 与内置演示是这些共享能力的
     // 主要调用方，删掉它们，调用方就没了。**这并不是缺陷**，而是初始化的真实
-    // 形状 —— 这些是 Factory Core 提供的能力，S1 的组件层接线时才会用到它们。
+    // 形状 —— 这些是 Factory Core 提供的能力，STH 的组件层接线时才会用到它们。
     // 基线版本已经把话说明白了：声明它，而不是因为样例不用就删掉一个能力。
     const UNEXERCISED: Record<string, string> = {
-      "components/layout/mobile-nav.tsx": "Core 外壳：移动端导航，S1 的 16:9 单屏形态不使用；能力保留",
+      "components/layout/mobile-nav.tsx": "Core 外壳：移动端导航，STH 的 16:9 单屏形态不使用；能力保留",
       "components/layout/page-container.tsx": "Core 外壳：页面容器（含 ambient opt-in，默认关闭）",
       "components/layout/top-nav.tsx": "Core 外壳：顶栏（身份与数据源必须由调用方注入）",
-      "components/motion/page-transition.tsx": "Core 动效原语：页面切换，S1 的动效语言是 event-driven",
+      "components/motion/page-transition.tsx": "Core 动效原语：页面切换，STH 的动效语言是 event-driven",
       "components/motion/slide-in.tsx": "Core 动效原语：入场位移，本产品暂未使用",
       "components/motion/stagger-container.tsx": "Core 动效原语：列表逐项入场，本产品暂未使用",
-      "components/prototype/ai-summary-panel.tsx": "Core 能力：结论面板，S1 的研判流会用它",
+      "components/prototype/ai-summary-panel.tsx": "Core 能力：结论面板，STH 的研判流会用它",
       "components/prototype/chart-card.tsx": "Core 能力：Recharts 卡片外壳，本产品暂未使用",
-      "components/prototype/command-palette.tsx": "Core 能力：命令面板，S1 的键盘优先导航会用它",
-      "components/prototype/data-table.tsx": "Core 能力：数据表，S1 的审计时间线会用它",
+      "components/prototype/command-palette.tsx": "Core 能力：命令面板，STH 的键盘优先导航会用它",
+      "components/prototype/data-table.tsx": "Core 能力：数据表，STH 的审计时间线会用它",
       "components/prototype/detail-drawer.tsx": "Core 能力：详情抽屉，证据引用点开时会用它",
       "components/prototype/empty-state.tsx": "Core 三态之一：空态，组件层接线时使用",
       "components/prototype/error-state.tsx": "Core 三态之一：错误态，组件层接线时使用",
@@ -411,7 +411,7 @@ test.describe("F5 · F6 · F7", () => {
 
     // F6's actual named case: `profile-dialog` used to be dead inventory that
     // nothing could see. It is in the list now — visible, with a reason — which
-    // is the fix. When the first S1 surface imports it, this line moves to that
+    // is the fix. When the first STH surface imports it, this line moves to that
     // surface and the entry comes off the list.
     expect(Object.keys(UNEXERCISED)).toContain("components/prototype/profile-dialog.tsx")
   })
@@ -429,7 +429,7 @@ test.describe("F5 · F6 · F7", () => {
     }
     // …and nothing in this product wires them up yet. 「可选」的意思就是：产品
     // 没有被外壳导航，就完全不引入它。基线版本这一句是「只有 Reference Sample
-    // 使用它们」；样例删除之后，正确的说法是「没有任何界面使用它们」—— S1 自己的
+    // 使用它们」；样例删除之后，正确的说法是「没有任何界面使用它们」—— STH 自己的
     // 外壳（或它决定不用外壳）是后续工单的事，不是这一轮可以替人决定的。
     const { files } = walkScoped(ROOT, { roots: ["app"], excludeTrees: [] })
     const shellImports = files.filter((file) =>

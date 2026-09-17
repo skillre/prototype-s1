@@ -9,7 +9,7 @@ import {
   evidenceDetailOf,
   type AuditRowView,
 } from "@/components/prototype/workbench/view-model"
-import { cursorIncludes, type ReplayCursor } from "@/lib/s1/replay"
+import { cursorIncludes, type ReplayCursor } from "@/lib/sth/replay"
 
 /**
  * ⑧ 审计时间线 —— 本回合的每一步都留痕，每一行都能把回放停到那一刻。
@@ -24,7 +24,7 @@ import { cursorIncludes, type ReplayCursor } from "@/lib/s1/replay"
  * ## 为什么 seek 传的是游标，不是毫秒
  *
  * 行上显示的是**事实时间**（`16:20:31`，设计稿真值），而回放跑在**回放时间**上，
- * 这是两个时钟（种子与剧本各自成立，见 `lib/s1/contract.ts` 里那段说明）。两条留痕
+ * 这是两个时钟（种子与剧本各自成立，见 `lib/sth/contract.ts` 里那段说明）。两条留痕
  * 可以共用一个事实时刻，却落在排程的两个不同毫秒上；只传毫秒就无法表达「是这两条里的
  * 哪一条」，点击会落到一个不属于任何一帧的位置上。游标 `{revealedAtMs, seq}` 是二者
  * 的**全序**，所以点击传的是它 —— 同刻的两行因此分得开。
@@ -71,7 +71,7 @@ export function AuditTimeline({
       emptyTitle={t.workbench.audit.empty}
       emptyNote={t.workbench.audit.emptyNote}
       aside={
-        <span className="s1-badge" data-testid="audit-badge" title={t.workbench.audit.badgeNote}>
+        <span className="sth-badge" data-testid="audit-badge" title={t.workbench.audit.badgeNote}>
           {t.workbench.audit.badge}
         </span>
       }
@@ -90,13 +90,13 @@ export function AuditTimeline({
        * 读数的位置固定在时间线**下方**：它描述的是整块面板此刻停在哪一帧，
        * 而不是某一行自己的属性 —— 放进行内会让「这是谁的游标」变得含糊。
        */}
-      <p className="s1-audit__readout">
+      <p className="sth-audit__readout">
         <span data-testid="audit-cursor" data-replay-cursor-ms={cursorMs}>
-          <span className="s1-audit__readout-label">{`${t.workbench.audit.cursorLabel} `}</span>
+          <span className="sth-audit__readout-label">{`${t.workbench.audit.cursorLabel} `}</span>
           <code>{cursorMs}</code>
         </span>
-        <span className="s1-audit__note">{t.workbench.audit.faithfulNote}</span>
-        <span data-testid="audit-faithful-note" className="s1-audit__note">
+        <span className="sth-audit__note">{t.workbench.audit.faithfulNote}</span>
+        <span data-testid="audit-faithful-note" className="sth-audit__note">
           {t.workbench.audit.replaySpeed}
         </span>
       </p>
@@ -130,7 +130,7 @@ function AuditRow({
   const seekLabel = `${t.workbench.audit.rowSeek} · ${row.at} · ${row.action}`
 
   const shared = {
-    className: "s1-audit__row",
+    className: "sth-audit__row",
     "data-testid": "audit-row",
     "data-row-seq": row.seq,
     "data-row-entry": row.entryId,
@@ -143,10 +143,10 @@ function AuditRow({
 
   const content = (
     <>
-      <span className="s1-audit__clock">{row.at}</span>
-      <span className="s1-audit__actor">{row.actor}</span>
-      <span className="s1-audit__action">
-        <span aria-hidden="true" className="s1-audit__sep">{` · `}</span>
+      <span className="sth-audit__clock">{row.at}</span>
+      <span className="sth-audit__actor">{row.actor}</span>
+      <span className="sth-audit__action">
+        <span aria-hidden="true" className="sth-audit__sep">{` · `}</span>
         {row.action}
       </span>
       <Basis refs={row.basisRefs} />
@@ -182,18 +182,18 @@ function Basis({ refs }: { refs: readonly string[] }): ReactElement {
 
   if (refs.length === 0) {
     return (
-      <span className="s1-audit__nobasis" data-testid="audit-no-basis">
+      <span className="sth-audit__nobasis" data-testid="audit-no-basis">
         {t.workbench.audit.noBasis}
       </span>
     )
   }
 
   return (
-    <span className="s1-audit__basis">
+    <span className="sth-audit__basis">
       {refs.map((ref) => (
         <span
           key={ref}
-          className="s1-audit__chip"
+          className="sth-audit__chip"
           data-meaning="evidence"
           data-evidence-ref={ref}
           data-testid="audit-basis-chip"

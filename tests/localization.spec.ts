@@ -9,7 +9,7 @@ import { zhCN } from "../lib/i18n/zh-CN"
  * `tests/support/localization.ts`，这里只负责「把页面打开、然后断言」。
  *
  * 初始化边界阶段的覆盖范围比基线小，这是事实而不是妥协：样例路由（CRM 与内置演示）
- * 已经删除，S1 的组件层还没有开始实现，所以此刻能打开的页面确实只有这两条。
+ * 已经删除，STH 的组件层还没有开始实现，所以此刻能打开的页面确实只有这两条。
  * 已经删掉的那部分覆盖由下面的「词典」describe 顶上 —— 那些浮层（命令面板、账户菜单、
  * 通知、原型状态、个人资料、退出登录、引导向导、AI 摘要）的**默认文案已经住在词典里**，
  * 接线那天就会出现在真实界面上；先把它们检查掉，比等接线之后再补便宜。
@@ -63,11 +63,11 @@ test.describe("浮层与共享组件：默认文案已经住在词典里", () =>
 })
 
 test.describe("首屏与 404", () => {
-  test("首屏说的是 S1 自己的产品身份", async ({ page }) => {
+  test("首屏说的是 STH 自己的产品身份", async ({ page }) => {
     await page.goto("/")
     const h1 = page.getByRole("heading", { level: 1 })
     await expect(h1).toBeVisible()
-    await expect(h1).toContainText("S1")
+    await expect(h1).toContainText("STH")
     // 首屏必须说清楚「这是什么产品」，而不是只有一句品牌名。
     await expect(page.getByText("AI 原生安全运营工作台").first()).toBeVisible()
     // 而且它必须诚实地标出阶段。**这一条跟着阶段事实走**（与 `landing` 文案同一条规矩：

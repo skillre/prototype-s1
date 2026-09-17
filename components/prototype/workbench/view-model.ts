@@ -5,11 +5,11 @@
  *
  * 界面不许自己算：面板里出现的每一行、每一个数字，都必须能追到一条消息或一个派生量。
  * 所以派生集中在这里，且全部是纯函数 —— 于是它们可以在**没有 DOM** 的情况下被断言
- * （`tests/s1-console.spec.ts`），也可以在浏览器里被断言同一件事。
+ * （`tests/sth-console.spec.ts`），也可以在浏览器里被断言同一件事。
  *
  * ## 三条纪律
  *
- * 1. **不发明内容。** 计划条目的名字、命令、回显、结论、证据标签全部来自 `lib/s1/**`
+ * 1. **不发明内容。** 计划条目的名字、命令、回显、结论、证据标签全部来自 `lib/sth/**`
  *    的事实底本；这里只做**筛选、排序、连接与投影**。凡是「数据里没有的字段」，
  *    返回 `null`，由界面显示空位，而不是就地编一句。
  * 2. **不读时钟、不随机。** 本模块里没有 `Date`、没有 `Math.random()`：时间只有两个来源 ——
@@ -46,7 +46,7 @@ import {
   type MessageId,
   type PlanStepState,
   type SedimentItem,
-} from "@/lib/s1/contract"
+} from "@/lib/sth/contract"
 import {
   CURSOR_OPENING,
   evidenceById,
@@ -56,20 +56,20 @@ import {
   type CardRecord,
   type IncidentState,
   type ReplayCursor,
-} from "@/lib/s1/replay"
-import { FINDINGS, ENVIRONMENT, HEADER_STATS_SIGNED, INCIDENT_ID, PLAN, PLAN_STEPS, REPORT, TOOL_CALLS, type SeedFinding } from "@/lib/s1/seed"
-import { ASK_S1_ANSWERS, ASK_S1_QUESTIONS, type AskS1Answer } from "@/lib/s1/timeline"
-import { BACKGROUND_ENTITY_VIEWS } from "@/lib/s1/background"
-import { ENTITY_VIEWS } from "@/lib/s1/seed"
-import { BEATS } from "@/lib/s1/storyboard"
+} from "@/lib/sth/replay"
+import { FINDINGS, ENVIRONMENT, HEADER_STATS_SIGNED, INCIDENT_ID, PLAN, PLAN_STEPS, REPORT, TOOL_CALLS, type SeedFinding } from "@/lib/sth/seed"
+import { ASK_STH_ANSWERS, ASK_STH_QUESTIONS, type AskSthAnswer } from "@/lib/sth/timeline"
+import { BACKGROUND_ENTITY_VIEWS } from "@/lib/sth/background"
+import { ENTITY_VIEWS } from "@/lib/sth/seed"
+import { BEATS } from "@/lib/sth/storyboard"
 import {
   bundleRoundTripDiff,
   exportSedimentFromEvents,
   importSediment,
   serializeSediment,
-} from "@/lib/s1/sediment"
-import { stableStringify, type JsonValue } from "@/lib/s1/stable-json"
-import { isAutonomous } from "@/lib/s1/verify"
+} from "@/lib/sth/sediment"
+import { stableStringify, type JsonValue } from "@/lib/sth/stable-json"
+import { isAutonomous } from "@/lib/sth/verify"
 
 /* -------------------------------------------------------------------------- */
 /* 1 · 已揭示的消息                                                             */
@@ -230,7 +230,7 @@ export function frameOfBeat(schedule: readonly ScheduleFrame[], step: number): S
  * ## 为什么需要它（2026-09-17 实测缺陷）
  *
  * 剧本有 18 拍，但**没有任何消息带 `beatStep: 18`**：第 18 拍是「被盘问 · 任意时刻」，
- * 它由观众点击 ⑨ 问 S1 时才追加（`timeline.ts` 的 `askS1Message`，且那时才带上
+ * 它由观众点击 ⑨ 问 STH 时才追加（`timeline.ts` 的 `askSthMessage`，且那时才带上
  * `beatStep: 18`）。所以排程里没有第 18 拍的帧，而旧实现遇到 `null` 就**静默留在 0**：
  *
  * ```
@@ -368,7 +368,7 @@ const FINDING_INDEX: ReadonlyMap<string, SeedFinding> = new Map(
   FINDINGS.map((finding) => [finding.id, finding]),
 )
 
-/** 只收本回合的研判卡（`affects` 里有 `finding-stream`）。第 18 拍的回答走 `ask-s1`。 */
+/** 只收本回合的研判卡（`affects` 里有 `finding-stream`）。第 18 拍的回答走 `ask-sth`。 */
 export function findingCards(revealed: readonly IncidentMessage[]): FindingCard[] {
   const cards: FindingCard[] = []
   for (const message of revealed) {
@@ -725,7 +725,7 @@ export type PromptSignal = {
  *   命令逐字打出、回显逐行返回（第 12 拍的 `rm` 带回显 `deleted: webshell6.jsp · exit 0`）。
  *
  * 两个时刻都取**排程**上的墙钟毫秒数，所以 `bothByMs ≤ 90_000` 是一条可复算的断言，
- * 而不是「看起来很快」；浏览器侧的墙钟测量在 `tests/s1-console.spec.ts` 里另有一条。
+ * 而不是「看起来很快」；浏览器侧的墙钟测量在 `tests/sth-console.spec.ts` 里另有一条。
  */
 export function promptSignals(
   events: readonly IncidentMessage[],
@@ -833,7 +833,7 @@ function replayStreamQuiet(
  * 不同排的节点在竖直方向上本来就不重叠。于是"不相交"由**区间不相交**保证，
  * 而区间是按内容所在的排分配的 —— 内容长高了，长的是那一排的高度，不是往邻居身上压。
  *
- * 这条性质有两道判据：纯函数侧断言同排列区间两两不相交（`tests/s1-panels.spec.ts`），
+ * 这条性质有两道判据：纯函数侧断言同排列区间两两不相交（`tests/sth-panels.spec.ts`），
  * 浏览器侧直接量 `getBoundingClientRect()` 断言任意两个节点的矩形不相交。
  */
 const ENTITY_KIND_DEPTH: Readonly<Record<EntityView["kind"], number>> = {
@@ -1148,7 +1148,7 @@ export function attackChainOf(state: IncidentState, stream?: readonly IncidentMe
  * 拿消息去比对消息，任何引用都会"解析得到"，探针就死了。
  *
  * 它是所有「引用必须可定位」判据的**唯一一份实现**：画布（`attackChainUnresolvableRefs`）
- * 与 ⑨ 问 S1 的回答都走它，免得两处各写一遍、其中一处悄悄放宽。
+ * 与 ⑨ 问 STH 的回答都走它，免得两处各写一遍、其中一处悄悄放宽。
  */
 export function unresolvableEvidenceRefs(refs: readonly EvidenceId[]): EvidenceId[] {
   const known = knownEvidenceIds()
@@ -1177,7 +1177,7 @@ export function attackChainUnresolvableRefs(chain: AttackChain): string[] {
  *
  * 为什么不用「矩形相交」在这里判：这一层没有像素，也不该有 ——
  * 矩形是**浏览器布局的产物**，那一条判据在浏览器侧量 `getBoundingClientRect()`
- * （`tests/s1-panels.spec.ts`）。两条合起来才是完整的保证：
+ * （`tests/sth-panels.spec.ts`）。两条合起来才是完整的保证：
  * 这里证明"格子本身不重叠"，那边证明"浏览器真的按格子摆"。
  */
 export function attackChainOverlaps(
@@ -1231,7 +1231,7 @@ export type AuthorityCardView = {
   planStepId: string | null
   /**
    * **数据层判定的**自主执行许可 —— `isAutonomous(actionCode)`，与
-   * `lib/s1/verify.ts` 的 `scanAuthority` 同一份判据源。
+   * `lib/sth/verify.ts` 的 `scanAuthority` 同一份判据源。
    * 界面不写"哪些动作能自动执行"这张表：那是数据层的事实。
    */
   autonomousAllowed: boolean
@@ -1412,7 +1412,7 @@ export function sedimentItemsOf(state: IncidentState): SedimentItemView[] {
  * 导出物的**文本**（键序稳定）—— 界面把这段文本写剪贴板 / 写文件。
  *
  * 纯函数：同一个状态 + 同一个事件序列 → 同一个字符串，所以它可以在没有 DOM 的
- * 情况下被断言（`tests/s1-console.spec.ts`），也可以在浏览器里被断言同一件事。
+ * 情况下被断言（`tests/sth-console.spec.ts`），也可以在浏览器里被断言同一件事。
  */
 export function exportSedimentText(
   state: IncidentState,
@@ -1472,7 +1472,7 @@ export function cursorKey(cursor: ReplayCursor | null): string {
 }
 
 /* -------------------------------------------------------------------------- */
-/* 15 · ⑨ 问 S1                                                                */
+/* 15 · ⑨ 问 STH                                                                */
 /* -------------------------------------------------------------------------- */
 
 /**
@@ -1483,13 +1483,13 @@ export function cursorKey(cursor: ReplayCursor | null): string {
  *   · 把提问对到数据层**真的写过答案**的那三条上（对不上就是 null，不是"尽力猜"）；
  *   · 把已揭示的回答投影成界面要读的形状。
  *
- * 它**不会**在没有答案时编一个：`askS1AnswerFor` 返回 `null`，由界面渲染
+ * 它**不会**在没有答案时编一个：`askSthAnswerFor` 返回 `null`，由界面渲染
  * 「答不出」那段话。这正是「问一个答不出证据的问题时，界面明说答不出」的实现方式。
  */
 
-/** 有出处的三个问题（种子 `askS1` 的占位提示 + 两个快捷问）。 */
-export function askS1Questions(): readonly string[] {
-  return ASK_S1_QUESTIONS
+/** 有出处的三个问题（种子 `askSth` 的占位提示 + 两个快捷问）。 */
+export function askSthQuestions(): readonly string[] {
+  return ASK_STH_QUESTIONS
 }
 
 /**
@@ -1499,24 +1499,24 @@ export function askS1Questions(): readonly string[] {
  * 「现在最大风险是什么？」看起来贴心，实际上是把别人的答案当成你的问题的答案 ——
  * 那正是这条不变量禁止的那类"像真的"。
  */
-export function askS1AnswerFor(question: string): { presetIndex: number; answer: AskS1Answer } | null {
+export function askSthAnswerFor(question: string): { presetIndex: number; answer: AskSthAnswer } | null {
   const wanted = question.trim()
   if (wanted.length === 0) return null
-  const index = ASK_S1_ANSWERS.findIndex((entry) => entry.question === wanted)
+  const index = ASK_STH_ANSWERS.findIndex((entry) => entry.question === wanted)
   if (index < 0) return null
-  return { presetIndex: index, answer: ASK_S1_ANSWERS[index] as AskS1Answer }
+  return { presetIndex: index, answer: ASK_STH_ANSWERS[index] as AskSthAnswer }
 }
 
 /** 提问为什么答不出 —— 界面按它选措辞（两种原因不是同一件事）。 */
-export type AskS1Refusal = "empty" | "unmatched"
+export type AskSthRefusal = "empty" | "unmatched"
 
-export function askS1RefusalFor(question: string): AskS1Refusal | null {
+export function askSthRefusalFor(question: string): AskSthRefusal | null {
   if (question.trim().length === 0) return "empty"
-  return askS1AnswerFor(question) === null ? "unmatched" : null
+  return askSthAnswerFor(question) === null ? "unmatched" : null
 }
 
 /** 一条已经出现在屏幕上的回答。 */
-export type AskS1AnswerView = {
+export type AskSthAnswerView = {
   messageId: MessageId
   seq: number
   /** 这条回答对应的问题原文（由 `claim.findingId` 连回种子的答案表，连不上就是 null）。 */
@@ -1528,32 +1528,32 @@ export type AskS1AnswerView = {
   occurredAt: string
 }
 
-/** `claim.findingId` → 预置问题序号（`ask-0` / `ask-1` / `ask-2`，见 `timeline.askS1Message`）。 */
+/** `claim.findingId` → 预置问题序号（`ask-0` / `ask-1` / `ask-2`，见 `timeline.askSthMessage`）。 */
 function askPresetIndexOf(findingId: string): number | null {
   const match = /^ask-(\d+)$/.exec(findingId)
   if (match === null) return null
   const index = Number(match[1])
-  return Number.isInteger(index) && index >= 0 && index < ASK_S1_ANSWERS.length ? index : null
+  return Number.isInteger(index) && index >= 0 && index < ASK_STH_ANSWERS.length ? index : null
 }
 
 /**
- * ⑨ 的回答 —— 只收 `affects` 里有 `ask-s1` 的已揭示消息（第 18 拍那条按需追加的）。
+ * ⑨ 的回答 —— 只收 `affects` 里有 `ask-sth` 的已揭示消息（第 18 拍那条按需追加的）。
  *
  * 它在**整条序列**上筛选而不是只挑最后一条：观众可以连问三次，三次的回答都留在屏幕上
  * （每一次都带自己的出处），而不是后一次把前一次顶掉 —— 顶掉会让"我问过什么"这件事消失。
  */
-export function askS1AnswersOf(revealed: readonly IncidentMessage[]): AskS1AnswerView[] {
-  const answers: AskS1AnswerView[] = []
+export function askSthAnswersOf(revealed: readonly IncidentMessage[]): AskSthAnswerView[] {
+  const answers: AskSthAnswerView[] = []
   for (const message of revealed) {
     if (message.kind !== "alert") continue
-    if (!message.affects.includes("ask-s1")) continue
+    if (!message.affects.includes("ask-sth")) continue
     const claim = message.claim
     if (claim === null) continue
     const index = askPresetIndexOf(claim.findingId)
     answers.push({
       messageId: message.id,
       seq: message.seq,
-      question: index === null ? null : (ASK_S1_ANSWERS[index]?.question ?? null),
+      question: index === null ? null : (ASK_STH_ANSWERS[index]?.question ?? null),
       conclusion: claim.conclusion,
       confidencePercent: Math.round(claim.confidence * 100),
       evidenceRefs: [...claim.evidenceRefs],
@@ -1565,14 +1565,14 @@ export function askS1AnswersOf(revealed: readonly IncidentMessage[]): AskS1Answe
 }
 
 /** 回答里有没有定位不到的证据引用？（空数组 = 每条引用都在登记簿上。） */
-export function askS1UnresolvableRefs(answers: readonly AskS1AnswerView[]): EvidenceId[] {
+export function askSthUnresolvableRefs(answers: readonly AskSthAnswerView[]): EvidenceId[] {
   return unresolvableEvidenceRefs(answers.flatMap((answer) => answer.evidenceRefs))
 }
 
 /** 提问被送出之后发生了什么 —— 界面据此决定要不要渲染「答不出」。 */
-export type AskS1Submit =
+export type AskSthSubmit =
   | { kind: "answered"; presetIndex: number }
-  | { kind: "refused"; reason: AskS1Refusal; question: string }
+  | { kind: "refused"; reason: AskSthRefusal; question: string }
 
 /**
  * 提交一次提问 —— **唯一的判据入口**（纯函数，所以它能被直接断言）。
@@ -1580,10 +1580,10 @@ export type AskS1Submit =
  * 调用方（组件）拿到 `answered` 才去 append 一条消息；拿到 `refused` 就把原因显示出来。
  * 于是"界面明说答不出"这件事不依赖组件里的某段 `if`，它在派生层就定了。
  */
-export function askS1Submit(question: string): AskS1Submit {
-  const match = askS1AnswerFor(question)
+export function askSthSubmit(question: string): AskSthSubmit {
+  const match = askSthAnswerFor(question)
   if (match !== null) return { kind: "answered", presetIndex: match.presetIndex }
-  return { kind: "refused", reason: askS1RefusalFor(question) ?? "unmatched", question }
+  return { kind: "refused", reason: askSthRefusalFor(question) ?? "unmatched", question }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1743,7 +1743,7 @@ export function pipelineOf(revealed: readonly IncidentMessage[]): PipelineView {
 export const REPORT_DOCUMENT_SCHEMA_VERSION = 1
 
 /** 报告面板导出文档的 DOM id（披露控件的 `aria-controls` 指向它）。 */
-export const REPORT_DOCUMENT_ID = "s1-report-export"
+export const REPORT_DOCUMENT_ID = "sth-report-export"
 
 export type ReportDocument = {
   schemaVersion: number
@@ -1932,7 +1932,7 @@ export function verifyReportImport(
  * `AGENT_ACTORS`（数据层的四个数字员工），席位短名来自种子 `headerStats.roster`（记录内容）。
  *
  * 每个席位的自主动作能追到三样东西：动作码、自主档、以及**白名单判决**
- * （`isAutonomous` —— 与 `lib/s1/verify.ts` 的 `scanAuthority` 同一份判据源，界面不另立一张表）。
+ * （`isAutonomous` —— 与 `lib/sth/verify.ts` 的 `scanAuthority` 同一份判据源，界面不另立一张表）。
  * 白名单外（`inWhitelist === false`）的动作只允许停在人的门上，所以席位同时给出
  * `awaiting`：那张挂在他名下、此刻仍然是 `pending` 的待批卡。
  */

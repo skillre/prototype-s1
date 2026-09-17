@@ -14,7 +14,7 @@ import { WorkbenchPanel, type PanelStatus } from "@/components/prototype/workben
 /**
  * 证据 chip 走 **Kits 的签名组件** —— 但产品代码 import 的是**角色文件**，不是资产名。
  *
- * 这一行就是决策 13（「让 S1 真的消费证据 chip 签名组件」）在产品侧的落点：
+ * 这一行就是决策 13（「让 STH 真的消费证据 chip 签名组件」）在产品侧的落点：
  * `evidence-cite` 是产品选定的语义角色，角色的绑定声明在适配接缝里
  * （`lib/kits/adapters/seam/seam.json` 的 `bindings`：角色 → 本次安装里的资产 id）。
  *
@@ -25,7 +25,7 @@ import { WorkbenchPanel, type PanelStatus } from "@/components/prototype/workben
  * 换资产只改角色文件里的一行 re-export。详见 `adapters/evidence-cite.tsx`。
  */
 import { EvidenceCite } from "@/lib/kits/adapters/evidence-cite"
-import type { EvidenceId } from "@/lib/s1/contract"
+import type { EvidenceId } from "@/lib/sth/contract"
 
 /**
  * ③ 研判流 —— 六特征的第三条（证据推理：结论 + 置信度 + 证据 chip）。
@@ -75,31 +75,31 @@ export function FindingStream({
       /* 流是往下长的，观众的眼睛在底部：条数一变就跟随到底。
          具体怎么滚由 `WorkbenchPanel` 负责（跟随 + 按行对齐，见 `use-panel-scroll.ts`）。 */
       followKey={cards.length}
-      aside={<span className="s1-panel__subtitle">{`${cards.length}`}</span>}
+      aside={<span className="sth-panel__subtitle">{`${cards.length}`}</span>}
     >
       {cards.map((card) => {
         const elapsed = revealedElapsed(progressMs, revealTimes.get(card.seq), reducedMotion)
         const conclusion = typedPrefix(card.conclusion, elapsed, FINDING_CHAR_MS)
         const typing = conclusion.length < card.conclusion.length
         return (
-          <article key={card.findingId} className="s1-finding" data-finding-id={card.findingId}>
-            <div className="s1-finding__meta">
+          <article key={card.findingId} className="sth-finding" data-finding-id={card.findingId}>
+            <div className="sth-finding__meta">
               <span>
                 {card.actor} · {card.occurredAt}
               </span>
               <span data-testid="confidence">{t.workbench.findings.confidence(card.confidencePercent)}</span>
             </div>
 
-            <p className="s1-finding__conclusion" data-testid="conclusion">
+            <p className="sth-finding__conclusion" data-testid="conclusion">
               {conclusion}
               {typing ? (
-                <span aria-hidden="true" className="s1-typing__caret">
+                <span aria-hidden="true" className="sth-typing__caret">
                   ▌
                 </span>
               ) : null}
             </p>
 
-            <div className="s1-chips">
+            <div className="sth-chips">
               {card.evidenceRefs.map((ref) => (
                 <EvidenceChip
                   key={ref}
@@ -109,7 +109,7 @@ export function FindingStream({
                 />
               ))}
               {card.extraChips.map((chip) => (
-                <span key={chip} className="s1-chip s1-chip--muted">
+                <span key={chip} className="sth-chip sth-chip--muted">
                   {chip}
                 </span>
               ))}
@@ -120,16 +120,16 @@ export function FindingStream({
             ) : null}
 
             {card.nextStep === null ? null : (
-              <p className="s1-fields">
-                <span className="s1-field__name">{`${t.workbench.findings.nextStep}：`}</span>
-                <span className="s1-field__value">{card.nextStep}</span>
+              <p className="sth-fields">
+                <span className="sth-field__name">{`${t.workbench.findings.nextStep}：`}</span>
+                <span className="sth-field__value">{card.nextStep}</span>
               </p>
             )}
 
-            <div className="s1-chips">
-              <span className="s1-field__name">{`${t.workbench.findings.sources}：`}</span>
+            <div className="sth-chips">
+              <span className="sth-field__name">{`${t.workbench.findings.sources}：`}</span>
               {card.sources.map((source) => (
-                <span key={source} className="s1-chip s1-chip--muted" data-source={source}>
+                <span key={source} className="sth-chip sth-chip--muted" data-source={source}>
                   {dataSourceLabelOf(source)}
                 </span>
               ))}
@@ -152,7 +152,7 @@ function revealedElapsed(
 }
 
 /**
- * 证据 chip —— **由 Kits 的签名组件渲染**（决策 13：S1 真的消费 `evidence-chip`）。
+ * 证据 chip —— **由 Kits 的签名组件渲染**（决策 13：STH 真的消费 `evidence-chip`）。
  *
  * 这一层只做两件属于产品的事：
  *
@@ -174,7 +174,7 @@ function EvidenceChip({
 }) {
   const t = useMessages()
   return (
-    <span className="s1-chip-slot" data-evidence-ref={id} data-testid="evidence-cite">
+    <span className="sth-chip-slot" data-evidence-ref={id} data-testid="evidence-cite">
       <EvidenceCite
         category={t.workbench.findings.evidenceLabel}
         // 组件负责 `#` 这个引用记号的渲染，所以传引用号本身。
@@ -191,19 +191,19 @@ function EvidenceChip({
 function EvidenceDetailBlock({ id }: { id: EvidenceId }) {
   const detail = evidenceDetailOf(id)
   return (
-    <div className="s1-evidence-detail" data-testid="evidence-detail">
-      <span className="s1-field__name">{`编号`}</span>
-      <span className="s1-field__value">
+    <div className="sth-evidence-detail" data-testid="evidence-detail">
+      <span className="sth-field__name">{`编号`}</span>
+      <span className="sth-field__value">
         <code>{detail.id}</code>
       </span>
-      <span className="s1-field__name">{`种类`}</span>
-      <span className="s1-field__value">
+      <span className="sth-field__name">{`种类`}</span>
+      <span className="sth-field__value">
         <code>{detail.kind}</code>
       </span>
-      <span className="s1-field__name">{`来源`}</span>
-      <span className="s1-field__value">{detail.sourceLabel}</span>
-      <span className="s1-field__name">{`指向`}</span>
-      <span className="s1-field__value">{detail.entityLabels.join(" · ")}</span>
+      <span className="sth-field__name">{`来源`}</span>
+      <span className="sth-field__value">{detail.sourceLabel}</span>
+      <span className="sth-field__name">{`指向`}</span>
+      <span className="sth-field__value">{detail.entityLabels.join(" · ")}</span>
     </div>
   )
 }

@@ -14,8 +14,8 @@ import {
   traceCausalChain,
   verifyCausalLedger,
   type AuditLedgerEntry,
-} from "../lib/s1/audit"
-import { BACKGROUND_SUMMARY } from "../lib/s1/background"
+} from "../lib/sth/audit"
+import { BACKGROUND_SUMMARY } from "../lib/sth/background"
 import {
   ACTION_CATALOG,
   AUTONOMOUS_ACTION_CODES,
@@ -23,38 +23,38 @@ import {
   MESSAGE_KINDS,
   type ActionCode,
   type IncidentMessage,
-} from "../lib/s1/contract"
-import { COUNTER_DEFINITIONS, counterContributors, counterTrace, countersFromEvents } from "../lib/s1/counters"
-import { CURSOR_OPENING, cursorAtBeat, replayStream } from "../lib/s1/replay"
-import { AUDIT_ROW_CLOCKS, INCIDENT_ID } from "../lib/s1/seed"
-import { exportSedimentBundle, importSediment, sedimentRoundTripDiff, serializeSediment } from "../lib/s1/sediment"
-import { stableStringify } from "../lib/s1/stable-json"
+} from "../lib/sth/contract"
+import { COUNTER_DEFINITIONS, counterContributors, counterTrace, countersFromEvents } from "../lib/sth/counters"
+import { CURSOR_OPENING, cursorAtBeat, replayStream } from "../lib/sth/replay"
+import { AUDIT_ROW_CLOCKS, INCIDENT_ID } from "../lib/sth/seed"
+import { exportSedimentBundle, importSediment, sedimentRoundTripDiff, serializeSediment } from "../lib/sth/sediment"
+import { stableStringify } from "../lib/sth/stable-json"
 import {
   BEATS,
   DEFERRED_FRAME_INVARIANT_ID,
   FRAME_INVARIANTS,
   ON_DEMAND_BEAT,
   TIMED_BEATS,
-} from "../lib/s1/storyboard"
-import { askS1Message, buildIncidentStream, summarizeStream } from "../lib/s1/timeline"
+} from "../lib/sth/storyboard"
+import { askSthMessage, buildIncidentStream, summarizeStream } from "../lib/sth/timeline"
 import {
   claimPartsOf,
   scanAuthority,
   scanCausalChain,
   scanEvidenceCitations,
   scanStoryboard,
-} from "../lib/s1/verify"
+} from "../lib/sth/verify"
 import { stripComments } from "../scripts/lib/kits-seam.mjs"
 import { invariant } from "./support/product-contract"
 
 /**
- * S1 数据层与确定性回放引擎的不变量登记与断言。
+ * STH 数据层与确定性回放引擎的不变量登记与断言。
  *
  * 本包登记五条（六条已签署里能不用 DOM 验证的那些）。第六条 `boundary.demo-is-labelled-as-demo`
  * 的判红方式写的是「每个路由断言存在**可见**的演示标识（非 aria-hidden、非 display:none）」——
  * 那需要 DOM，而本包没有界面；**声明了却没有对象会让 `pnpm factory:contract` 变红**。
  * 组件第一批（2026-09-17）建出了那件对象，所以它现在**已经进契约、也已经登记**
- * （`tests/s1-console.spec.ts`）；原文仍原样留在 `lib/s1/storyboard.ts` 的 `FRAME_INVARIANTS` 里。
+ * （`tests/sth-console.spec.ts`）；原文仍原样留在 `lib/sth/storyboard.ts` 的 `FRAME_INVARIANTS` 里。
  *
  * 第七条 `color.every-hue-has-one-meaning` 登记在 `tests/art-direction.spec.ts`
  * （那是对真实像素的断言，取证能力在那里）。
@@ -91,9 +91,9 @@ invariant(
       expect(kinds).toEqual(["action_card", "alert", "context_package", "tool_call"])
     })
 
-    test("「问 S1」的回答同样有出处（第 18 拍按需生成）", () => {
+    test("「问 STH」的回答同样有出处（第 18 拍按需生成）", () => {
       for (let index = 0; index < 3; index += 1) {
-        const answer = askS1Message(STREAM, index)
+        const answer = askSthMessage(STREAM, index)
         expect(answer.evidenceRefs.length, `第 ${index} 条回答没有引用`).toBeGreaterThanOrEqual(1)
         expect(scanEvidenceCitations([...STREAM, answer])).toEqual([])
       }
@@ -405,11 +405,11 @@ invariant(
     })
 
     test("计数器模块里没有这些数字，也没有 count++ 这类直接赋值", () => {
-      const source = stripComments(readFileSync(join(ROOT, "lib/s1/counters.ts"), "utf8"))
+      const source = stripComments(readFileSync(join(ROOT, "lib/sth/counters.ts"), "utf8"))
       for (const literal of ["128", "41", "5330", "130"]) {
         expect(source, `counters.ts 不该出现字面量 ${literal}`).not.toContain(literal)
       }
-      for (const file of listFiles(join(ROOT, "lib/s1"))) {
+      for (const file of listFiles(join(ROOT, "lib/sth"))) {
         const code = stripComments(readFileSync(file, "utf8"))
         expect(code, `${file} 不得用自增改计数`).not.toMatch(/\bcount\w*\s*(\+\+|--|\+=|-=)/)
       }
@@ -541,7 +541,7 @@ test.describe("契约与剧本的机器化副本", () => {
       invariants: Array<{ id: string }>
     }
     // 数据层那一包**故意**没写进契约（判红需要 DOM，声明了没测试会让 factory:contract 变红）。
-    // 组件第一批建出了 DOM 对象，于是它进了契约、并在 `tests/s1-console.spec.ts` 里登记；
+    // 组件第一批建出了 DOM 对象，于是它进了契约、并在 `tests/sth-console.spec.ts` 里登记；
     // 数据层这一侧保留的仍是它的**原文**，所以两边能对上。
     expect(contract.invariants.map((entry) => entry.id)).toContain(DEFERRED_FRAME_INVARIANT_ID)
     expect(FRAME_INVARIANTS.map((entry) => entry.id)).toContain(DEFERRED_FRAME_INVARIANT_ID)
@@ -632,7 +632,7 @@ test.describe("顺序、两个时钟与种子静帧", () => {
 })
 
 test.describe("确定性：不读时钟、不随机、不依赖迭代顺序", () => {
-  test("lib/s1 与 stores 的源码里没有 Date / Math.random / performance.now", () => {
+  test("lib/sth 与 stores 的源码里没有 Date / Math.random / performance.now", () => {
     const files = dataLayerFiles()
     expect(files.length).toBeGreaterThan(8)
     for (const file of files) {
@@ -672,7 +672,7 @@ test.describe("zustand 约定：selector 只取原始值", () => {
       "cursorMs",
       "events",
       /* 人的裁决要走「插在当前游标之后」而不是「追加到末尾」，理由见 `stores/incident-store.ts`
-         里 `insertAfter` 的注释与 `tests/s1-batch3.spec.ts` 的 ⑥ 一节 ——
+         里 `insertAfter` 的注释与 `tests/sth-batch3.spec.ts` 的 ⑥ 一节 ——
          它是动作，不是派生字段，所以这一条枚举仍然只说「store 里没有派生量」。 */
       "insertAfter",
       "loadCanonicalStream",
@@ -708,9 +708,9 @@ function entityState(state: ReturnType<typeof replayStream>, entityId: string): 
   return state.entities.find((entity) => entity.id === entityId)?.state
 }
 
-/** 数据层的全部 .ts 文件（`lib/s1/**` + `stores/**`）—— 确定性扫描与视觉常量扫描的对象。 */
+/** 数据层的全部 .ts 文件（`lib/sth/**` + `stores/**`）—— 确定性扫描与视觉常量扫描的对象。 */
 function dataLayerFiles(): string[] {
-  return [...listFiles(join(ROOT, "lib/s1")), ...listFiles(join(ROOT, "stores"))]
+  return [...listFiles(join(ROOT, "lib/sth")), ...listFiles(join(ROOT, "stores"))]
 }
 
 function listFiles(dir: string): string[] {

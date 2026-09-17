@@ -9,7 +9,7 @@
  *
  * ## 它为什么存在
  *
- * `S1-人眼验收清单.md` 要求人在 **1680×1050 双主题**下看真实画面。
+ * `STH-人眼验收清单.md` 要求人在 **1680×1050 双主题**下看真实画面。
  * 截图是那份验收的输入之一，而"截图"这件事最容易变成一次性的手工操作：
  * 下一个人想复现时，只能靠记忆复原当时开了哪一帧、哪个主题、哪个视口。
  * 所以这里把三件事写死成参数：**视口 1680×1050**（设计画布，scale = 1）、
@@ -75,7 +75,7 @@ async function main() {
         await page.goto(`${origin}/workbench${frame.query}`, { waitUntil: "domcontentloaded" })
         // 等 scale 落到 1（1680×1050 下不缩放）——「页面能看见」不等于「布局已经 settle」。
         await page.waitForFunction(
-          () => document.querySelector(".s1-canvas")?.getAttribute("data-scale") === "1.0000",
+          () => document.querySelector(".sth-canvas")?.getAttribute("data-scale") === "1.0000",
           undefined,
           { timeout: 15_000 },
         )

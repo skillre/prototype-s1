@@ -4,7 +4,7 @@
 import { useMessages } from "@/components/i18n/locale-provider"
 import { WorkbenchPanel, type PanelStatus } from "@/components/prototype/workbench/panel"
 import type { PlanRow } from "@/components/prototype/workbench/view-model"
-import type { PlanStepState } from "@/lib/s1/contract"
+import type { PlanStepState } from "@/lib/sth/contract"
 
 /**
  * ② 任务计划面板 —— 六特征的第一条（自主规划，含**重规划划掉重写**）。
@@ -60,29 +60,29 @@ export function PlanPanel({
       followKey={rows.length}
       aside={
         rows.length > 0 ? (
-          <span className="s1-panel__subtitle">{t.workbench.plan.progress(progress.done, progress.total)}</span>
+          <span className="sth-panel__subtitle">{t.workbench.plan.progress(progress.done, progress.total)}</span>
         ) : null
       }
     >
-      <div className="s1-plan" data-testid="plan-list">
+      <div className="sth-plan" data-testid="plan-list">
         {rows.map((row) => (
           <div
             key={row.id}
-            className="s1-plan__row"
+            className="sth-plan__row"
             data-step-id={row.id}
             data-step-state={row.state}
             data-struck={row.struck ? "true" : "false"}
             data-fresh={row.state === "replanned" ? "true" : "false"}
           >
-            <span className="s1-plan__mark" aria-hidden="true">
+            <span className="sth-plan__mark" aria-hidden="true">
               {markOf(row.state)}
             </span>
-            <span className="s1-plan__label" data-testid="plan-step-label">
+            <span className="sth-plan__label" data-testid="plan-step-label">
               {row.label}
             </span>
-            <span className="s1-plan__meta">
+            <span className="sth-plan__meta">
               {row.detail === null ? null : <span>{row.detail}</span>}
-              <span className="s1-plan__state" data-testid="plan-step-state">
+              <span className="sth-plan__state" data-testid="plan-step-state">
                 {stateWordOf(t.workbench.plan, row.state)}
               </span>
               <span>{row.actor}</span>
@@ -91,8 +91,8 @@ export function PlanPanel({
         ))}
 
         {replan === null ? null : (
-          <p className="s1-plan__note" data-testid="replan-note">
-            <span className="s1-field__name">{`${t.workbench.plan.replanLabel}：`}</span>
+          <p className="sth-plan__note" data-testid="replan-note">
+            <span className="sth-field__name">{`${t.workbench.plan.replanLabel}：`}</span>
             <span>{t.workbench.plan.replanNote(replan.from, replan.to)}</span>
           </p>
         )}
@@ -107,7 +107,7 @@ function markOf(state: PlanStepState): string | React.ReactElement {
     case "done":
       return "✓"
     case "running":
-      return <span className="s1-dot s1-dot--breathing" />
+      return <span className="sth-dot sth-dot--breathing" />
     case "blocked":
       return "!"
     case "replanned":

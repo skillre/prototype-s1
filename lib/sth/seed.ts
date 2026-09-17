@@ -1,7 +1,7 @@
 /**
- * S1 事实底本 —— `seed.round3.json` 的**只读**类型化视图。
+ * STH 事实底本 —— `seed.round3.json` 的**只读**类型化视图。
  *
- * `seed.round3.json` 是从工作区根目录 `S1-回合3种子事件流.json` **逐字复制**进来的
+ * `seed.round3.json` 是从工作区根目录 `STH-回合3种子事件流.json` **逐字复制**进来的
  * （复制后 `diff` 为空，2026-09-17）。复制而不是引用，是因为产品必须独立可构建：
  * 根目录不属于本仓，跨仓读文件会让本仓在独立 checkout 里读不到事实底本。
  *
@@ -35,7 +35,7 @@ export const SEED = seedDocument
 
 export const SEED_PROVENANCE = {
   /** 工作区根目录里的原件（复制来源，不是运行时依赖）。 */
-  sourceOfTruthFile: "S1-回合3种子事件流.json",
+  sourceOfTruthFile: "STH-回合3种子事件流.json",
   sourceId: seedDocument.id,
   sourceTitle: seedDocument.title,
   copiedFrom: "工作区根目录",
@@ -64,7 +64,7 @@ const CLOCK_PATTERN = /^(\d{2}):(\d{2}):(\d{2})$/
  * `"16:20:31"` → 当日 00:00:00 起的毫秒数。
  *
  * 刻意**不用 `Date`**：本层的确定性要求「同一输入同一输出」，而 `Date` 会把时区、
- * 夏令时、`now()` 这些环境变量引进来（`verify.ts` 有一条扫描器禁止 `lib/s1/**` 出现 `Date`）。
+ * 夏令时、`now()` 这些环境变量引进来（`verify.ts` 有一条扫描器禁止 `lib/sth/**` 出现 `Date`）。
  */
 export function clockToMs(clock: string): number {
   const match = CLOCK_PATTERN.exec(clock)
@@ -295,6 +295,18 @@ export const AUDIT_ROWS = seedDocument.audit
 /** 沉淀物（种子 `sediment`）。`kind` 与 `sourceRefs` 是显式化，见各自的出处注释。 */
 export const SEDIMENT_ITEMS: readonly SedimentItem[] = [
   {
+    /*
+     * ⚠ **这个 `s1` 不是产品名，不要跟着改名。**
+     *
+     * 它是沉淀条目的**序号 id**（`s` = sediment，第 1 条），与 `s2` / `s3` 是同一组。
+     * 2026-09-17 把产品名 S1 统一改成 STH 时，机械替换把这一处也改成了 `sth` ——
+     * 结果是同一组序号里冒出一个不同前缀的成员，而且 `sortById` 的字典序也变了：
+     * `s1 < s2 < s3` 成立，`sth` 与 `s2`/`s3` 比则是 `s2 < s3 < sth`（'2' < 't'），
+     * 于是沉淀物的**显示顺序**跟着变了。是 `tests/sth-invariants.spec.ts` 的往返断言
+     * 把它抓出来的 —— 一条"不该红的红"，红得对。
+     *
+     * 判据：`s1` 在这里是**数据记录的标识**，产品名是另一回事。改名要认「哪个 s1 是名字」。
+     */
     id: "s1",
     label: seedDocument.sediment[0].label,
     kind: "detection-playbook",
@@ -317,7 +329,7 @@ export const SEDIMENT_ITEMS: readonly SedimentItem[] = [
 ]
 
 export const REPORT = seedDocument.report
-export const ASK_S1 = seedDocument.askS1
+export const ASK_STH = seedDocument.askSth
 
 /* -------------------------------------------------------------------------- */
 /* 动作码：把种子里的两张卡翻译成目录里的代码                                   */

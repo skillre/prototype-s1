@@ -15,7 +15,7 @@
 
 ## 1. 这套风格在解决什么问题
 
-它是给 **S1 安全运营控制台**（16:9 大屏产品界面）用的视觉身份。这类界面的真正
+它是给 **STH 安全运营控制台**（16:9 大屏产品界面）用的视觉身份。这类界面的真正
 难点不是「好不好看」，而是三件同时成立的事：
 
 1. **一屏三层必须同时可读**：攻击链（左）/ 战情（中）/ 信任与授权（右）
@@ -175,7 +175,7 @@ AA。因此它在本 pack 里的用途被**限定为三类**：禁用态、水�
 同族同宽，读者接收到的信息是「这两件事在同一个测量系统里」。用 Inter 会把标题
 变成一种与数据无关的装饰层，而这块屏上的装饰预算已经被前面两条约束吃光了。
 
-**为什么正文不用等宽：** S1 是**中英混排**界面。全站等宽会让中文段落塌成不可读的
+**为什么正文不用等宽：** STH 是**中英混排**界面。全站等宽会让中文段落塌成不可读的
 字块 —— 等宽的汉字与等宽的拉丁字母在同一行里产生参差的字距，而中文没有西文的
 词间空隙来补这个节奏。等宽必须**只覆盖读数性文本**：数字 / ID / 命令 / 日志 /
 审计行 / 证据引用 / 标签。
@@ -193,7 +193,7 @@ import "@kits/style-console/tokens.css";
 
 <section data-kits-pack="console">
   <header className="kits-nav">
-    <span className="kits-label">S1 / 战情</span>
+    <span className="kits-label">STH / 战情</span>
     <input className="kits-control" placeholder="查询：asset:10.0.3.7  severity:high" />
     <button className="kits-control kits-control--authorize">待授权 · 3</button>
   </header>
@@ -380,7 +380,7 @@ DOM 节点数比样式更可能成为瓶颈。如果需要上百个格子，用*
   高密度列不需要指针光斑、环境网格与滚动揭示
 - 效果：**无**（`effects: []`）—— 理由见 §9
 - 参考板：**尚未建立**（`references/console/` 不存在）。本 pack 的设计参考是
-  S1 设计稿本身与「终端 / 运营控制台」的既有共识，不是某个第三方页面；
+  STH 设计稿本身与「终端 / 运营控制台」的既有共识，不是某个第三方页面；
   需要参考板时再按 [`references/README.md`](../../references/README.md) 的规则补
 - 技能：[`skills/visual-direction/SKILL.md`](../../skills/visual-direction/SKILL.md)
 

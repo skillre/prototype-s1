@@ -84,17 +84,17 @@ export function WorkbenchPanel({
 
   return (
     <section
-      className={cn("s1-panel", "kits-surface", className)}
+      className={cn("sth-panel", "kits-surface", className)}
       data-panel={id}
       data-panel-status={status}
       aria-label={title}
     >
-      <header className="s1-panel__head">
+      <header className="sth-panel__head">
         <div className="min-w-0">
-          <h2 className="s1-panel__title">{title}</h2>
-          {subtitle ? <p className="s1-panel__subtitle">{subtitle}</p> : null}
+          <h2 className="sth-panel__title">{title}</h2>
+          {subtitle ? <p className="sth-panel__subtitle">{subtitle}</p> : null}
         </div>
-        {aside ? <div className="s1-panel__aside">{aside}</div> : null}
+        {aside ? <div className="sth-panel__aside">{aside}</div> : null}
       </header>
 
       <div
@@ -110,7 +110,7 @@ export function WorkbenchPanel({
          */
         // eslint-disable-next-line react-hooks/refs -- 回调 ref 不是渲染期读 ref，见上
         ref={scroll.setNode}
-        className={cn("s1-panel__body", status !== "ready" && "s1-panel__body--centre", bodyClassName)}
+        className={cn("sth-panel__body", status !== "ready" && "sth-panel__body--centre", bodyClassName)}
       >
         {status === "loading" ? <LoadingState variant="rows" count={3} /> : null}
         {status === "error" ? (

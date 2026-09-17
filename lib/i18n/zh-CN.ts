@@ -1,5 +1,5 @@
 /**
- * zh-CN — S1 工作台的界面词典。
+ * zh-CN — STH 工作台的界面词典。
  *
  * Every user-visible string in the product lives here. Components never inline
  * copy: they read it through `useMessages()`. Adding a locale therefore means
@@ -28,7 +28,7 @@
  * 它只用来给 `workbench.toolConsole.actions` 加一条完整性约束 ——
  * 动作目录里新增一个动作而没有中文名，typecheck 就会红。
  */
-import type { ActionCode } from "../s1/contract"
+import type { ActionCode } from "../sth/contract"
 
 export const zhCN = {
   /* ------------------------------------------------------------------ meta */
@@ -78,14 +78,14 @@ export const zhCN = {
 
   /* ------------------------------------------------------------ 产品身份 */
   /**
-   * S1 的身份。这里是品牌与文档元信息的**唯一**来源：
+   * STH 的身份。这里是品牌与文档元信息的**唯一**来源：
    * `app/layout.tsx` 的 metadata 读它，而不是各写一份字面量。
    */
   brand: {
-    name: "S1",
+    name: "STH",
     subtitle: "AI 原生安全运营工作台",
-    mark: "S1",
-    metaTitle: "S1 · AI 原生安全运营工作台",
+    mark: "STH",
+    metaTitle: "STH · AI 原生安全运营工作台",
     metaDescription:
       "面向保险公司安全团队的 SOC 控制台原型：AI 自主调查与闭环、人只在关键门授权、每条结论都能点开证据。",
   },
@@ -101,9 +101,9 @@ export const zhCN = {
    */
   landing: {
     eyebrow: "安全运营 · AI 原生工作台",
-    title: "S1 工作台",
+    title: "STH 工作台",
     description:
-      "给保险公司安全团队用的 SOC 控制台。产品形态是 16:9 单屏不加滚动的三列战情室：左列攻击链实体视图，中列任务计划与研判流，右列处置授权与审计，底部常驻「问 S1」与流式报告。",
+      "给保险公司安全团队用的 SOC 控制台。产品形态是 16:9 单屏不加滚动的三列战情室：左列攻击链实体视图，中列任务计划与研判流，右列处置授权与审计，底部常驻「问 STH」与流式报告。",
 
     /* 工作台入口。它是一个真链接，不是装饰：十二个组件就在这一页后面。 */
     entry: {
@@ -131,7 +131,7 @@ export const zhCN = {
       title: "本轮已完成",
       caption: "组件批次 3：最后四个面板 + 整屏收口（2026-09-17）",
       items: [
-        "十二格全部落盘：⑨ 问 S1、⑩ E+N 汇流管道、⑫ 数字员工花名册、⑭ 报告流式生成补上了最后四个占位，工作台上不再有未实现的面板。⑬ 传统引擎对照栏按已签署决定永久空缺（由演示层承担）。",
+        "十二格全部落盘：⑨ 问 STH、⑩ E+N 汇流管道、⑫ 数字员工花名册、⑭ 报告流式生成补上了最后四个占位，工作台上不再有未实现的面板。⑬ 传统引擎对照栏按已签署决定永久空缺（由演示层承担）。",
         "⑤ 攻击链画布换成真图布局：落点不再是手写格子，而是由图的形状算出的排与列区间（分层 + 层内重心排序），画布高度随内容撑开。判据是浏览器里逐对量矩形 —— 任意两个节点不相交，并且配了一条会红的负对照。",
         "骨架实测值钉到了 DOM：1680×1050 下用 getBoundingClientRect() 断言顶栏 76 / 底栏 130 / 三列 500·600·366 / 根内边距 20 / 列间距 14，以及窄视口下的等比缩小。「常量等于规格」与「页面等于常量」现在是两条独立的断言。",
         "界面上的每个数字都能追到事件：顶栏三个计数、待人工授权项数、在岗人数（收尾那一帧逐字等于种子的「4 个 AI 数字员工在岗」）、管道上的两路计数与报告进度，全部由回放游标派生，没有一个是抄进代码的常量。",
@@ -142,7 +142,7 @@ export const zhCN = {
       title: "待人决定的事项",
       caption: "以下都不是本仓现在的能力，是等人做的两件事",
       items: [
-        "人眼验收（HVA）：双主题、1680×1050，以及 3 米投影距离下的可读性。看哪里、怎么判红写在《S1-人眼验收清单.md》里，Agent 不能代填 —— 没有 HVA 就没有发布，状态只能停在 READY FOR HUMAN VISUAL ACCEPTANCE。",
+        "人眼验收（HVA）：双主题、1680×1050，以及 3 米投影距离下的可读性。看哪里、怎么判红写在《STH-人眼验收清单.md》里，Agent 不能代填 —— 没有 HVA 就没有发布，状态只能停在 READY FOR HUMAN VISUAL ACCEPTANCE。",
         "发布授权：是否发布、发布哪个 SHA、要不要 Vercel 线上地址。源码发布与 Production 部署是两次独立授权，都在人手里。",
         "⑬ 传统引擎对照栏与演示编排（左屏、双屏投屏调度、真实攻防环境）不在本仓：前者按签署交给演示层，后者属于演示侧。",
       ],
@@ -198,7 +198,7 @@ export const zhCN = {
       ],
     },
 
-    footer: "S1 工作台原型 · 由 Prototype Factory 生产 · 前端 + 本地状态，无后端",
+    footer: "STH 工作台原型 · 由 Prototype Factory 生产 · 前端 + 本地状态，无后端",
   },
 
   /**
@@ -309,16 +309,16 @@ export const zhCN = {
     },
   },
 
-  /* ------------------------------------------------- S1 工作台（战情室控制台） */
+  /* ------------------------------------------------- STH 工作台（战情室控制台） */
   /**
    * 十二个组件的界面文案。**业务记录内容不在这里**：计划条目的名字、命令、
-   * 回显、审计行的动作、攻击者编号、IP、hash、时间戳、Agent 名都住在 `lib/s1/**`
+   * 回显、审计行的动作、攻击者编号、IP、hash、时间戳、Agent 名都住在 `lib/sth/**`
    * 的种子事实底本里，按仓规不翻译（它们是记录，不是文案）。
    *
    * 这里只放两类东西：
    *   • 面板自己的标题 / 字段标签 / 状态词（「依据」「回滚」「受阻」…）；
    *   • 由界面拼出来、必须与种子对齐的模板 —— 例如 `liveStatus(0)` 必须逐字等于
-   *     种子 `headerStats.liveStatus`（那条断言在 `tests/s1-console.spec.ts` 里）。
+   *     种子 `headerStats.liveStatus`（那条断言在 `tests/sth-console.spec.ts` 里）。
    *
    * 动作码的中文名是**词典的一份覆盖纪律**：`satisfies Record<ActionCode, string>`
    * 让「动作目录里多了一个动作、而界面上没有它的名字」在 typecheck 阶段就红，
@@ -350,7 +350,7 @@ export const zhCN = {
        * 因为「你要的第 18 拍落在了第 17 拍」是一句可核对的话，而「回放结束」不是。
        */
       beatClamped: (requested: number, landed: number) =>
-        `第 ${requested} 拍由「问 S1」按需追加 · 已停在排程末尾（第 ${landed} 拍）`,
+        `第 ${requested} 拍由「问 STH」按需追加 · 已停在排程末尾（第 ${landed} 拍）`,
     },
 
     /* ----------------------------------------- 演示标识（已签署的不变量） */
@@ -454,7 +454,7 @@ export const zhCN = {
        *
        * 这一栏不是事件数据，是「动作目录」的中文对照：它说的是**这个动作本身的爆炸半径**
        * （只读 / 只影响攻击源 / 改一处业务接口…），同一动作码在任何事件里都得到同一句话。
-       * 它由 `tests/s1-console.spec.ts` 断言「目录里的每个动作码都必须有图例」，
+       * 它由 `tests/sth-console.spec.ts` 断言「目录里的每个动作码都必须有图例」，
        * 所以界面上不可能出现一个没有影响说明的动作。
        */
       impacts: {
@@ -491,7 +491,7 @@ export const zhCN = {
       emptyNote: "第 2 拍汇流之后，画布上会逐条长出与结论相关的实体节点。",
       /**
        * 图例 —— **视觉语汇的对照表**，说的是这个标记在画布上是什么意思。
-       * 它由 `tests/s1-console.spec.ts` 断言「三个键都在 DOM 上出现」。
+       * 它由 `tests/sth-console.spec.ts` 断言「三个键都在 DOM 上出现」。
        */
       legend: {
         attackPath: "攻击路径",
@@ -619,7 +619,7 @@ export const zhCN = {
       } satisfies Record<"detection-playbook" | "policy" | "attacker-profile", string>,
     },
 
-    /* ------------------------------------------------------------ ⑨ 问 S1 */
+    /* ------------------------------------------------------------ ⑨ 问 STH */
     /**
      * ⑨ 的判据是 `evidence.every-claim-cites-a-source` 在**对话**上的形态。
      *
@@ -629,9 +629,9 @@ export const zhCN = {
      *   · `cannotFabricate` 把机制说出来（回答要么带证据，要么不回答）。
      */
     ask: {
-      title: "问 S1",
+      title: "问 STH",
       subtitle: "自然语言 · 结论先行 · 证据可点开",
-      inputLabel: "向 S1 提问",
+      inputLabel: "向 STH 提问",
       send: "发送",
       quickAsk: "快捷问",
       answerableTitle: "有证据可引的问题",
@@ -646,7 +646,7 @@ export const zhCN = {
       refusedEmpty: "输入框是空的 —— 没有问句就没有回答。",
       refusedUnmatched: (count: number) =>
         `本条事件流里只有 ${count} 条带证据的回答，这句话不在其中。`,
-      cannotFabricate: "S1 不会为它编一个结论：回答要么引得出证据，要么就不回答。",
+      cannotFabricate: "STH 不会为它编一个结论：回答要么引得出证据，要么就不回答。",
       askedAt: (beat: number) => `由第 ${beat} 拍按需追加`,
     },
 
@@ -682,7 +682,7 @@ export const zhCN = {
      *
      * `onDuty(count)` 必须逐字产出种子 `headerStats.rosterLabel` 的形状 ——
      * 那句「4 个 AI 数字员工在岗」是**算出来的**：收尾那一帧上 `count` 恰好是 4，
-     * 有断言逐字比对（`tests/s1-batch3.spec.ts`）。所以模板本身不能带数字。
+     * 有断言逐字比对（`tests/sth-batch3.spec.ts`）。所以模板本身不能带数字。
      */
     roster: {
       title: "数字员工花名册",

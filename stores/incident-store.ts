@@ -1,14 +1,14 @@
 /**
- * S1 事件总线 —— zustand 参考实现（本仓的第一个，也是仓规里那条约定的落地样本）。
+ * STH 事件总线 —— zustand 参考实现（本仓的第一个，也是仓规里那条约定的落地样本）。
  *
- * ## 约定（`prototype-s1/AGENTS.md` 的「Zustand 约定」一节，这里是它的参考实现）
+ * ## 约定（`prototype-sth/AGENTS.md` 的「Zustand 约定」一节，这里是它的参考实现）
  *
  * > selector 只取**原始值**（例如事件数组本身），派生（filter/sort/计数）在组件内用 `useMemo`。
  * > **禁止在 selector 里返回新数组/新对象**（zustand v5 会无限渲染）。
  *
  * 所以这个 store 里只有两样东西：**原始事件序列**与**回放游标**。没有 `plan`、没有
  * `counters`、没有 `findings` —— 那些都是派生量，派生量住在纯函数模块里
- * （`lib/s1/replay.ts` / `lib/s1/counters.ts`），由组件在 `useMemo` 里算：
+ * （`lib/sth/replay.ts` / `lib/sth/counters.ts`），由组件在 `useMemo` 里算：
  *
  * ```tsx
  * const events = useIncidentStore(selectEvents)      // 原始引用，稳定
@@ -30,8 +30,8 @@
 
 import { create } from "zustand"
 
-import type { IncidentMessage } from "../lib/s1/contract"
-import { buildIncidentStream } from "../lib/s1/timeline"
+import type { IncidentMessage } from "../lib/sth/contract"
+import { buildIncidentStream } from "../lib/sth/timeline"
 
 /** 开场之前的游标：当日事件簿还没揭示（`-1` 比任何一条消息的 `revealedAtMs` 都小）。 */
 export const CURSOR_OPENING_MS = -1
@@ -43,7 +43,7 @@ export type IncidentStoreState = {
   cursorMs: number
   /** 载入确定性时间轴（同一次会话里两次调用得到同一条序列）。 */
   loadCanonicalStream: () => void
-  /** 追加一条消息（例如第 18 拍「问 S1」按需生成的那条）。 */
+  /** 追加一条消息（例如第 18 拍「问 STH」按需生成的那条）。 */
   append: (message: IncidentMessage) => void
   /**
    * 把一条消息插到**某条已发生消息之后**（例如人此刻做出的裁决）。
@@ -54,7 +54,7 @@ export type IncidentStoreState = {
    * 都从序列头部开始收，遇到第一条还没揭示的就 `break`。所以一条**追加在末尾**的消息，
    * 只有在它前面每一条都已经揭示时才够得着 —— 回放停在半途时，追加的消息永远落在游标之外，
    * 无论把它的时刻写成多少（`-1`、`此刻`、`此刻 − 1ms` 都试过，见
-   * `tests/s1-batch3.spec.ts` 的「⑥ 人的裁决」一节）。
+   * `tests/sth-batch3.spec.ts` 的「⑥ 人的裁决」一节）。
    *
    * 实测（`?beat=14` 上点 ⑥ 的「批准」）：序列从 412 条变成 413 条、排程也跟着长了 40ms，
    * 但卡片仍然是 `pending`、顶栏仍读「待人工授权 1 项」—— 界面上看起来什么都没发生。

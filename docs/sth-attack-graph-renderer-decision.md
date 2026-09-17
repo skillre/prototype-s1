@@ -1,4 +1,4 @@
-# S1 · ⑤ 攻击链实体画布的渲染方式 —— xyflow 取证与决定
+# STH · ⑤ 攻击链实体画布的渲染方式 —— xyflow 取证与决定
 
 > 2026-09-17 · 组件批次 2 交付物的一部分。
 > **结论先行**：**不引入 `@xyflow/react`**，⑤ 用 **SVG + DOM 自绘**。
@@ -130,7 +130,7 @@ gzip -c package/dist/esm/index.js | wc -c   # → 52,449 bytes（仅该文件的
    > 现在的画布是一个**真正的网格**（CSS Grid）：同一排的节点拿到互不相交的列区间，
    > 不同排的节点在竖直方向上本来就不重叠，所以"压在一起"在布局层面不可能发生；
    > 线由**量出来的**节点布局框中心画（`ResizeObserver` + `offsetLeft/offsetTop`），
-   > 不再是"先把坐标算好再让节点去对"。判据在 `tests/s1-batch3.spec.ts`：
+   > 不再是"先把坐标算好再让节点去对"。判据在 `tests/sth-batch3.spec.ts`：
    > 浏览器里逐对量 `getBoundingClientRect()`，任意两个节点的矩形不相交，并配了一条会红的负对照。
 2. **可换**：如果将来 ⑤ 真的需要拖拽/缩放（那是**产品形态变更**，不是实现细节），
    换渲染器的改动面被限制在 `attack-graph.tsx` 一个文件 —— `AttackChain` 这个

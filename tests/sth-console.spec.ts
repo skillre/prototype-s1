@@ -16,27 +16,27 @@ import {
   transcriptIsGuarded,
   workbenchTranscript,
 } from "../components/prototype/workbench/view-model"
-import { ACTION_CATALOG, type ActionCode, type IncidentMessage } from "../lib/s1/contract"
-import { countersFromEvents } from "../lib/s1/counters"
-import { CURSOR_OPENING, cursorAtBeat, replayStream } from "../lib/s1/replay"
-import { ENVIRONMENT, HEADER_STATS_SIGNED, SEED, TOOL_CALLS } from "../lib/s1/seed"
-import { buildIncidentStream } from "../lib/s1/timeline"
+import { ACTION_CATALOG, type ActionCode, type IncidentMessage } from "../lib/sth/contract"
+import { countersFromEvents } from "../lib/sth/counters"
+import { CURSOR_OPENING, cursorAtBeat, replayStream } from "../lib/sth/replay"
+import { ENVIRONMENT, HEADER_STATS_SIGNED, SEED, TOOL_CALLS } from "../lib/sth/seed"
+import { buildIncidentStream } from "../lib/sth/timeline"
 import { zhCN } from "../lib/i18n/zh-CN"
 import { stripComments } from "../scripts/lib/kits-seam.mjs"
 import { invariant } from "./support/product-contract"
 
 /**
- * S1 工作台 · 界面第一批（骨架 + ① 顶栏 + ②③④ 中列）的浏览器与派生断言。
+ * STH 工作台 · 界面第一批（骨架 + ① 顶栏 + ②③④ 中列）的浏览器与派生断言。
  *
  * 这个文件是**注释里已经承诺过的那一份**：
  *   · `lib/i18n/zh-CN.ts` 的 `workbench` 命名空间写着「`liveStatus(0)` 必须逐字等于种子
- *     `headerStats.liveStatus`（那条断言在 `tests/s1-console.spec.ts` 里）」；
+ *     `headerStats.liveStatus`（那条断言在 `tests/sth-console.spec.ts` 里）」；
  *   · 同一个文件承诺「动作目录里的每个动作码都必须有图例」；
  *   · `components/prototype/workbench/view-model.ts` 写着派生「可以在没有 DOM 的情况下被断言
- *     （`tests/s1-console.spec.ts`），也可以在浏览器里被断言同一件事」；
- *   · `geometry.ts` 写着骨架尺寸「由 `tests/s1-console.spec.ts` 逐值比对」；
+ *     （`tests/sth-console.spec.ts`），也可以在浏览器里被断言同一件事」；
+ *   · `geometry.ts` 写着骨架尺寸「由 `tests/sth-console.spec.ts` 逐值比对」；
  *   · `workbench.css` 写着「文件里没有 #hex / rgb() / px 时长 / cubic-bezier 字面量，
- *     `tests/s1-console.spec.ts` 会逐条扫描」。
+ *     `tests/sth-console.spec.ts` 会逐条扫描」。
  *
  * 所以这里的形状是固定的：**同一件事既在纯函数上算一遍，也在真实 Chromium 上量一遍**。
  * 只有前者 = 「代码看起来对」；只有后者 = 「今天这台机器看起来对」。
@@ -67,7 +67,7 @@ const VIEWPORT = { width: 1440, height: 900 }
 async function settled(page: Page, viewport = VIEWPORT) {
   await expect
     .poll(
-      async () => Number(await page.locator(".s1-canvas").getAttribute("data-scale")),
+      async () => Number(await page.locator(".sth-canvas").getAttribute("data-scale")),
       { message: "scale-to-fit 必须落到签过字的那个值上" },
     )
     .toBeCloseTo(scaleForViewport(viewport.width, viewport.height), 3)
@@ -82,7 +82,7 @@ async function openAt(page: Page, beat: number) {
 }
 
 const counterValue = (page: Page, key: string) =>
-  page.locator(`[data-counter="${key}"] .s1-counter__value`)
+  page.locator(`[data-counter="${key}"] .sth-counter__value`)
 
 /**
  * 这个节点（含祖先）里有几个 `aria-hidden="true"`。
@@ -215,7 +215,7 @@ test.describe("顶栏计数：派生、可复算、可追到事件", () => {
     const readCounters = async () =>
       page.evaluate(() => {
         const value = (key: string) =>
-          document.querySelector(`[data-counter="${key}"] .s1-counter__value`)?.textContent ?? null
+          document.querySelector(`[data-counter="${key}"] .sth-counter__value`)?.textContent ?? null
         return {
           autonomous: value("autonomousClosedToday"),
           interventions: value("humanInterventions"),
@@ -393,7 +393,7 @@ test.describe("骨架与 scale-to-fit", () => {
     expect(CONSOLE_GEOMETRY.headerGap).toBe(facts.headerGap)
     expect(CONSOLE_GEOMETRY.footerPadding).toBe(facts.footerPadding)
     expect(CONSOLE_GEOMETRY.footerGap).toBe(facts.footerGap)
-    expect(CONSOLE_GEOMETRY.askS1Width).toBe(facts.askS1Width)
+    expect(CONSOLE_GEOMETRY.askSthWidth).toBe(facts.askSthWidth)
     expect(CONSOLE_GEOMETRY.columnWidths).toEqual({
       left: facts.columns[0].width,
       middle: facts.columns[1].width,
@@ -421,7 +421,7 @@ test.describe("骨架与 scale-to-fit", () => {
       const expected = scaleForViewport(viewport.width, viewport.height)
       await expect
         .poll(
-          async () => Number(await page.locator(".s1-canvas").getAttribute("data-scale")),
+          async () => Number(await page.locator(".sth-canvas").getAttribute("data-scale")),
           { message: `${viewport.width}×${viewport.height} 的 scale 必须落到 ${expected}` },
         )
         .toBeCloseTo(expected, 3)
@@ -434,7 +434,7 @@ test.describe("骨架与 scale-to-fit", () => {
     }
   })
 
-  test("样式层没有颜色与时长字面量（骨架尺寸只从 --s1-* 来）", () => {
+  test("样式层没有颜色与时长字面量（骨架尺寸只从 --sth-* 来）", () => {
     const css = stripComments(read("components/prototype/workbench/workbench.css"))
     expect(css.length).toBeGreaterThan(1_000)
     expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b/)
@@ -443,8 +443,8 @@ test.describe("骨架与 scale-to-fit", () => {
     // 时长：任何裸的 `180ms` / `0.2s` 都不许出现，动画只走 pack 的刻度令牌。
     expect(css).not.toMatch(/\b\d+(?:\.\d+)?m?s\b/)
     // 骨架尺寸必须来自 geometry 注入的变量，不许在样式表里手抄 px 骨架值。
-    expect(css).toContain("var(--s1-canvas-w)")
-    expect(css).toContain("var(--s1-scale)")
+    expect(css).toContain("var(--sth-canvas-w)")
+    expect(css).toContain("var(--sth-scale)")
   })
 })
 
@@ -480,7 +480,7 @@ test.describe("④ 工具控制台的数据形状", () => {
     for (let index = 0; index < expected.length; index += 1) {
       const block = commands.nth(index)
       const call = expected[index]
-      await expect(block.locator(".s1-console__line pre")).toHaveText(call.command ?? "")
+      await expect(block.locator(".sth-console__line pre")).toHaveText(call.command ?? "")
       const typed = Number(await block.getAttribute("data-typed-chars"))
       expect(typed, "停在第 16 拍时命令必须已经打完").toBe((call.command ?? "").length)
 
@@ -526,7 +526,7 @@ test.describe("④ 工具控制台的数据形状", () => {
 /**
  * ## 为什么这一节是补上的（2026-09-17）
  *
- * `?beat=<拍>` 与 `?cursor=<毫秒>` 都是**讲解用的深链**：`S1-人眼验收清单.md` 明确告诉人
+ * `?beat=<拍>` 与 `?cursor=<毫秒>` 都是**讲解用的深链**：`STH-人眼验收清单.md` 明确告诉人
  * 「可以把某一帧当链接发出去」。但测试一直**只覆盖 `?beat=`** ——
  * `?cursor=` 那条路径在方案 §五「本包未验证的部分」里挂了很久，是已知的空白。
  *

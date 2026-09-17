@@ -4,7 +4,7 @@
  * ## 三条硬性质
  *
  * 1. **纯函数**：`replayStream(events, at)` 不读时钟、不随机、不依赖迭代顺序不稳定的容器
- *    （源码扫描器见 `tests/s1-invariants.spec.ts` 的「确定性：不读时钟、不随机、不依赖迭代顺序」一节 ——
+ *    （源码扫描器见 `tests/sth-invariants.spec.ts` 的「确定性：不读时钟、不随机、不依赖迭代顺序」一节 ——
  *    它先 `stripComments` 再扫，所以注释里可以自由地提到被禁止的 API）。同一输入两次调用深比较相等。
  * 2. **状态由「效果」驱动**：`effectsOf(message)` 把一条消息翻译成一串 `StateEffect`，
  *    `applyEffect` 是唯一改状态的地方。审计重放（`audit.ts`）喂的是**同一批效果**，
@@ -126,7 +126,7 @@ export type CardRecord = {
    * 卡片状态被归约进 `CardRecord` 时丢掉了。丢掉之后界面只有两条路：把 `basis`
    * 那类文字再解析一遍（脆），或者另写一句（编）。两条都不能要，所以让记录带上它。
    *
-   * ⚠ 这是 `lib/s1/**` 的**增补，不是语义变更**：既有字段一个没改，既有消费者
+   * ⚠ 这是 `lib/sth/**` 的**增补，不是语义变更**：既有字段一个没改，既有消费者
    * （`audit.ts` 的 `explainCardDecision`、`sediment.ts` 的 `card.open`）读的还是原来那些；
    * 新增的三个字段只是不再让已经存在于消息里的事实丢失。
    */
@@ -295,7 +295,7 @@ export function effectsOf(message: IncidentMessage): StateEffect[] {
       })
       if (message.claim !== null) {
         effects.push({ op: "claim.record", claim: cloneClaim(message.claim) })
-        if (message.affects.includes("ask-s1")) {
+        if (message.affects.includes("ask-sth")) {
           effects.push({
             op: "answer.record",
             record: {

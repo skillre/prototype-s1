@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "id": "s1-round3-scenario-seed",
-  "title": "S1 战情室 · 回合 3 实况种子事件流",
+  "id": "sth-round3-scenario-seed",
+  "title": "STH 战情室 · 回合 3 实况种子事件流",
   "sourceOfTruth": {
-    "design": "s1-ai-native-console.pen（Pencil 设计稿 v2.17，391 节点 / 166 文本节点，画布 1680×1050）",
-    "proseSpec": "S1-设计稿实测与实现规格.md §三（组件清单与实测文案）",
+    "design": "sth-ai-native-console.pen（Pencil 设计稿 v2.17，391 节点 / 166 文本节点，画布 1680×1050）",
+    "proseSpec": "STH-设计稿实测与实现规格.md §三（组件清单与实测文案）",
     "scenario": "picc-s1-demo-scenario-alternatives.md 环节 4（再传新壳 vs 根因修复）",
     "extractedAt": "2026-09-16"
   },
-  "note": "这是**从真实设计稿反推出来的种子数据**，不是设计。它的用途是给 S1 的确定性回放器一份可断言的事实底本 —— 界面上的每一个数字、IP、hash、时间戳都必须能在这里找到出处（这是不变量 evidence.every-claim-cites-a-source 的物质基础）。时间戳取自设计稿审计时间线上的原值（16:20:31–16:21:00），因此它们是**可被逐字核对**的。",
+  "note": "这是**从真实设计稿反推出来的种子数据**，不是设计。它的用途是给 STH 的确定性回放器一份可断言的事实底本 —— 界面上的每一个数字、IP、hash、时间戳都必须能在这里找到出处（这是不变量 evidence.every-claim-cites-a-source 的物质基础）。时间戳取自设计稿审计时间线上的原值（16:20:31–16:21:00），因此它们是**可被逐字核对**的。",
   "environment": {
     "businessSystem": "在线理赔服务平台",
     "isolation": "演示环境，与客户真实业务系统、数据完全隔离",
@@ -18,7 +18,7 @@
         "id": "probe",
         "label": "探针 · 网络流量",
         "detail": "镜像 #p-102 · 10Gbps",
-        "capability": "只监听不阻断；拦截由 S1 编排防火墙/EDR 执行"
+        "capability": "只监听不阻断；拦截由 STH 编排防火墙/EDR 执行"
       },
       {
         "id": "edr",
@@ -209,7 +209,7 @@
   "toolCalls": [
     {
       "id": "t1",
-      "session": "svc-s1-auto@bastion → DMZ-app01",
+      "session": "svc-sth-auto@bastion → DMZ-app01",
       "disclosure": "堡垒机托管会话 · 全程留痕",
       "brief": "# 处置说明卡 · 依据证据#e-41/#e-77 · 影响：仅删除已验证后门文件 · 回滚：备份 /tmp/ws2.bak"
     },
@@ -357,7 +357,7 @@
     ],
     "rosterLabel": "4 个 AI 数字员工在岗"
   },
-  "askS1": {
+  "askSth": {
     "placeholder": "如果攻击者换个新 IP 再来一次会怎样？",
     "hint": "自然语言 · 结论先行 · 证据可点开",
     "presets": [
@@ -398,7 +398,7 @@
         "height": "fill"
       }
     ],
-    "askS1Width": 640,
+    "askSthWidth": 640,
     "noPageScroll": true,
     "minReadablePx": 20,
     "conclusionTextPx": [
@@ -417,7 +417,7 @@
     "controlHeightPx": 38,
     "rowHeightPx": 28,
     "sectionGapPx": 24,
-    "verifiedFrom": "s1-ai-native-console.pen 逐帧读出（root pad=20 gap=14；① pad=16 gap=20；三列 500/600/366 gap=14 pad=12；底栏 pad=12 gap=12）",
+    "verifiedFrom": "sth-ai-native-console.pen 逐帧读出（root pad=20 gap=14；① pad=16 gap=20；三列 500/600/366 gap=14 pad=12；底栏 pad=12 gap=12）",
     "scaleToFit": {
       "algorithm": "SCALE = Math.min(1, innerWidth/1680, innerHeight/1050)",
       "canvas": {
@@ -454,6 +454,6 @@
     "④ 工具控制台的命令在本阶段**不落到真实主机**（已签署决定 2：脚本化回放）。",
     "report.progressPercent 的 68% 是设计稿静帧值；若回放要动它，需要一条与 report.lines 同步的进度定义，本文件不提供。",
     "设计文档 §五 收束画面的「全程 19 分 42 秒」只存在于文档与最终定格，**本种子不含该字段** —— 它属于整场演示的总账，不属于回合 3 的实况。",
-    "背景事件序列的规模与形态未定：决定 counters-are-derived 要求回放器生成能聚合出 128 / 3 / 41s 的事件底座，但「128 起各自长什么样、跨度多长、每条的字段密度」还没有定义。这是 S1 实现阶段的第一件设计工作，不得由实现者顺手编造。"
+    "背景事件序列的规模与形态未定：决定 counters-are-derived 要求回放器生成能聚合出 128 / 3 / 41s 的事件底座，但「128 起各自长什么样、跨度多长、每条的字段密度」还没有定义。这是 STH 实现阶段的第一件设计工作，不得由实现者顺手编造。"
   ]
 }

@@ -19,11 +19,11 @@ import {
   exportSedimentText,
   verifySedimentImport,
 } from "../components/prototype/workbench/view-model"
-import { countersFromEvents, type CounterSnapshot } from "../lib/s1/counters"
-import type { IncidentMessage } from "../lib/s1/contract"
-import { CURSOR_END, knownEvidenceIds, replayStream } from "../lib/s1/replay"
-import { buildIncidentStream } from "../lib/s1/timeline"
-import { isAutonomous, scanAuthority } from "../lib/s1/verify"
+import { countersFromEvents, type CounterSnapshot } from "../lib/sth/counters"
+import type { IncidentMessage } from "../lib/sth/contract"
+import { CURSOR_END, knownEvidenceIds, replayStream } from "../lib/sth/replay"
+import { buildIncidentStream } from "../lib/sth/timeline"
+import { isAutonomous, scanAuthority } from "../lib/sth/verify"
 import { READ_COLOR_SOURCE, stripComments } from "./support/source-scan"
 
 /**
@@ -31,12 +31,12 @@ import { READ_COLOR_SOURCE, stripComments } from "./support/source-scan"
  */
 declare global {
   interface Window {
-    __s1ReadColor?: (value: string) => [number, number, number] | null
+    __sthReadColor?: (value: string) => [number, number, number] | null
   }
 }
 
 /**
- * S1 工作台 · 界面第二批（⑤ 攻击链 · ⑥ 处置与授权 · ⑧ 审计时间线 · ⑪ 战果与沉淀）的
+ * STH 工作台 · 界面第二批（⑤ 攻击链 · ⑥ 处置与授权 · ⑧ 审计时间线 · ⑪ 战果与沉淀）的
  * 浏览器与派生断言，外加本批修掉的两条演示缺陷的回归钉。
  *
  * ## 形状与第一批相同，理由也相同
@@ -71,7 +71,7 @@ const read = (rel: string) => readFileSync(join(ROOT, rel), "utf8")
  */
 async function settled(page: Page) {
   await expect
-    .poll(async () => Number(await page.locator(".s1-canvas").getAttribute("data-scale")), {
+    .poll(async () => Number(await page.locator(".sth-canvas").getAttribute("data-scale")), {
       message: "scale-to-fit 必须落到签过字的那个值上",
     })
     .toBeCloseTo(Math.min(1, VIEWPORT.width / 1680, VIEWPORT.height / 1050), 3)
@@ -80,7 +80,7 @@ async function settled(page: Page) {
 /** 停在某一拍上打开工作台。 */
 async function openAt(page: Page, beat: number, theme: "dark" | "light" = "dark") {
   // 颜色读取器必须在文档脚本之前就位（颜色断言用它把声明值归一化）。
-  await page.addInitScript(`window.__s1ReadColor = ${READ_COLOR_SOURCE}`)
+  await page.addInitScript(`window.__sthReadColor = ${READ_COLOR_SOURCE}`)
   await page.setViewportSize(VIEWPORT)
   await page.emulateMedia({ colorScheme: theme })
   await page.goto(`${WORKBENCH}?beat=${beat}&autoplay=0`, { waitUntil: "domcontentloaded" })
@@ -108,13 +108,13 @@ async function openAt(page: Page, beat: number, theme: "dark" | "light" = "dark"
 async function panelsSettled(page: Page): Promise<void> {
   await page.waitForFunction(
     () => {
-      const w = window as unknown as { __s1ScrollProbe?: { last: string; stable: number } }
-      const bodies = Array.from(document.querySelectorAll<HTMLElement>("[data-panel] .s1-panel__body"))
+      const w = window as unknown as { __sthScrollProbe?: { last: string; stable: number } }
+      const bodies = Array.from(document.querySelectorAll<HTMLElement>("[data-panel] .sth-panel__body"))
       const snapshot = bodies.map((b) => b.scrollTop.toFixed(2)).join(",")
-      const probe = w.__s1ScrollProbe ?? { last: "", stable: 0 }
+      const probe = w.__sthScrollProbe ?? { last: "", stable: 0 }
       probe.stable = probe.last === snapshot ? probe.stable + 1 : 0
       probe.last = snapshot
-      w.__s1ScrollProbe = probe
+      w.__sthScrollProbe = probe
       return probe.stable >= 3
     },
     undefined,
@@ -268,7 +268,7 @@ test.describe("A2 · 面板正文顶边按行对齐（没有一行文字被切�
         /** 滚到底 / 无可滚动空间的面板 —— 见下方「为什么排除它们」。 */
         const atLimit: string[] = []
         for (const body of Array.from(
-          document.querySelectorAll<HTMLElement>("[data-panel] .s1-panel__body"),
+          document.querySelectorAll<HTMLElement>("[data-panel] .sth-panel__body"),
         )) {
           const clip = body.getBoundingClientRect()
           /*
@@ -332,7 +332,7 @@ test.describe("A2 · 面板正文顶边按行对齐（没有一行文字被切�
     await openAt(page, 17)
     // 先证明「现在没有」不是因为它永远找不到东西：找得到正文、也确实在滚动。
     const scrolled = await page.evaluate(() => {
-      const bodies = Array.from(document.querySelectorAll<HTMLElement>("[data-panel] .s1-panel__body"))
+      const bodies = Array.from(document.querySelectorAll<HTMLElement>("[data-panel] .sth-panel__body"))
       return bodies
         .filter((body) => body.scrollHeight - body.clientHeight > 20)
         .map((body) => ({ panel: (body.closest("[data-panel]") as HTMLElement).dataset.panel, scrollTop: body.scrollTop }))
@@ -354,7 +354,7 @@ test.describe("A2 · 面板正文顶边按行对齐（没有一行文字被切�
      * 这正是「切在半个字高上」的定义。判据本身一个字没改。
      */
     const broken = await page.evaluate(() => {
-      const body = Array.from(document.querySelectorAll<HTMLElement>("[data-panel] .s1-panel__body")).find(
+      const body = Array.from(document.querySelectorAll<HTMLElement>("[data-panel] .sth-panel__body")).find(
         (candidate) => candidate.scrollHeight - candidate.clientHeight > 20,
       )
       if (body === undefined) return null
@@ -421,7 +421,7 @@ test.describe("A2 · 面板正文顶边按行对齐（没有一行文字被切�
     await openAt(page, 17)
 
     const walked = await page.evaluate(async () => {
-      const bodies = Array.from(document.querySelectorAll<HTMLElement>("[data-panel] .s1-panel__body")).filter(
+      const bodies = Array.from(document.querySelectorAll<HTMLElement>("[data-panel] .sth-panel__body")).filter(
         (body) => body.scrollHeight - body.clientHeight > 20,
       )
       const before = bodies.map((body) => body.scrollTop)
@@ -456,7 +456,7 @@ test.describe("A2 · 面板正文顶边按行对齐（没有一行文字被切�
 /* ========================================================================== */
 
 /**
- * ⑤ 画布侧的判据。**登记（`invariant()`）在 `tests/s1-invariants.spec.ts`**：
+ * ⑤ 画布侧的判据。**登记（`invariant()`）在 `tests/sth-invariants.spec.ts`**：
  * 两条 spec 跑在同一个 worker 里，同一 id 登记两次会让 `invariant()` 响亮地抛
  * （这是它的设计 —— 重复登记意味着有人以为自己在守住一条其实已经有人守的东西）。
  * 所以这里用普通 `describe`，标题带上 id，双向可查。
@@ -947,9 +947,9 @@ test.describe("color.every-hue-has-one-meaning · 一色一义（双主题）", 
            * 所以先把声明值画到一个画布上，让浏览器替我们归一化。
            *
            * 实现放在 `tests/support/source-scan.ts` 的 `READ_COLOR_SOURCE`，
-           * 由 `openAt()` 以 `addInitScript` 注入为 `window.__s1ReadColor` —— 两个 spec 共用一份。
+           * 由 `openAt()` 以 `addInitScript` 注入为 `window.__sthReadColor` —— 两个 spec 共用一份。
            */
-          const parse = window.__s1ReadColor
+          const parse = window.__sthReadColor
           if (typeof parse !== "function") throw new Error("颜色读取器没有被注入 —— 探针没有在量它以为在量的东西")
           const root = getComputedStyle(document.documentElement)
           const slots = meanings.map((entry) => ({
@@ -967,7 +967,7 @@ test.describe("color.every-hue-has-one-meaning · 一色一义（双主题）", 
            * ## 为什么不要求「每个带语义色的元素都挂 data-meaning」
            *
            * 那是这条不变量**更强**的一种读法，而它不是签署的那一条。签署的
-           * `color.every-hue-has-one-meaning`（`S1-语义不变量候选.md` 候选七）说的是：
+           * `color.every-hue-has-one-meaning`（`STH-语义不变量候选.md` 候选七）说的是：
            * 一个色相只能承载一个语义；同一语义在两个主题下保持同一色相；五个语义色
            * 各自对每个承载面达到 WCAG-AA。它的判红方式在 `tests/art-direction.spec.ts`
            * 里，是**色相距离与对比度**，不是逐元素挂属性。
@@ -1168,7 +1168,7 @@ test.describe("第二批的样式与文案纪律", () => {
 async function readCounters(page: Page): Promise<{ autonomous: string; interventions: string; handling: string }> {
   return page.evaluate(() => {
     const value = (key: string) =>
-      document.querySelector(`[data-counter="${key}"] .s1-counter__value`)?.textContent ?? null
+      document.querySelector(`[data-counter="${key}"] .sth-counter__value`)?.textContent ?? null
     return {
       autonomous: value("autonomousClosedToday") ?? "",
       interventions: value("humanInterventions") ?? "",

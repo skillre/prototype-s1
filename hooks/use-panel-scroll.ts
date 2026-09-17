@@ -49,7 +49,7 @@ const FOLLOW_THRESHOLD_PX = 24
  * ## 为什么不是「容器的直接孩子」
  *
  * 这是 2026-09-17 实测出来的：直接孩子常常只是一个 `div.w-full` 外壳（`finding-stream`
- * 的直接孩子是两篇 `article`、`plan-panel` 是一个 `.s1-plan`），而会被切在半个字高上的是
+ * 的直接孩子是两篇 `article`、`plan-panel` 是一个 `.sth-plan`），而会被切在半个字高上的是
  * **里面的文本行**。拿外壳去对齐，算出来的落点整行偏高，切痕一点没少。
  *
  * 判据：**自己直接含非空文本**的盒子。它们就是行。嵌套（行里还有盒子）时只取最外层，
@@ -81,7 +81,7 @@ function visible(box: DOMRect): boolean {
  *
  * 第一版拿**容器的直接孩子**对齐，并且把落点算到容器的**边框盒**上沿。实测两个都错：
  *
- *   · 边框盒 ≠ 内容盒：`.s1-panel__body` 有 `padding-top`（`--kits-label-gap`），
+ *   · 边框盒 ≠ 内容盒：`.sth-panel__body` 有 `padding-top`（`--kits-label-gap`），
  *     于是算出来的落点整行偏低一个 padding，顶行就停在切痕里；
  *   · 直接孩子常常只是外壳，真正被切的是里面的**文本行**，粒度不对。
  *

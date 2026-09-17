@@ -4,7 +4,7 @@
   "invariants": [
     {
       "id": "evidence.every-claim-cites-a-source",
-      "statement": "凡出现结论或置信度的卡片，必须至少挂一条可定位的证据引用（原始报文 / 进程链 / 文件 hash）；不允许出现无引用的结论，「问 S1」的回答同样不例外。",
+      "statement": "凡出现结论或置信度的卡片，必须至少挂一条可定位的证据引用（原始报文 / 进程链 / 文件 hash）；不允许出现无引用的结论，「问 STH」的回答同样不例外。",
       "enforcement": "test"
     },
     {

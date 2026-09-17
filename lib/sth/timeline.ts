@@ -64,7 +64,7 @@ import {
 } from "./background"
 import {
   APPROVAL_CARD,
-  ASK_S1,
+  ASK_STH,
   AUDIT_ROWS,
   AUTO_CARD,
   CARD_A1_ACTION,
@@ -251,7 +251,7 @@ function backgroundDrafts(closure: BackgroundClosure): Draft[] {
       actionCode: closure.action,
       auto: closure.autonomous,
       autonomy: closure.autonomous ? "L3" : "L2",
-      session: "svc-s1-auto@bastion",
+      session: "svc-sth-auto@bastion",
       ...(closure.autonomous
         ? { rollbackWindowMs: AUTO_CARD.rollbackWindowMs }
         : { approvalCardId: `${slug}-a1` }),
@@ -791,13 +791,13 @@ export function buildIncidentStream(): IncidentMessage[] {
 }
 
 /* -------------------------------------------------------------------------- */
-/* 第 18 拍：问 S1（按需生成）                                                  */
+/* 第 18 拍：问 STH（按需生成）                                                  */
 /* -------------------------------------------------------------------------- */
 
-/** 预置问题（种子 `askS1.presets` 三条 + 占位提示里的那一条）。 */
-export const ASK_S1_QUESTIONS = [ASK_S1.placeholder, ...ASK_S1.presets] as const
+/** 预置问题（种子 `askSth.presets` 三条 + 占位提示里的那一条）。 */
+export const ASK_STH_QUESTIONS = [ASK_STH.placeholder, ...ASK_STH.presets] as const
 
-export type AskS1Answer = {
+export type AskSthAnswer = {
   question: string
   /** 结论先行的回答（业务记录内容，不翻译）。 */
   conclusion: string
@@ -815,21 +815,21 @@ export type AskS1Answer = {
  *   · 「如果攻击者换个新 IP 再来一次会怎样？」→ `plan.steps[5]`（修复上传接口 · 需人工授权）
  *     与 `actionCards[1].five.alternative`（不修则 4 回合后仍可再传）。
  */
-export const ASK_S1_ANSWERS: readonly AskS1Answer[] = [
+export const ASK_STH_ANSWERS: readonly AskSthAnswer[] = [
   {
-    question: ASK_S1.placeholder,
+    question: ASK_STH.placeholder,
     conclusion:
       "攻击者换个新 IP 仍然进得来：入口是上传接口的扩展名白名单，换 IP 不改变入口；白名单修复正停在待批。",
     evidenceRefs: ["#e-79", "#e-41"],
   },
   {
-    question: ASK_S1.presets[0],
+    question: ASK_STH.presets[0],
     conclusion:
       "当前最大风险是门户那台应用服上的活跃后门（1 台 · 攻击者 #0421 第 3 回合）；保单库与会员账号尚未被触及。",
     evidenceRefs: ["#e-77", "#e-41"],
   },
   {
-    question: ASK_S1.presets[1],
+    question: ASK_STH.presets[1],
     conclusion:
       "删除操作没有人工批准单：它命中 L3 可回滚清单，在策略内自主执行、回滚窗口内可一键撤销，审计时间线有留痕。",
     evidenceRefs: ["#e-79"],
@@ -837,7 +837,7 @@ export const ASK_S1_ANSWERS: readonly AskS1Answer[] = [
 ]
 
 /** 按需回答与最后一条已揭示消息之间的回放间隔。 */
-export const ASK_S1_REVEAL_OFFSET_MS = 100
+export const ASK_STH_REVEAL_OFFSET_MS = 100
 
 /**
  * 生成第 18 拍的一条消息（观众点预置问题时调用）。
@@ -847,15 +847,15 @@ export const ASK_S1_REVEAL_OFFSET_MS = 100
  * （根：因为『提问』不是八类消息之一，剧本把这一拍算作 `alert` 的 emits）。
  * 调用方把返回值 append 进序列即可；下一次调用会看到它继续编号。
  */
-export function askS1Message(stream: readonly IncidentMessage[], presetIndex: number): AlertMessage {
-  const answer = ASK_S1_ANSWERS[presetIndex]
+export function askSthMessage(stream: readonly IncidentMessage[], presetIndex: number): AlertMessage {
+  const answer = ASK_STH_ANSWERS[presetIndex]
   if (answer === undefined) {
-    throw new Error(`问 S1 没有第 ${presetIndex} 个预置问题（共 ${ASK_S1_ANSWERS.length} 个）`)
+    throw new Error(`问 STH 没有第 ${presetIndex} 个预置问题（共 ${ASK_STH_ANSWERS.length} 个）`)
   }
   const seq = stream.length + 1
   const id = messageId(seq, "alert")
   const lastRevealed = stream.reduce((max, message) => Math.max(max, message.revealedAtMs), 0)
-  const occurredAtMs = clockToMs("16:21:00") + ASK_S1_REVEAL_OFFSET_MS
+  const occurredAtMs = clockToMs("16:21:00") + ASK_STH_REVEAL_OFFSET_MS
 
   return {
     id,
@@ -865,11 +865,11 @@ export function askS1Message(stream: readonly IncidentMessage[], presetIndex: nu
     beatStep: 18,
     occurredAtMs,
     occurredAt: formatClock(occurredAtMs),
-    revealedAtMs: lastRevealed + ASK_S1_REVEAL_OFFSET_MS,
+    revealedAtMs: lastRevealed + ASK_STH_REVEAL_OFFSET_MS,
     causeId: null,
     causalId: causalIdOf(null, id),
     evidenceRefs: [...answer.evidenceRefs],
-    affects: ["ask-s1"],
+    affects: ["ask-sth"],
     actor: "调查 Agent",
     source: "edr",
     severity: "medium",

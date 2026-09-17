@@ -4,7 +4,7 @@ import { useMessages } from "@/components/i18n/locale-provider"
 import { WorkbenchPanel, type PanelStatus } from "@/components/prototype/workbench/panel"
 import { RoundTripBlock } from "@/components/prototype/workbench/round-trip-block"
 import { REPORT_DOCUMENT_ID, type ReportView } from "@/components/prototype/workbench/view-model"
-import { ENVIRONMENT } from "@/lib/s1/seed"
+import { ENVIRONMENT } from "@/lib/sth/seed"
 
 /**
  * ⑭ 报告流式生成 —— 底栏右（设计稿实测：底栏 130px，⑨ 占 640px，其余归它）。
@@ -56,14 +56,14 @@ export function ReportStream({
       onRetry={onRetry}
       emptyTitle={copy.empty}
       emptyNote={copy.emptyNote}
-      className="s1-panel--dense"
+      className="sth-panel--dense"
       aside={
         /* 两个读数都在面板头上：① 进度（派生）② 已生成几行（派生）。
            它们**不放进报告正文** —— 底栏只有 130px，正文每多一行，报告本身就少看得见一行。
            演示标识与正文必须留在最显眼的位置，chrome 让位（2026-09-17 截图实测之后调整）。 */
-        <span className="s1-report__readout">
+        <span className="sth-report__readout">
           <span
-            className="s1-panel__subtitle"
+            className="sth-panel__subtitle"
             data-testid="report-progress"
             data-percent={view.progressPercent}
             data-design-progress={view.designProgressPercent}
@@ -72,15 +72,15 @@ export function ReportStream({
           >
             {copy.progress(view.progressPercent)}
           </span>
-          <span className="s1-panel__subtitle" data-testid="report-generated-count">
+          <span className="sth-panel__subtitle" data-testid="report-generated-count">
             {copy.generatedOf(view.generatedLines.length, view.totalLines)}
           </span>
         </span>
       }
     >
-      <div className="s1-report">
+      <div className="sth-report">
         <section
-          className="s1-report__doc"
+          className="sth-report__doc"
           data-testid="report-document"
           data-demo-environment="true"
           /* 演示标识的机器可读形态：屏幕上第一行是人读的那一份，这里是给探针的那一份。 */
@@ -90,31 +90,31 @@ export function ReportStream({
               文案逐字取种子 `environment.isolation`（记录内容）—— 它自己就以「演示环境」开头，
               再加一个词典里的前缀会读成「演示环境 演示环境，……」（2026-09-17 截图实拍）。
               与画布底部那条全场标识用的是**同一句话**：同一个东西在整屏里只有一种写法。 */}
-          <p className="s1-report__demo" data-testid="report-demo-banner">
-            <span aria-hidden="true" className="s1-report__demo-dot" />
+          <p className="sth-report__demo" data-testid="report-demo-banner">
+            <span aria-hidden="true" className="sth-report__demo-dot" />
             <span>{ENVIRONMENT.isolation}</span>
           </p>
 
-          <ol className="s1-report__lines" data-testid="report-lines">
+          <ol className="sth-report__lines" data-testid="report-lines">
             {view.generatedLines.map((line, index) => (
-              <li key={`${index}-${line}`} className="s1-report__line" data-line-index={index}>
-                <span className="s1-report__line-no" aria-hidden="true">
+              <li key={`${index}-${line}`} className="sth-report__line" data-line-index={index}>
+                <span className="sth-report__line-no" aria-hidden="true">
                   {String(index + 1).padStart(2, "0")}
                 </span>
                 {/* 报告正文是记录内容（含 IP / hash / 引用编号），逐字显示、不翻译。 */}
-                <code className="s1-report__line-text">{line}</code>
+                <code className="sth-report__line-text">{line}</code>
               </li>
             ))}
           </ol>
         </section>
 
-        <div className="s1-report__actions">
+        <div className="sth-report__actions">
           <RoundTripBlock
             prefix="report"
             exportText={view.text}
-            fileBase="s1-report"
+            fileBase="sth-report"
             documentId={REPORT_DOCUMENT_ID}
-            textareaId="s1-report-import"
+            textareaId="sth-report-import"
             labels={{
               exportAction: copy.exportAction,
               exportHint: copy.exportHint,

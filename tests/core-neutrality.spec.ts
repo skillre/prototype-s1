@@ -312,7 +312,7 @@ test.describe("the product's own surfaces opt into nothing (for now)", () => {
    * 而 `/` 拿到了 hero 光。样例删除之后不存在任何 opt-in 的界面，所以正向的
    * 浏览器断言没有对象了 —— 但**被守的性质还在**，而且更强：
    *
-   *   • S1 的首屏必须是**中性面**：不声明性格 token、不渲染性格元素。
+   *   • STH 的首屏必须是**中性面**：不声明性格 token、不渲染性格元素。
    *     这不是「暂时没有」，而是 `visual-manifest.json` 的 avoid 里写明的两条
    *     （`glow-everywhere` / `ambient-light-layer`）—— 控制台的光只应来自真实状态。
    *   • 中性 ≠ 无设计：它同时必须仍然是有样式、可读的页面（下面两条）。
@@ -371,7 +371,7 @@ test.describe("the product's own surfaces opt into nothing (for now)", () => {
 /*
  * 这一段曾经用 `invariant("factory.core-not-art-directed", …)` 登记。
  *
- * 本包（S1 数据层与回放引擎）把人签署的六条 S1 不变量写进 `product-contract.json` 时，
+ * 本包（STH 数据层与回放引擎）把人签署的六条 STH 不变量写进 `product-contract.json` 时，
  * 同时摘掉了基线那两条 `factory.` / `contract.` 声明里的 `factory.` 那一条：
  * 它是**基线的**不变量，而归档的 `prototype-ai-research` 与 `prototype-ai-finance`
  * 两个派生仓留下的处置是「基线级不变量随它的登记一起离开产品契约」。

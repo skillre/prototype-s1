@@ -15,7 +15,7 @@ import { useMessages } from "@/components/i18n/locale-provider"
  * 另一边没有，于是同一条不变量在两个面板上的强度不同，而屏幕上它们看起来一样。
  *
  * 所以这里只留机制，判据仍然在各自的数据层：
- *   · ⑪ 的 `onVerify` 走 `lib/s1/sediment.ts` 的往返检查；
+ *   · ⑪ 的 `onVerify` 走 `lib/sth/sediment.ts` 的往返检查；
  *   · ⑭ 的 `onVerify` 走 `view-model.ts` 的 `verifyReportImport`（逐行比对）。
  * 组件本身**不判断"一样不一样"** —— 它只把那个回答翻译成三种结果。
  *
@@ -139,12 +139,12 @@ export function RoundTripBlock({
 
   return (
     <>
-      <section className="s1-rt__block">
-        <div className="s1-rt__bar">
-          <span className="s1-rt__block-title">{labels.exportAction}</span>
+      <section className="sth-rt__block">
+        <div className="sth-rt__bar">
+          <span className="sth-rt__block-title">{labels.exportAction}</span>
           <button
             type="button"
-            className="kits-control s1-rt__action"
+            className="kits-control sth-rt__action"
             data-testid={`${prefix}-copy`}
             onClick={() => void copyExport()}
           >
@@ -152,7 +152,7 @@ export function RoundTripBlock({
           </button>
           <button
             type="button"
-            className="kits-control s1-rt__action"
+            className="kits-control sth-rt__action"
             data-testid={`${prefix}-download`}
             onClick={downloadExport}
           >
@@ -162,20 +162,20 @@ export function RoundTripBlock({
 
         {copyState === null ? null : (
           <p
-            className="s1-rt__copy-state"
+            className="sth-rt__copy-state"
             data-testid={`${prefix}-copy-result`}
             data-copy-result={copyState.kind}
             data-meaning={copyState.kind === "copied" ? "closed" : "waiting"}
           >
             {copyState.kind === "copied" ? t.common.copied : t.toast.clipboardUnavailable}
-            {copyState.kind === "failed" ? <code className="s1-rt__detail">{copyState.detail}</code> : null}
+            {copyState.kind === "failed" ? <code className="sth-rt__detail">{copyState.detail}</code> : null}
           </p>
         )}
 
         {/* 披露控件：折叠时只看得到「带出去的是什么」，展开才看得到那份文档本身。 */}
         <button
           type="button"
-          className="s1-rt__disclosure"
+          className="sth-rt__disclosure"
           data-testid={`${prefix}-export-toggle`}
           aria-expanded={exportOpen}
           aria-controls={documentId}
@@ -190,7 +190,7 @@ export function RoundTripBlock({
             与是否展开无关）。 */}
         <pre
           id={documentId}
-          className="s1-rt__export-text"
+          className="sth-rt__export-text"
           data-testid={`${prefix}-export-text`}
           data-export-open={String(exportOpen)}
         >
@@ -198,15 +198,15 @@ export function RoundTripBlock({
         </pre>
 
         {/* 这句是导出可复算的**理由**，不是装饰：读者因此知道文件名与内容为什么逐次相同。 */}
-        <p className="s1-rt__note">{labels.exportNote}</p>
+        <p className="sth-rt__note">{labels.exportNote}</p>
       </section>
 
-      <section className="s1-rt__block">
+      <section className="sth-rt__block">
         {/* 这句提示本身是按钮：它说的「导出再导入，逐条等价」正是点下去要做的事 —— 把当前
             导出填进导入框，于是往返核对不需要任何剪贴板权限。 */}
         <button
           type="button"
-          className="kits-control s1-rt__action s1-rt__fill"
+          className="kits-control sth-rt__action sth-rt__fill"
           data-testid={`${prefix}-fill-import`}
           data-fill-source="export"
           onClick={() => setPasted(exportText)}
@@ -216,7 +216,7 @@ export function RoundTripBlock({
 
         <textarea
           id={textareaId}
-          className="s1-rt__input"
+          className="sth-rt__input"
           data-testid={`${prefix}-import-input`}
           aria-label={labels.importAction}
           placeholder={labels.importPlaceholder}
@@ -227,7 +227,7 @@ export function RoundTripBlock({
         />
         <button
           type="button"
-          className="kits-control s1-rt__action s1-rt__submit"
+          className="kits-control sth-rt__action sth-rt__submit"
           data-testid={`${prefix}-import-verify`}
           /* 空文本核不了：禁用的控件是诚实的，静默无反应不是。 */
           disabled={pasted.trim().length === 0}
@@ -238,16 +238,16 @@ export function RoundTripBlock({
 
         {outcome === null ? null : (
           <div
-            className="s1-rt__result"
+            className="sth-rt__result"
             data-testid={`${prefix}-import-result`}
             data-import-result={outcome.kind}
             data-meaning={RESULT_MEANING[outcome.kind]}
           >
-            <p className="s1-rt__result-text" data-meaning={RESULT_MEANING[outcome.kind]}>
+            <p className="sth-rt__result-text" data-meaning={RESULT_MEANING[outcome.kind]}>
               {resultTextOf(outcome, labels)}
             </p>
             {outcome.lines.length === 0 ? null : (
-              <ul className="s1-rt__diffs" data-testid={`${prefix}-import-diffs`}>
+              <ul className="sth-rt__diffs" data-testid={`${prefix}-import-diffs`}>
                 {outcome.lines.map((line, index) => (
                   <li key={`${index}-${line}`}>
                     <code>{line}</code>

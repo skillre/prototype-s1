@@ -11,9 +11,9 @@ import {
   scheduleDurationMs,
   type ScheduleFrame,
 } from "@/components/prototype/workbench/view-model"
-import { countersFromEvents, type CounterSnapshot } from "@/lib/s1/counters"
-import type { IncidentMessage } from "@/lib/s1/contract"
-import { replayStream, type IncidentState, type ReplayCursor } from "@/lib/s1/replay"
+import { countersFromEvents, type CounterSnapshot } from "@/lib/sth/counters"
+import type { IncidentMessage } from "@/lib/sth/contract"
+import { replayStream, type IncidentState, type ReplayCursor } from "@/lib/sth/replay"
 import {
   loadCanonicalStream,
   selectCursorMs,

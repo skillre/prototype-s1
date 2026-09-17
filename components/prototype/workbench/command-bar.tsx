@@ -3,15 +3,15 @@
 import { useMessages } from "@/components/i18n/locale-provider"
 import { scheduledBeats, type RosterView } from "@/components/prototype/workbench/view-model"
 import type { WorkbenchReplay } from "@/hooks/use-workbench-replay"
-import type { CounterSnapshot } from "@/lib/s1/counters"
-import { AUTONOMY_LEVELS, SCENE_AUTONOMY_CEILING, type AgentActor, type AutonomyLevel } from "@/lib/s1/contract"
-import { ENVIRONMENT, HEADER_STATS_SIGNED } from "@/lib/s1/seed"
+import type { CounterSnapshot } from "@/lib/sth/counters"
+import { AUTONOMY_LEVELS, SCENE_AUTONOMY_CEILING, type AgentActor, type AutonomyLevel } from "@/lib/sth/contract"
+import { ENVIRONMENT, HEADER_STATS_SIGNED } from "@/lib/sth/seed"
 
 /**
  * ⑫ 展开面的 DOM id。**模块级常量**：它必须跨渲染稳定，否则 `aria-controls` 会在下一次
  * 渲染时指向一个不存在的 id（关联是"上一次那个字符串"，不是"那个面板"）。
  */
-export const ROSTER_PANEL_ID = "s1-roster-panel"
+export const ROSTER_PANEL_ID = "sth-roster-panel"
 
 /**
  * ① 态势指挥条（76px，设计稿实测骨架）—— 含 ⑫ 数字员工花名册。
@@ -78,57 +78,57 @@ export function CommandBar({
   ]
 
   return (
-    <header className="s1-header" data-testid="command-bar">
-      <div className="s1-zone">
-        <div className="s1-brand">
-          <span aria-hidden="true" className="s1-brand__mark">
+    <header className="sth-header" data-testid="command-bar">
+      <div className="sth-zone">
+        <div className="sth-brand">
+          <span aria-hidden="true" className="sth-brand__mark">
             {t.brand.mark}
           </span>
           <div className="flex min-w-0 flex-col">
-            <h1 className="s1-brand__name">{t.brand.name}</h1>
-            <span className="s1-counter__label">{t.brand.subtitle}</span>
+            <h1 className="sth-brand__name">{t.brand.name}</h1>
+            <span className="sth-counter__label">{t.brand.subtitle}</span>
           </div>
         </div>
-        <span className="s1-counter__label">{ENVIRONMENT.businessSystem}</span>
+        <span className="sth-counter__label">{ENVIRONMENT.businessSystem}</span>
       </div>
 
-      <div className="s1-zone s1-zone--divider" title={t.workbench.commandBar.countersHint} data-testid="counters">
+      <div className="sth-zone sth-zone--divider" title={t.workbench.commandBar.countersHint} data-testid="counters">
         {reads.map((read) => (
-          <div key={read.key} className="s1-counter" data-counter={read.key}>
-            <span className="s1-counter__value">{read.value}</span>
-            <span className="s1-counter__label">{read.label}</span>
+          <div key={read.key} className="sth-counter" data-counter={read.key}>
+            <span className="sth-counter__value">{read.value}</span>
+            <span className="sth-counter__label">{read.label}</span>
           </div>
         ))}
       </div>
 
-      <div className="s1-zone s1-zone--divider s1-zone--grow">
+      <div className="sth-zone sth-zone--divider sth-zone--grow">
         {/* 当前事件：种子记录内容，逐字显示。 */}
-        <span className="s1-status__line" data-testid="current-event">
+        <span className="sth-status__line" data-testid="current-event">
           {stats.currentEvent}
         </span>
         <span
-          className="s1-status__line s1-status__line--muted"
+          className="sth-status__line sth-status__line--muted"
           data-testid="live-status"
           data-pending-approvals={pendingApproval}
         >
           {/* 状态点：AI 正在跑。全场唯一的循环动效，reduced-motion 下降级为实心点。 */}
-          <span aria-hidden="true" className="s1-dot s1-dot--breathing" />
+          <span aria-hidden="true" className="sth-dot sth-dot--breathing" />
           {t.workbench.commandBar.liveStatus(pendingApproval)}
         </span>
       </div>
 
       <div
-        className="s1-zone s1-zone--divider"
+        className="sth-zone sth-zone--divider"
         data-testid="autonomy-ladder"
         /* 空间不够时「场景策略」会以省略号收尾：title 让它仍然读得到全文。 */
         title={stats.scenePolicy}
       >
-        <span className="s1-counter__label">{t.workbench.commandBar.autonomy}</span>
-        <div className="s1-ladder">
+        <span className="sth-counter__label">{t.workbench.commandBar.autonomy}</span>
+        <div className="sth-ladder">
           {AUTONOMY_LEVELS.map((level) => (
             <span
               key={level}
-              className="s1-ladder__step"
+              className="sth-ladder__step"
               data-level={level}
               data-active={observed.has(level) ? "true" : "false"}
               data-ceiling={level === SCENE_AUTONOMY_CEILING ? "true" : "false"}
@@ -138,22 +138,22 @@ export function CommandBar({
           ))}
         </div>
         {/* 场景策略：种子记录内容，逐字。 */}
-        <span className="s1-counter__label">{stats.scenePolicy}</span>
+        <span className="sth-counter__label">{stats.scenePolicy}</span>
       </div>
 
-      <div className="s1-zone s1-zone--divider" data-testid="round-timer">
-        <div className="s1-counter">
-          <span className="s1-counter__value">{`回合 ${stats.roundTimer.round}`}</span>
-          <span className="s1-counter__label">{stats.roundTimer.label}</span>
+      <div className="sth-zone sth-zone--divider" data-testid="round-timer">
+        <div className="sth-counter">
+          <span className="sth-counter__value">{`回合 ${stats.roundTimer.round}`}</span>
+          <span className="sth-counter__label">{stats.roundTimer.label}</span>
         </div>
         {/* 设计稿静帧值（种子 `roundTimer.value`）：是取值，不是派生量 ——
             从 16:20:31 到 16:21:00 是 29 秒，台账推不出 18.4 秒，所以不假装它是活的。 */}
-        <span className="s1-counter__value" data-design-value="true">
+        <span className="sth-counter__value" data-design-value="true">
           {stats.roundTimer.value}
         </span>
       </div>
 
-      <div className="s1-zone s1-zone--divider" data-testid="roster-zone">
+      <div className="sth-zone sth-zone--divider" data-testid="roster-zone">
         {/*
           花名册席位是**一个真控件**：它是 ⑫ 展开面的开关（`aria-expanded` + `aria-controls`）。
           过去它们是四个纯展示的方块 —— 点了没有任何事发生的方块，就是一个看起来像按钮的装饰。
@@ -162,18 +162,18 @@ export function CommandBar({
         */}
         <button
           type="button"
-          className="s1-roster-toggle"
+          className="sth-roster-toggle"
           data-testid="roster-toggle"
           aria-expanded={rosterOpen}
           aria-controls={ROSTER_PANEL_ID}
           onClick={onToggleRoster}
           title={rosterOpen ? t.workbench.roster.close : t.workbench.roster.open}
         >
-          <span className="s1-roster">
+          <span className="sth-roster">
             {roster.seats.map((seat) => (
               <span
                 key={seat.role}
-                className="s1-roster__seat"
+                className="sth-roster__seat"
                 data-role={seat.role}
                 data-active={seat.role === activeActor ? "true" : "false"}
                 data-on-duty={String(seat.onDuty)}
@@ -190,7 +190,7 @@ export function CommandBar({
             （有断言）—— 与顶栏那三个计数受同一条不变量管（`evidence.counters-derive-from-events`
             的姊妹条：界面上的数字要么是记录，要么是算出来的，不许是抄来的）。
           */}
-          <span className="s1-roster__label" data-testid="roster-label" data-on-duty={roster.onDutyCount}>
+          <span className="sth-roster__label" data-testid="roster-label" data-on-duty={roster.onDutyCount}>
             {t.workbench.roster.onDuty(roster.onDutyCount)}
           </span>
         </button>
@@ -237,12 +237,12 @@ export function ReplayControl({ replay }: { replay: WorkbenchReplay }) {
       : t.workbench.replay.position((replay.frame.cursor.revealedAtMs / 1000).toFixed(2))
 
   return (
-    <div className="s1-replay" data-testid="replay-control">
-      <span className="s1-counter__label">{t.workbench.replay.label}</span>
+    <div className="sth-replay" data-testid="replay-control">
+      <span className="sth-counter__label">{t.workbench.replay.label}</span>
 
       <button
         type="button"
-        className="kits-control s1-replay__button"
+        className="kits-control sth-replay__button"
         onClick={replay.restart}
         data-testid="replay-restart"
       >
@@ -251,7 +251,7 @@ export function ReplayControl({ replay }: { replay: WorkbenchReplay }) {
 
       <button
         type="button"
-        className="kits-control s1-replay__button"
+        className="kits-control sth-replay__button"
         onClick={() => replay.seekBeat(previous)}
         data-testid="replay-prev-beat"
       >
@@ -262,8 +262,8 @@ export function ReplayControl({ replay }: { replay: WorkbenchReplay }) {
         type="button"
         className={
           replay.playing
-            ? "kits-control kits-control--primary s1-replay__button"
-            : "kits-control s1-replay__button"
+            ? "kits-control kits-control--primary sth-replay__button"
+            : "kits-control sth-replay__button"
         }
         onClick={replay.toggle}
         aria-pressed={replay.playing}
@@ -278,7 +278,7 @@ export function ReplayControl({ replay }: { replay: WorkbenchReplay }) {
 
       <button
         type="button"
-        className="kits-control s1-replay__button"
+        className="kits-control sth-replay__button"
         onClick={() => replay.seekBeat(next)}
         data-testid="replay-next-beat"
       >
@@ -287,7 +287,7 @@ export function ReplayControl({ replay }: { replay: WorkbenchReplay }) {
 
       <input
         type="range"
-        className="s1-replay__range"
+        className="sth-replay__range"
         min={0}
         max={Math.max(1, Math.round(replay.durationMs))}
         step={10}
@@ -298,7 +298,7 @@ export function ReplayControl({ replay }: { replay: WorkbenchReplay }) {
       />
 
       <select
-        className="s1-replay__select"
+        className="sth-replay__select"
         /* 显示的是**界面请求过的**那一拍，不是当前帧的拍号：第 18 拍没有自己的帧，
            若显示当前帧就会跳回 17 —— 观众点了 18、界面显示 17，那是一次看得见的撒谎。 */
         value={replay.requestedBeat === null ? "" : String(replay.requestedBeat)}
@@ -317,7 +317,7 @@ export function ReplayControl({ replay }: { replay: WorkbenchReplay }) {
       </select>
 
       <span
-        className="s1-replay__position"
+        className="sth-replay__position"
         data-testid="replay-position"
         data-replay-cursor-ms={replay.frame.cursor.revealedAtMs}
         data-replay-cursor-seq={Number.isFinite(replay.frame.cursor.seq) ? replay.frame.cursor.seq : -1}
@@ -329,11 +329,11 @@ export function ReplayControl({ replay }: { replay: WorkbenchReplay }) {
       {/* 夹取要说出来：请求的那一拍没有自己的帧时，界面明说它落在了哪儿。
           「没有这一帧」与「回到开场」是两件事，静默归零是一次看不见的撒谎。 */}
       {replay.requestedBeatClamped ? (
-        <span className="s1-counter__label" data-testid="replay-beat-clamped">
+        <span className="sth-counter__label" data-testid="replay-beat-clamped">
           {t.workbench.replay.beatClamped(replay.requestedBeat ?? 0, current ?? 0)}
         </span>
       ) : null}
-      <span className="s1-counter__label" data-testid="replay-phase">
+      <span className="sth-counter__label" data-testid="replay-phase">
         {phase}
       </span>
     </div>

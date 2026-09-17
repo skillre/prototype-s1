@@ -67,7 +67,7 @@ export function AttackGraph({
       subtitle={copy.subtitle}
       aside={
         chain.nodes.length === 0 ? null : (
-          <span className="s1-panel__subtitle" data-testid="graph-node-count">{chain.nodes.length}</span>
+          <span className="sth-panel__subtitle" data-testid="graph-node-count">{chain.nodes.length}</span>
         )
       }
       status={status}
@@ -76,18 +76,18 @@ export function AttackGraph({
       emptyTitle={copy.empty}
       emptyNote={copy.emptyNote}
     >
-      <div className="s1-graph" data-testid="attack-graph">
-        <ul className="s1-graph__legend" data-testid="graph-legend">
+      <div className="sth-graph" data-testid="attack-graph">
+        <ul className="sth-graph__legend" data-testid="graph-legend">
           <li data-meaning="attack">
-            <span className="s1-graph__legend-mark s1-graph__legend-mark--path" aria-hidden="true" />
+            <span className="sth-graph__legend-mark sth-graph__legend-mark--path" aria-hidden="true" />
             {copy.legend.attackPath}
           </li>
           <li data-meaning="ai">
-            <span className="s1-graph__legend-mark s1-graph__legend-mark--controlled" aria-hidden="true" />
+            <span className="sth-graph__legend-mark sth-graph__legend-mark--controlled" aria-hidden="true" />
             {copy.legend.controlled}
           </li>
           <li data-meaning="closed">
-            <span className="s1-graph__legend-mark s1-graph__legend-mark--closed" aria-hidden="true" />
+            <span className="sth-graph__legend-mark sth-graph__legend-mark--closed" aria-hidden="true" />
             {copy.legend.closed}
           </li>
         </ul>
@@ -98,9 +98,9 @@ export function AttackGraph({
            而不是靠"坐标取得够开"这种会随内容变化的假设（旧实现就是这么坏的，见
            `view-model.ts` 里 `attackChainLayout` 的长注释）。
            画布高度由内容撑开（`grid-auto-rows: auto`），面板正文照常内部滚动 ——
-           见 `workbench.css` 里 `.s1-graph__canvas` 关于「16:9 单屏不溢出」的说明。 */}
+           见 `workbench.css` 里 `.sth-graph__canvas` 关于「16:9 单屏不溢出」的说明。 */}
         <div
-          className="s1-graph__canvas"
+          className="sth-graph__canvas"
           ref={canvasRef}
           data-testid="attack-graph-canvas"
           data-rank-count={chain.layout.rankCount}
@@ -112,7 +112,7 @@ export function AttackGraph({
         >
           {/* 线层：坐标是**量出来的**（节点的布局框中心），不是算出来的百分比。
               它 `aria-hidden`，因为每条边在下面的列表里另有一份完整的文字形态。 */}
-          <svg className="s1-graph__edges" aria-hidden="true" focusable="false">
+          <svg className="sth-graph__edges" aria-hidden="true" focusable="false">
             {edgeLines.map((line) => (
               <line key={line.key} x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} />
             ))}
@@ -130,12 +130,12 @@ export function AttackGraph({
         </div>
 
         {chain.edgesNoneCitable ? (
-          <p className="s1-graph__note" data-testid="graph-edges-note">{copy.edgesNote}</p>
+          <p className="sth-graph__note" data-testid="graph-edges-note">{copy.edgesNote}</p>
         ) : null}
 
         {/* 边的**文字形态** —— 一根 SVG 线对屏幕阅读器不存在，所以每条边在这里说全：
             证据引用 + 两端标签 + 两端各自的角色。图形层因此可以是纯装饰。 */}
-        <ul className="s1-graph__edge-list" data-testid="graph-edge-list">
+        <ul className="sth-graph__edge-list" data-testid="graph-edge-list">
           {chain.edges.map((edge) => {
             const from = byId.get(edge.from)
             const to = byId.get(edge.to)
@@ -143,22 +143,22 @@ export function AttackGraph({
             return (
               <li
                 key={edgeKey(edge)}
-                className="s1-graph__edge"
+                className="sth-graph__edge"
                 data-testid="graph-edge"
                 data-edge-from={edge.from}
                 data-edge-to={edge.to}
                 data-evidence-ref={edge.evidenceRef}
               >
                 <EvidenceCite id={edge.evidenceRef} open={open} onToggle={() => toggleEvidence(edge.evidenceRef)} />
-                <span className="s1-graph__edge-labels">
-                  <span className="s1-graph__edge-end">
+                <span className="sth-graph__edge-labels">
+                  <span className="sth-graph__edge-end">
                     <code>{from?.label ?? edge.from}</code>
-                    {edge.fromRole === null ? null : <span className="s1-graph__role">{edge.fromRole}</span>}
+                    {edge.fromRole === null ? null : <span className="sth-graph__role">{edge.fromRole}</span>}
                   </span>
-                  <span className="s1-graph__arrow" aria-hidden="true">→</span>
-                  <span className="s1-graph__edge-end">
+                  <span className="sth-graph__arrow" aria-hidden="true">→</span>
+                  <span className="sth-graph__edge-end">
                     <code>{to?.label ?? edge.to}</code>
-                    {edge.toRole === null ? null : <span className="s1-graph__role">{edge.toRole}</span>}
+                    {edge.toRole === null ? null : <span className="sth-graph__role">{edge.toRole}</span>}
                   </span>
                 </span>
                 {open ? <EvidenceDetailBlock id={edge.evidenceRef} /> : null}
@@ -168,14 +168,14 @@ export function AttackGraph({
         </ul>
 
         {chain.attacker === null ? null : (
-          <div className="s1-graph__profile" data-testid="graph-attacker">
-            <span className="s1-graph__profile-title">{copy.attackerProfile}</span>
+          <div className="sth-graph__profile" data-testid="graph-attacker">
+            <span className="sth-graph__profile-title">{copy.attackerProfile}</span>
             <code data-testid="graph-attacker-label">{chain.attacker.label}</code>
-            <span className="s1-graph__field">
-              <span className="s1-field__name">{`${copy.fingerprint}：`}</span>
+            <span className="sth-graph__field">
+              <span className="sth-field__name">{`${copy.fingerprint}：`}</span>
               <code data-testid="graph-fingerprint">{chain.attacker.fingerprint}</code>
             </span>
-            <span className="s1-graph__field" data-testid="graph-fingerprint-matches">
+            <span className="sth-graph__field" data-testid="graph-fingerprint-matches">
               {copy.fingerprintMatches(chain.attacker.matches)}
             </span>
           </div>
@@ -288,7 +288,7 @@ function GraphNode({
 
   return (
     <div
-      className="s1-graph__node"
+      className="sth-graph__node"
       style={{
         gridRow: node.slot.rank + 1,
         gridColumn: `${node.slot.columnStart} / span ${node.slot.columnSpan}`,
@@ -312,27 +312,27 @@ function GraphNode({
        * 「代码里的命令 / ID / hash 放进 `<code>` / `<pre>`」）用 `<code>` 承载 ——
        * 于是它不会被当成漏翻的界面文案，同时屏幕上仍然可读。
        */}
-      <code className="s1-graph__node-label">{node.label}</code>
+      <code className="sth-graph__node-label">{node.label}</code>
       {/*
        * 状态词在染色时**必须同时声明它的含义** —— 状态词在 `data-meaning="ai"` / `"closed"`
        * 的节点里继承到那个语义色（`--brand` / `--success`），颜色在，"这是什么意思"也必须在。
        * 中性状态不借色，所以 `data-meaning` 与节点一致地缺席 —— 一色一义守的是
        * 「凡出现语义色处必有声明」，不是「每个元素都要挂一个」。
        */}
-      <span className="s1-graph__node-state" data-meaning={meaning}>
+      <span className="sth-graph__node-state" data-meaning={meaning}>
         {node.state}
       </span>
-      {node.detail === null ? null : <code className="s1-graph__node-detail">{node.detail}</code>}
+      {node.detail === null ? null : <code className="sth-graph__node-detail">{node.detail}</code>}
 
       {/* 没有引用不是缺陷，是一句必须说出口的事实：不变量禁的是**假**引用，不是空引用。 */}
       {cited ? (
-        <span className="s1-graph__cites">
+        <span className="sth-graph__cites">
           {node.evidenceRefs.map((ref) => (
             <EvidenceCite key={ref} id={ref} open={opened === ref} onToggle={() => onToggle(ref)} />
           ))}
         </span>
       ) : (
-        <span className="s1-graph__uncited" data-testid="graph-no-citation">{uncited}</span>
+        <span className="sth-graph__uncited" data-testid="graph-no-citation">{uncited}</span>
       )}
 
       {opened === undefined ? null : <EvidenceDetailBlock id={opened} />}
@@ -356,7 +356,7 @@ function EvidenceCite({
   return (
     <button
       type="button"
-      className="s1-graph__cite"
+      className="sth-graph__cite"
       onClick={onToggle}
       aria-expanded={open}
       data-evidence-ref={id}
@@ -376,7 +376,7 @@ function EvidenceCite({
 function EvidenceDetailBlock({ id }: { id: string }) {
   const detail = evidenceDetailOf(id)
   return (
-    <span className="s1-graph__detail" data-testid="graph-evidence-detail">
+    <span className="sth-graph__detail" data-testid="graph-evidence-detail">
       <code>{detail.id}</code>
       <code>{detail.kind}</code>
       <span>{detail.sourceLabel}</span>
