@@ -1463,7 +1463,7 @@ export function verifySedimentImport(
  * 游标的字符串形式：`时刻:序号`。
  *
  * 它是「点了一行之后，回放真的停在那一帧上吗」这条断言的**对照物**：DOM 上的
- * `data-cursor-key` 与 `data-replay-cursor-ms` 必须来自同一个游标。序号不能省 ——
+ * `data-replay-cursor-key` 与 `data-replay-cursor-ms` 必须来自同一个游标。序号不能省 ——
  * 剧本第 6/7 拍与 14/15 拍共享同一个揭示时刻，只比毫秒的话，点第 8 拍那条
  * 「16:20:38」与点第 7 拍那条会得到同一个读数，而那两行是不同的两行。
  */
